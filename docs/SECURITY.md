@@ -144,9 +144,11 @@ recoverable; "delete forever" is explicit.
 
 ## Reporting a security issue
 
-Please **do not** open a public issue for security vulnerabilities.
-Contact: _[maintainer contact to be added]_ — we'll acknowledge within a few
-days and coordinate disclosure.
+Please **do not** open a public issue for security vulnerabilities. This
+repository uses **GitHub Private Vulnerability Reporting**: go to the
+**Security** tab of the repository and click **"Report a vulnerability"**.
+Reports are visible only to the maintainers, and we'll coordinate disclosure
+before any fix is published.
 
 ---
 
