@@ -48,6 +48,15 @@ MainActivity     Routes + bottom nav + FAB
 
 Swap points for the real backend: `FdRepository` (→ Firestore) and `SettingsStore` (→ user doc).
 
+## Security & trust
+
+The public security architecture — multi-user tenancy, threat model, defense
+in depth, data-handling promises and honest limitations — is documented in
+**[docs/SECURITY.md](docs/SECURITY.md)**.
+
+Current mock phase: all data is in-memory only, never persisted, and never
+leaves the device.
+
 ## Deliberately not implemented (backend-era)
 
 Authentication, real push notifications (10:00 AM daily job), biometric unlock, CSV export, interest rate history, multi-currency.
