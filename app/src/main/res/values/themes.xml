@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <style name="Theme.FDManager" parent="android:Theme.Material.NoActionBar">
+        <!-- Teal status bar matches the Compose top-app-bar so icons stay readable in both themes -->
+        <item name="android:statusBarColor">@color/brand_teal</item>
+        <item name="android:navigationBarColor">@color/system_nav_dark</item>
+        <item name="android:windowBackground">@android:color/white</item>
+    </style>
+</resources>
