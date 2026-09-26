@@ -1,7 +1,24 @@
+# --- Gradle / build output ---
 .gradle/
 build/
 */build/
-local.properties
-*.iml
+.cxx/
+.externalNativeBuild/
+.navigation/
+*.hprof
+captures/
+
+# --- Android Studio / IntelliJ ---
 .idea/
+*.iml
+local.properties
+
+# --- Never commit binaries or signing material ---
 *.apk
+*.aab
+*.keystore
+*.jks
+
+# --- OS noise ---
+.DS_Store
+Thumbs.db
