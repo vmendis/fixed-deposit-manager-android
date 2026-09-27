@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -46,6 +47,7 @@ import com.example.fdmanager.domain.Dates
 import com.example.fdmanager.domain.FdQueries
 import com.example.fdmanager.domain.Lkr
 import com.example.fdmanager.ui.FdViewModel
+import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.EmptyState
 import com.example.fdmanager.ui.components.FdCard
 import java.time.LocalDate
@@ -79,7 +81,18 @@ fun FdListScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
-            title = { Text(bank, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BankMonogram(bank = bank, size = 30.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        bank,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            },
             actions = {
                 Box {
                     IconButton(onClick = { sortMenu = true }) {

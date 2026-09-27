@@ -37,6 +37,7 @@ import com.example.fdmanager.data.model.FixedDeposit
 import com.example.fdmanager.domain.Dates
 import com.example.fdmanager.domain.FdQueries
 import com.example.fdmanager.domain.Lkr
+import androidx.compose.ui.platform.testTag
 import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.EmptyState
 
@@ -83,6 +84,7 @@ fun RecycleBinScreen(
                         Modifier
                             .fillMaxWidth()
                             .padding(horizontal = 16.dp, vertical = 6.dp)
+                            .testTag("bin:${fd.fdNumber}")
                     ) {
                         Row(
                             Modifier.padding(14.dp),

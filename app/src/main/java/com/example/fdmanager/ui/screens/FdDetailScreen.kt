@@ -54,6 +54,7 @@ import com.example.fdmanager.domain.FdMath
 import com.example.fdmanager.domain.FdQueries
 import com.example.fdmanager.domain.Lkr
 import com.example.fdmanager.ui.FdViewModel
+import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.CountdownChip
 import com.example.fdmanager.ui.components.InfoRow
 import com.example.fdmanager.ui.components.StatusChip
@@ -125,6 +126,8 @@ fun FdDetailScreen(
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    BankMonogram(bank = fd.bank, size = 52.dp)
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         fd.bank,
                         style = MaterialTheme.typography.labelMedium,
