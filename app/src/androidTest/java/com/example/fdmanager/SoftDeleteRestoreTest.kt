@@ -39,8 +39,9 @@ class SoftDeleteRestoreTest {
         rule.onNodeWithText("Delete").performScrollTo().performClick()
         rule.confirmDialog()
 
-        // Back on the bank list: now empty
-        rule.onNodeWithText("This bank has no deposits.").assertIsDisplayed()
+        // Back on the bank list: now empty. Scroll first — round 2 proved the node is
+        // composed but out of the viewport; bring it in, then assert visibility.
+        rule.onNodeWithText("This bank has no deposits.").performScrollTo().assertIsDisplayed()
 
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("FD Manager").assertIsDisplayed()

@@ -142,8 +142,10 @@ The executor creates this file at the project root and hands it to the reviewer:
   from Device Manager or `adb shell getprop ro.build.version.sdk`; Gradle from
   `gradlew.bat --version`. Literal `$(...)`, `(unknown)`, or guessed values are rejections.
 - **Tier-2 table completeness:** one row per test class (all 6), per-class counts that sum
-  to the suite total (13 as of v1 — if the count changed, use the real one). Any test not
-  executed must be NAMED with its reason under "Not covered".
+  to the suite total — current suite: AddFdValidationTest **2**, BankMonogramUiTest **4**,
+  NavigationFlowTest **2**, RenewalChainTest **1**, SoftDeleteRestoreTest **2**,
+  SortFilterTest **2** = **13**. Any test not executed must be NAMED with its reason under
+  "Not covered". The header's commit must equal the SHA actually tested (`git log -1`).
 - **Every failure section is full:** verbatim assertion message + ≤30 lines of relevant
   logcat + the `<failure>` excerpt (3–10 lines) from
   `app\build\outputs\androidTest-results\connected\*.xml` — **including the
