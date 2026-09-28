@@ -42,9 +42,11 @@ class RenewalChainTest {
         // app-bar title and the info row → assert presence, not uniqueness
         assertTrue(rule.onAllNodesWithText("COM-33018-R2").fetchSemanticsNodes().isNotEmpty())
 
-        // Back → the renewed parent now wears the Renewed chip
+        // Back → the renewed parent now wears the Renewed chip. Detail scroll state is
+        // restored on back-nav (we left it at the bottom on the Renew button) — bring the
+        // chip into the viewport before asserting it.
         rule.onNodeWithContentDescription("Back").performClick()
-        rule.onNodeWithText("Renewed").assertIsDisplayed()
+        rule.onNodeWithText("Renewed").performScrollTo().assertIsDisplayed()
 
         // Back → the bank list holds the whole chain
         rule.onNodeWithContentDescription("Back").performClick()

@@ -145,13 +145,22 @@ The executor creates this file at the project root and hands it to the reviewer:
   to the suite total (13 as of v1 — if the count changed, use the real one). Any test not
   executed must be NAMED with its reason under "Not covered".
 - **Every failure section is full:** verbatim assertion message + ≤30 lines of relevant
-  logcat + a classification proposal (TEST-BUG / CODE-BUG / ENV-FLAKE). Blank template
-  rows are rejections.
+  logcat + the `<failure>` excerpt (3–10 lines) from
+  `app\build\outputs\androidTest-results\connected\*.xml` — **including the
+  `at com.example.fdmanager.<Test>.…(<Test>.kt:NN)` frame that names the failing line** —
+  + a classification proposal (TEST-BUG / CODE-BUG / ENV-FLAKE). Blank template rows are
+  rejections.
 
-**Flake protocol (MANDATORY):** on a failure, rerun that class **once**
-(`gradlew.bat connectedDebugAndroidTest --tests "*ClassName"`); record BOTH results in the
-failure section. If it passes on rerun, label it ENV-FLAKE. A report without rerun results
-for each failed class is incomplete and will be returned untriaged.
+**Flake protocol (MANDATORY):** on a failure, rerun that class **once** with the
+instrumentation class filter (plain `--tests` does NOT work on connected tasks):
+
+```bat
+gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.fdmanager.RenewalChainTest
+```
+
+(comma-separate FQCNs to rerun several). Record BOTH results in the failure section. If it
+passes on rerun, label it ENV-FLAKE. A report without rerun results for each failed class
+is incomplete and will be returned untriaged.
 
 ---
 
