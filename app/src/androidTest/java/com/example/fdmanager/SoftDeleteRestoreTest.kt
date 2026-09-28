@@ -5,6 +5,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -39,8 +40,12 @@ class SoftDeleteRestoreTest {
         rule.onNodeWithText("Delete").performScrollTo().performClick()
         rule.confirmDialog()
 
-        // Back on the bank list: now empty. Scroll first — round 2 proved the node is
-        // composed but out of the viewport; bring it in, then assert visibility.
+        // Back on the bank list: now empty. The pop lands asynchronously after the dialog
+        // confirm — rounds 2/3 raced it (found-hidden vs not-yet-composed). Wait for the
+        // empty state to enter the tree, bring it into the viewport, then assert.
+        rule.waitUntil(5_000) {
+            rule.onAllNodesWithText("This bank has no deposits.").fetchSemanticsNodes().isNotEmpty()
+        }
         rule.onNodeWithText("This bank has no deposits.").performScrollTo().assertIsDisplayed()
 
         rule.onNodeWithContentDescription("Back").performClick()
