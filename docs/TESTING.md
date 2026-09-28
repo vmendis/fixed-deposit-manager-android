@@ -69,9 +69,13 @@ debugImplementation("androidx.compose.ui:ui-test-manifest")
      `"Renew"`, `"Delete"`, `"Restore"`, `"Cancel"`, chips `"Matured"`)
   3. `contentDescription` values already on icons: `"Add FD"`, `"Back"`, `"Edit"`,
      `"Sort"`, `"Recycle bin"`, `"Maturing soon"`, `"Delete forever"`
-  - Dialog confirm buttons that duplicate an on-screen label (e.g. detail "Renew" +
-    dialog "Renew"): click the LAST matching node — helper `clickLastNodeWithText(text)`
-    in `TestSupport.kt` (dialogs append after the screen behind them).
+  - `dialogConfirm` / `dialogDismiss` — AlertDialog confirm/dismiss buttons (detail and
+    list dialogs). Use helper `confirmDialog()` from `TestSupport.kt`; never match dialog
+    buttons by text (dialog/root ordering is not guaranteed by the test API).
+  - Screen-bottom buttons (`Save FD`, `Renew`, `Delete`) live inside scrollable columns —
+    always `performScrollTo().performClick()` on them (the soft keyboard can cover them).
+  - Detail screens show an FD number TWICE (app-bar title + info row): assert presence via
+    `onAllNodesWithText(...)` — `onNodeWithText(...).assertIsDisplayed()` will fail as ambiguous.
 - **If a needed selector is missing: do not invent one and do not edit app code — record it in the
   report as a blocker** (`SELECTOR-MISSING: <what was needed>`).
 - **Never modify assertions, never delete or skip a failing test, never "fix" app code.**
@@ -131,9 +135,23 @@ The executor creates this file at the project root and hands it to the reviewer:
 - <what was out of scope or skipped, and why>
 ```
 
-**Flake protocol:** on a failure, rerun that class **once**
-(`gradlew.bat connectedDebugAndroidTest --tests "*ClassName"`); if it passes on rerun, label it
-ENV-FLAKE with both results.
+**Hard rules — a report containing these violations is REJECTED and re-requested:**
+
+- **No placeholders, no fabrication.** Every `<...>` above must be real command output:
+  run `git rev-parse --short HEAD`; Android Studio version from Help → About; AVD API level
+  from Device Manager or `adb shell getprop ro.build.version.sdk`; Gradle from
+  `gradlew.bat --version`. Literal `$(...)`, `(unknown)`, or guessed values are rejections.
+- **Tier-2 table completeness:** one row per test class (all 6), per-class counts that sum
+  to the suite total (13 as of v1 — if the count changed, use the real one). Any test not
+  executed must be NAMED with its reason under "Not covered".
+- **Every failure section is full:** verbatim assertion message + ≤30 lines of relevant
+  logcat + a classification proposal (TEST-BUG / CODE-BUG / ENV-FLAKE). Blank template
+  rows are rejections.
+
+**Flake protocol (MANDATORY):** on a failure, rerun that class **once**
+(`gradlew.bat connectedDebugAndroidTest --tests "*ClassName"`); record BOTH results in the
+failure section. If it passes on rerun, label it ENV-FLAKE. A report without rerun results
+for each failed class is incomplete and will be returned untriaged.
 
 ---
 

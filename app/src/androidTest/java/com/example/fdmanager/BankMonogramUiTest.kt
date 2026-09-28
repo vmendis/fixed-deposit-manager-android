@@ -35,7 +35,8 @@ class BankMonogramUiTest {
 
         rule.onNode(
             hasTestTag("bankMonogram") and
-                hasAnyAncestor(hasTestTag("summary:National Savings Bank (NSB)"))
+                hasAnyAncestor(hasTestTag("summary:National Savings Bank (NSB)")),
+            useUnmergedTree = true
         ).assertExists()
     }
 

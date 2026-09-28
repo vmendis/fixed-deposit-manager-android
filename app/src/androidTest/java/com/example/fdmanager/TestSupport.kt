@@ -42,11 +42,11 @@ internal fun ComposeContentTestRule.openBank(bank: String) {
 }
 
 /**
- * Click the LAST node whose text is exactly [text]. Dialogs append after the screen
- * behind them, so for duplicated labels (detail "Renew" + dialog "Renew") the last
- * node is the dialog's button.
+ * Click the confirm button of the open AlertDialog. Dialog confirm/dismiss buttons carry
+ * `dialogConfirm` / `dialogDismiss` tags — a tag beats "last matching text" because
+ * dialog/root ordering is not guaranteed by the test API.
  */
-internal fun ComposeContentTestRule.clickLastNodeWithText(text: String) {
-    val nodes = onAllNodesWithText(text)
-    nodes[nodes.fetchSemanticsNodes().size - 1].performClick()
+internal fun ComposeContentTestRule.confirmDialog() {
+    onNodeWithTag("dialogConfirm").performClick()
+    waitForIdle()
 }

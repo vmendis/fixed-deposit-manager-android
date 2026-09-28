@@ -2,12 +2,14 @@ package com.example.fdmanager
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fdmanager.data.FdRepository
 import com.example.fdmanager.data.SampleData
+import org.junit.Assert.assertTrue
 import org.junit.Before
 import org.junit.Rule
 import org.junit.Test
@@ -35,7 +37,8 @@ class NavigationFlowTest {
 
         rule.onNodeWithText("BOC-90812").performClick()
         rule.onNodeWithText("FD number").assertIsDisplayed()
-        rule.onNodeWithText("BOC-90812").assertIsDisplayed()
+        // Detail shows the number twice (app-bar title + info row) → presence, not uniqueness
+        assertTrue(rule.onAllNodesWithText("BOC-90812").fetchSemanticsNodes().isNotEmpty())
 
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("Bank of Ceylon (BOC)").assertIsDisplayed()

@@ -46,6 +46,7 @@ import com.example.fdmanager.data.model.StatusFilter
 import com.example.fdmanager.domain.Dates
 import com.example.fdmanager.domain.FdQueries
 import com.example.fdmanager.domain.Lkr
+import androidx.compose.ui.platform.testTag
 import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.EmptyState
@@ -171,12 +172,15 @@ fun FdListScreen(
                 Text("${fd.fdNumber} (${Lkr.full(fd.amount)}) will be moved to the recycle bin. You can restore it any time — nothing is permanently lost.")
             },
             confirmButton = {
-                TextButton(onClick = { vm.softDelete(fd.id); deleteTarget = null }) {
+                TextButton(
+                    modifier = Modifier.testTag("dialogConfirm"),
+                    onClick = { vm.softDelete(fd.id); deleteTarget = null }
+                ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("Cancel") }
+                TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = { deleteTarget = null }) { Text("Cancel") }
             }
         )
     }
@@ -192,14 +196,17 @@ fun FdListScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val newId = vm.renew(fd.id)
-                    renewTarget = null
-                    onOpenFd(newId)
-                }) { Text("Renew") }
+                TextButton(
+                    modifier = Modifier.testTag("dialogConfirm"),
+                    onClick = {
+                        val newId = vm.renew(fd.id)
+                        renewTarget = null
+                        onOpenFd(newId)
+                    }
+                ) { Text("Renew") }
             },
             dismissButton = {
-                TextButton(onClick = { renewTarget = null }) { Text("Cancel") }
+                TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = { renewTarget = null }) { Text("Cancel") }
             }
         )
     }

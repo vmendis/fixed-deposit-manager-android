@@ -8,6 +8,7 @@ import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fdmanager.data.FdRepository
 import com.example.fdmanager.data.SampleData
@@ -34,9 +35,9 @@ class SoftDeleteRestoreTest {
         rule.openBank("National Savings Bank (NSB)")
         rule.onNodeWithText("NSB-78412").performClick()
 
-        // Detail: Delete button → "Delete FD?" dialog → confirm (dialog appends last)
-        rule.onNodeWithText("Delete").performClick()
-        rule.clickLastNodeWithText("Delete")
+        // Detail: Delete button (near screen bottom) → dialog → confirm via dialog tag
+        rule.onNodeWithText("Delete").performScrollTo().performClick()
+        rule.confirmDialog()
 
         // Back on the bank list: now empty
         rule.onNodeWithText("This bank has no deposits.").assertIsDisplayed()
