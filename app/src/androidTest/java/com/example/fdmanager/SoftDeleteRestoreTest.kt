@@ -40,11 +40,27 @@ class SoftDeleteRestoreTest {
         rule.onNodeWithText("Delete").performScrollTo().performClick()
         rule.confirmDialog()
 
-        // Back on the bank list: now empty. The pop lands asynchronously after the dialog
-        // confirm — rounds 2/3 raced it (found-hidden vs not-yet-composed). Wait for the
-        // empty state to enter the tree, bring it into the viewport, then assert.
-        rule.waitUntil(5_000) {
-            rule.onAllNodesWithText("This bank has no deposits.").fetchSemanticsNodes().isNotEmpty()
+        // Back on the bank list: now empty. Wait for the empty state to enter the tree.
+        try {
+            rule.waitUntil(5_000) {
+                rule.onAllNodesWithText("This bank has no deposits.").fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: Exception) {
+            // Self-diagnosis: fingerprint which screen is actually up at timeout, so the
+            // failure message tells the triager where the flow landed instead of guessing.
+            val markers = listOf(
+                "Total invested" to "HOME",
+                "By bank" to "HOME-section",
+                "FD number" to "DETAIL",
+                "Delete FD?" to "DETAIL+DIALOG-OPEN",
+                "Recycle bin" to "BIN-screen",
+                "NSB-78412" to "NSB-row/title",
+                "This bank has no deposits." to "EMPTY-LIST"
+            )
+            val present = markers.filter { (text, _) ->
+                rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+            }.joinToString { "${it.second}<${it.first}>" }
+            throw AssertionError("Empty state never appeared. Screen markers at timeout: [$present]", e)
         }
         rule.onNodeWithText("This bank has no deposits.").performScrollTo().assertIsDisplayed()
 
