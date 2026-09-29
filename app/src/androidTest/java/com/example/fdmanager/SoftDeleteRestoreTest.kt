@@ -45,7 +45,7 @@ class SoftDeleteRestoreTest {
             rule.waitUntil(5_000) {
                 rule.onAllNodesWithText("This bank has no deposits.").fetchSemanticsNodes().isNotEmpty()
             }
-        } catch (e: Exception) {
+        } catch (e: Throwable) {
             // Self-diagnosis: fingerprint which screen is actually up at timeout, so the
             // failure message tells the triager where the flow landed instead of guessing.
             val markers = listOf(
