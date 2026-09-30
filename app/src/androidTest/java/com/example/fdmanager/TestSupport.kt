@@ -33,6 +33,14 @@ internal fun ComposeContentTestRule.swipeUntilText(text: String, maxSwipes: Int 
     }
 }
 
+/**
+ * Source-freshness stamp: emitted into the SoftDelete failure fingerprint (compile-coupled —
+ * a checkout missing this constant cannot even build the suite). If a report's failure message
+ * lacks `openBank=$OPEN_BANK_GATE`, the device ran STALE test sources (as v7 did — its
+ * signature was byte-identical to v6 despite claiming 01f2b9e).
+ */
+internal const val OPEN_BANK_GATE = "navgate-01f2b9e"
+
 /** Scroll Home to "By bank", open the summary card for [bank], and prove the list opened. */
 internal fun ComposeContentTestRule.openBank(bank: String) {
     onNodeWithText("By bank").performScrollTo()

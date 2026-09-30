@@ -5,6 +5,7 @@ import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasTestTag
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -59,8 +60,16 @@ class SoftDeleteRestoreTest {
             )
             val present = markers.filter { (text, _) ->
                 rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
-            }.joinToString { "${it.second}<${it.first}>" }
-            throw AssertionError("Empty state never appeared. Screen markers at timeout: [$present]", e)
+            }.map { "${it.second}<${it.first}>" }.toMutableList()
+            // FdList-only probe: the "Sort" icon proves the bank list (not Home) is up —
+            // the decisive screen the v6/v7 markers could not otherwise separate.
+            if (rule.onAllNodesWithContentDescription("Sort").fetchSemanticsNodes().isNotEmpty()) {
+                present += "FDLIST<Sort>"
+            }
+            throw AssertionError(
+                "Empty state never appeared. openBank=$OPEN_BANK_GATE Screen markers at timeout: [${present.joinToString()}]",
+                e
+            )
         }
         rule.onNodeWithText("This bank has no deposits.").performScrollTo().assertIsDisplayed()
 
