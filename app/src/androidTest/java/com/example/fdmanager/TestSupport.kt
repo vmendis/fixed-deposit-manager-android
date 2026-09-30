@@ -1,6 +1,7 @@
 package com.example.fdmanager
 
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
+import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
@@ -32,13 +33,25 @@ internal fun ComposeContentTestRule.swipeUntilText(text: String, maxSwipes: Int 
     }
 }
 
-/** Scroll Home to "By bank", open the summary card for [bank] (swiping as needed). */
+/** Scroll Home to "By bank", open the summary card for [bank], and prove the list opened. */
 internal fun ComposeContentTestRule.openBank(bank: String) {
     onNodeWithText("By bank").performScrollTo()
     waitForIdle()
     swipeUntilTag("summary:$bank")
+    // Composed ≠ visible (lazy prefetch): scroll the card fully into the viewport before
+    // clicking, or the touch silently misses and the test keeps running on Home. That miss
+    // is what SoftDeleteRestoreTest hit for rounds 2–6: its NSB-78412 click then landed on
+    // Home's maturing-soon strip (the only bank whose FD also appears on Home), pushing
+    // detail from Home so the dialog-confirm pop returned to Home instead of the list.
+    onNodeWithTag("summary:$bank").performScrollTo()
+    waitForIdle()
     onNodeWithTag("summary:$bank").performClick()
     waitForIdle()
+    // Post-navigation sync: the "Sort" icon exists ONLY on FdList. If the destination
+    // hasn't switched, fail HERE loudly instead of downstream on a coincidental node.
+    waitUntil(5_000) {
+        onAllNodesWithContentDescription("Sort").fetchSemanticsNodes().isNotEmpty()
+    }
 }
 
 /**
