@@ -51,6 +51,17 @@ class FdMathTest {
     }
 
     @Test
+    fun `hero wording spells Million with adaptive decimal and exact keeps cents`() {
+        assertEquals("Rs 3.2 Million", Lkr.words(3_200_000.0))
+        assertEquals("Rs 5 Million", Lkr.words(5_000_000.0))     // trailing .0 dropped
+        assertEquals("Rs 12.5 Million", Lkr.words(12_500_000.0))
+        assertEquals("Rs 750 K", Lkr.words(750_000.0))           // sub-million keeps K family
+        assertEquals("Rs 0", Lkr.words(0.0))
+        assertEquals("Rs 3,200,000.00", Lkr.exact(3_200_000.0))
+        assertEquals("Rs 75,000.00", Lkr.exact(75_000.0))
+    }
+
+    @Test
     fun `rate formatting trims zeros`() {
         assertEquals("10", FdMath.formatRate(10.0))
         assertEquals("8.5", FdMath.formatRate(8.5))

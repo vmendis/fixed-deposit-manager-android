@@ -53,6 +53,21 @@ object Lkr {
 
     fun full(amount: Double): String = "Rs " + grouped.format(amount)
 
+    /**
+     * Hero wording for prominent totals: "Rs 3.2 Million" at >= 1M (one decimal, trailing
+     * `.0` dropped → "Rs 5 Million"); below that the compact K-style ("Rs 750 K") so the
+     * Home card, the bank-row wording, and the hero stay one family. Issue #20.
+     */
+    fun words(amount: Double): String =
+        if (Math.abs(amount) >= 1_000_000) {
+            "Rs " + DecimalFormat("0.#", DecimalFormatSymbols(Locale.US))
+                .format(amount / 1_000_000.0) + " Million"
+        } else compact(amount)
+
+    /** Exact secondary line: grouped with two decimals — "Rs 3,200,000.00". Issue #20. */
+    fun exact(amount: Double): String =
+        "Rs " + DecimalFormat("#,##0.00", DecimalFormatSymbols(Locale.US)).format(amount)
+
     fun compact(amount: Double): String {
         val abs = Math.abs(amount)
         val short = DecimalFormat("0.##", DecimalFormatSymbols(Locale.US))
