@@ -62,7 +62,7 @@ debugImplementation("androidx.compose.ui:ui-test-manifest")
   ```
 
 - **Selector contract** — use only these, in this priority order:
-  1. `testTag` values that exist in the code (grep `testTag(` under `app/src/main`), notably:
+  1. `testTag` values that exist in the code (Windows: `findstr /S /C:"testTag(" app\src\main\*.kt`), notably:
      - `bankMonogram` — the bank identity tile (any surface)
      - `summary:<full bank name>` — Home "By bank" summary card, e.g. `summary:Bank of Ceylon (BOC)`
   2. Visible exact text (e.g. `hasText("Save FD")`, `"NSB-78412"`, button labels
