@@ -78,8 +78,12 @@ fun FdDetailScreen(
     val today = remember { LocalDate.now() }
     val fd = FdQueries.byId(fds, fdId)
 
-    // If the FD was deleted from elsewhere, leave quietly.
-    if (fd == null || fd.isDeleted) {
+    // If the route references an FD that no longer exists, leave quietly.
+    // Deletion from this screen must pop exactly once: the delete dialog's confirm already
+    // calls onBack() after softDelete(), so ALSO auto-popping on isDeleted here fires a
+    // second popBackStack() while this entry is still composed during its exit transition —
+    // which pops the bank list underneath and bounces the user to Home.
+    if (fd == null) {
         LaunchedEffect(Unit) { onBack() }
         return
     }
