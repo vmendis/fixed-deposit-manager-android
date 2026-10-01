@@ -34,6 +34,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
@@ -45,7 +46,9 @@ import com.example.fdmanager.data.model.StatusFilter
 import com.example.fdmanager.domain.Dates
 import com.example.fdmanager.domain.FdQueries
 import com.example.fdmanager.domain.Lkr
+import androidx.compose.ui.platform.testTag
 import com.example.fdmanager.ui.FdViewModel
+import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.EmptyState
 import com.example.fdmanager.ui.components.FdCard
 import java.time.LocalDate
@@ -79,7 +82,18 @@ fun FdListScreen(
                     Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
                 }
             },
-            title = { Text(bank, maxLines = 1, overflow = TextOverflow.Ellipsis) },
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    BankMonogram(bank = bank, size = 30.dp)
+                    Spacer(Modifier.width(10.dp))
+                    Text(
+                        bank,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
+                    )
+                }
+            },
             actions = {
                 Box {
                     IconButton(onClick = { sortMenu = true }) {
@@ -158,12 +172,15 @@ fun FdListScreen(
                 Text("${fd.fdNumber} (${Lkr.full(fd.amount)}) will be moved to the recycle bin. You can restore it any time — nothing is permanently lost.")
             },
             confirmButton = {
-                TextButton(onClick = { vm.softDelete(fd.id); deleteTarget = null }) {
+                TextButton(
+                    modifier = Modifier.testTag("dialogConfirm"),
+                    onClick = { vm.softDelete(fd.id); deleteTarget = null }
+                ) {
                     Text("Delete", color = MaterialTheme.colorScheme.error)
                 }
             },
             dismissButton = {
-                TextButton(onClick = { deleteTarget = null }) { Text("Cancel") }
+                TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = { deleteTarget = null }) { Text("Cancel") }
             }
         )
     }
@@ -179,14 +196,17 @@ fun FdListScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    val newId = vm.renew(fd.id)
-                    renewTarget = null
-                    onOpenFd(newId)
-                }) { Text("Renew") }
+                TextButton(
+                    modifier = Modifier.testTag("dialogConfirm"),
+                    onClick = {
+                        val newId = vm.renew(fd.id)
+                        renewTarget = null
+                        onOpenFd(newId)
+                    }
+                ) { Text("Renew") }
             },
             dismissButton = {
-                TextButton(onClick = { renewTarget = null }) { Text("Cancel") }
+                TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = { renewTarget = null }) { Text("Cancel") }
             }
         )
     }

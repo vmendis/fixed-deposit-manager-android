@@ -53,7 +53,9 @@ import com.example.fdmanager.domain.Dates
 import com.example.fdmanager.domain.FdMath
 import com.example.fdmanager.domain.FdQueries
 import com.example.fdmanager.domain.Lkr
+import androidx.compose.ui.platform.testTag
 import com.example.fdmanager.ui.FdViewModel
+import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.CountdownChip
 import com.example.fdmanager.ui.components.InfoRow
 import com.example.fdmanager.ui.components.StatusChip
@@ -76,8 +78,12 @@ fun FdDetailScreen(
     val today = remember { LocalDate.now() }
     val fd = FdQueries.byId(fds, fdId)
 
-    // If the FD was deleted from elsewhere, leave quietly.
-    if (fd == null || fd.isDeleted) {
+    // If the route references an FD that no longer exists, leave quietly.
+    // Deletion from this screen must pop exactly once: the delete dialog's confirm already
+    // calls onBack() after softDelete(), so ALSO auto-popping on isDeleted here fires a
+    // second popBackStack() while this entry is still composed during its exit transition —
+    // which pops the bank list underneath and bounces the user to Home.
+    if (fd == null) {
         LaunchedEffect(Unit) { onBack() }
         return
     }
@@ -125,6 +131,8 @@ fun FdDetailScreen(
                         .padding(20.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    BankMonogram(bank = fd.bank, size = 52.dp)
+                    Spacer(Modifier.height(10.dp))
                     Text(
                         fd.bank,
                         style = MaterialTheme.typography.labelMedium,
@@ -320,14 +328,17 @@ fun FdDetailScreen(
             title = { Text("Delete FD?") },
             text = { Text("${fd.fdNumber} will be moved to the recycle bin. Nothing is permanently lost.") },
             confirmButton = {
-                TextButton(onClick = {
-                    showDelete = false
-                    vm.softDelete(fd.id)
-                    onBack()
-                }) { Text("Delete", color = MaterialTheme.colorScheme.error) }
+                TextButton(
+                    modifier = Modifier.testTag("dialogConfirm"),
+                    onClick = {
+                        showDelete = false
+                        vm.softDelete(fd.id)
+                        onBack()
+                    }
+                ) { Text("Delete", color = MaterialTheme.colorScheme.error) }
             },
             dismissButton = {
-                TextButton(onClick = { showDelete = false }) { Text("Cancel") }
+                TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = { showDelete = false }) { Text("Cancel") }
             }
         )
     }
@@ -343,14 +354,17 @@ fun FdDetailScreen(
                 )
             },
             confirmButton = {
-                TextButton(onClick = {
-                    showRenew = false
-                    val newId = vm.renew(fd.id)
-                    onOpenFd(newId)
-                }) { Text("Renew") }
+                TextButton(
+                    modifier = Modifier.testTag("dialogConfirm"),
+                    onClick = {
+                        showRenew = false
+                        val newId = vm.renew(fd.id)
+                        onOpenFd(newId)
+                    }
+                ) { Text("Renew") }
             },
             dismissButton = {
-                TextButton(onClick = { showRenew = false }) { Text("Cancel") }
+                TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = { showRenew = false }) { Text("Cancel") }
             }
         )
     }
