@@ -110,7 +110,7 @@ gradlew.bat connectedDebugAndroidTest
 
 ---
 
-## 3. Report spec — `TEST-REPORT.md`
+## 3. Report spec — `TEST-REPORT-V<N>.md` (e.g. `TEST-REPORT-V11.md`)
 
 The executor creates this file at the project root and hands it to the reviewer:
 

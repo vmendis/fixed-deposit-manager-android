@@ -65,6 +65,8 @@ users/{userId}/fds/{fdId}
   "maturityDate": number,
   "branch": "string | null",
   "branchCode": "number | null",
+  "payoutFrequency": "MONTHLY | AT_MATURITY",
+  "renewOption": "CAPITALIZE | PAYOUT",
   "autoRenew": boolean,
   "isActive": boolean,
 
@@ -77,6 +79,13 @@ users/{userId}/fds/{fdId}
   "userId": "string"
 }
 ```
+
+> **Amendment (issue #25):** `payoutFrequency` = when the bank pays the interest
+> (monthly vs at maturity) — always chosen when adding an FD (no default); shown on the
+> FD card and detail. `renewOption` = stored instruction for renewals: `CAPITALIZE`
+> (add accrued interest to the principal) or `PAYOUT` (reopen with the original sum,
+> interest withdrawn); chosen at add/edit (form pre-selects `CAPITALIZE`), overridable
+> per renewal in the renew dialog. `autoRenew` executes at app session start.
 
 ---
 
@@ -110,8 +119,16 @@ users/{userId}/fds/{fdId}
 * FD Number
 * Amount
 * Interest Rate
+* **Interest payout frequency** (`Monthly payout` / `At maturity`) — issue #25
 * Maturity Date
 * Status (color-coded)
+
+**Detail view additionally shows (issue #25):**
+
+* `Interest payout` row (Details card)
+* **Renewal card**: stored instruction (`Add interest to capital` / `Withdraw interest`),
+  new-FD principal preview (principal + accrued interest for `CAPITALIZE`, principal only
+  for `PAYOUT`), and an instruction-aware auto-renew banner
 
 ---
 
@@ -120,10 +137,14 @@ users/{userId}/fds/{fdId}
 **Add FD:**
 
 * Form with validation
+* **Required:** interest payout frequency (`Monthly payout` / `At maturity`) — save is
+  blocked without a choice ("Select when interest is paid") — issue #25
+* **Renewal instruction** selector, pre-selects `Add interest to capital` — issue #25
+* `Auto-renew` toggle (default off) — issue #25
 
 **Modify FD:**
 
-* Pre-filled editable form
+* Pre-filled editable form (including payout frequency + renewal instruction)
 
 **Delete FD:**
 
@@ -133,7 +154,7 @@ users/{userId}/fds/{fdId}
 
 ### 4.4 Auto-Renewal Handling
 
-**Process:**
+**Renewal (manual or automatic) process:**
 
 1. Mark old FD as:
 
@@ -142,6 +163,18 @@ users/{userId}/fds/{fdId}
 2. Create new FD:
 
    * `parentFdId = oldFdId`
+   * opens on the old FD's maturity date, same terms
+   * **principal per the effective renew option** (issue #25):
+     * `CAPITALIZE` → `amount + interestEarned(amount, interestRate, duration)`
+     * `PAYOUT` → original `amount` (interest paid out, not tracked in-app in v1)
+
+**Renew dialog (issue #25):** shows both options as radio choices, pre-selected from the
+FD's stored `renewOption`, with the resulting next principal in the copy; the user can
+override the stored instruction for that renewal.
+
+**Auto-renew sweep (issue #25):** at app session start, every FD with
+`autoRenew = true`, maturity reached, and `status != RENEWED` renews itself using its
+stored `renewOption` (no user interaction; works while the app opens).
 
 ---
 
