@@ -19,6 +19,18 @@ enum class SortOption(val label: String) {
     RATE_DESC("Interest rate")
 }
 
+/** Issue #25 — when the bank pays the FD's interest. Display metadata in v1 (no payout ledger). */
+enum class PayoutFrequency(val label: String) {
+    MONTHLY("Monthly payout"),
+    AT_MATURITY("At maturity")
+}
+
+/** Issue #25 — stored renewal instruction: what happens to accrued interest when the FD renews. */
+enum class RenewOption(val label: String) {
+    CAPITALIZE("Add interest to capital"),
+    PAYOUT("Withdraw interest")
+}
+
 data class FixedDeposit(
     val id: String,
     val fdNumber: String,
@@ -30,6 +42,8 @@ data class FixedDeposit(
     val maturityDate: LocalDate,
     val branch: String? = null,
     val branchCode: String? = null,
+    val payoutFrequency: PayoutFrequency = PayoutFrequency.AT_MATURITY, // issue #25 (form always asks)
+    val renewOption: RenewOption = RenewOption.PAYOUT,                   // issue #25 (form pre-selects CAPITALIZE)
     val autoRenew: Boolean = false,
     val isActive: Boolean = true,
     val status: FdStatus = FdStatus.ACTIVE,

@@ -2,6 +2,8 @@ package com.example.fdmanager.data
 
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
+import com.example.fdmanager.data.model.PayoutFrequency
+import com.example.fdmanager.data.model.RenewOption
 import com.example.fdmanager.domain.FdMath
 import com.example.fdmanager.domain.FdQueries
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -48,18 +50,25 @@ class FdRepository(initial: List<FixedDeposit>) {
     /**
      * Spec 4.4 — mark old FD RENEWED + inactive, create a child FD linked by parentFdId.
      * Child opens on the old FD's maturity date with the same terms.
+     * Issue #25 — [option] decides the child's principal: CAPITALIZE adds the accrued
+     * interest, PAYOUT reopens with the original sum. Null = use the FD's stored instruction.
      * Returns the new FD's id.
      */
-    fun renew(id: String): String {
+    fun renew(id: String, option: RenewOption? = null): String {
         val old = get(id)
         require(old != null && !old.isDeleted && old.status != FdStatus.RENEWED) {
             "Only an existing, non-renewed FD can be renewed"
         }
+        val chosen = option ?: old.renewOption
+        val childAmount = if (chosen == RenewOption.CAPITALIZE) {
+            old.amount + FdMath.interestEarned(old.amount, old.interestRate, old.durationMonths)
+        } else old.amount
         val chainPos = FdQueries.renewalChain(_fds.value, id).size  // root=1 → child becomes -R1
         val baseNumber = old.fdNumber.replace(Regex("-R\\d+$"), "")
         val newId = "fd-" + UUID.randomUUID().toString()
         val child = old.copy(
             id = newId,
+            amount = childAmount,
             fdNumber = "$baseNumber-R$chainPos",
             openedDate = old.maturityDate,
             maturityDate = FdMath.maturityDate(old.maturityDate, old.durationMonths),
@@ -77,6 +86,21 @@ class FdRepository(initial: List<FixedDeposit>) {
 
     fun reset(sample: List<FixedDeposit>) {
         _fds.value = sample
+    }
+
+    /**
+     * Issue #25 — session-start sweep: every due FD (maturity reached, auto-renew on,
+     * not yet renewed/deleted) renews itself per its stored instruction. Returns the ids
+     * of the parents that were renewed.
+     */
+    fun autoRenewDue(today: LocalDate = LocalDate.now()): List<String> {
+        val due = _fds.value.filter {
+            !it.isDeleted && it.autoRenew && it.status != FdStatus.RENEWED &&
+                !it.maturityDate.isAfter(today) &&
+                (it.status == FdStatus.ACTIVE || it.status == FdStatus.MATURED)
+        }
+        due.forEach { renew(it.id, it.renewOption) }
+        return due.map { it.id }  // parent ids that were renewed
     }
 
     companion object {
@@ -104,6 +128,8 @@ object SampleData {
             maturityDate = today.plusDays(3),
             branch = "Colombo Main",
             branchCode = "001",
+            payoutFrequency = PayoutFrequency.MONTHLY,
+            renewOption = RenewOption.CAPITALIZE,
             autoRenew = true,
             status = FdStatus.ACTIVE
         ),
@@ -117,6 +143,8 @@ object SampleData {
             interestRate = 8.5,
             maturityDate = today.plusDays(12),
             branch = "Kandy",
+            payoutFrequency = PayoutFrequency.AT_MATURITY,
+            renewOption = RenewOption.PAYOUT,
             autoRenew = false,
             status = FdStatus.ACTIVE
         ),
@@ -130,6 +158,8 @@ object SampleData {
             interestRate = 11.25,
             maturityDate = today.plusDays(48),
             branch = "Galle",
+            payoutFrequency = PayoutFrequency.MONTHLY,
+            renewOption = RenewOption.CAPITALIZE,
             autoRenew = false,
             status = FdStatus.ACTIVE
         ),
@@ -144,6 +174,8 @@ object SampleData {
             interestRate = 9.75,
             maturityDate = today.minusMonths(1),
             branch = "Colombo 03",
+            payoutFrequency = PayoutFrequency.AT_MATURITY,
+            renewOption = RenewOption.PAYOUT,
             autoRenew = true,
             isActive = false,
             status = FdStatus.RENEWED
@@ -158,6 +190,8 @@ object SampleData {
             interestRate = 10.25,
             maturityDate = today.plusMonths(11),
             branch = "Colombo 03",
+            payoutFrequency = PayoutFrequency.AT_MATURITY,
+            renewOption = RenewOption.PAYOUT,
             autoRenew = true,
             isActive = true,
             status = FdStatus.ACTIVE,
@@ -173,6 +207,8 @@ object SampleData {
             interestRate = 7.5,
             maturityDate = today.minusDays(6),
             branch = "Nugegoda",
+            payoutFrequency = PayoutFrequency.AT_MATURITY,
+            renewOption = RenewOption.PAYOUT,
             autoRenew = false,
             status = FdStatus.MATURED
         ),
@@ -186,6 +222,8 @@ object SampleData {
             interestRate = 12.0,
             maturityDate = today.plusMonths(10),
             branch = "Matara",
+            payoutFrequency = PayoutFrequency.MONTHLY,
+            renewOption = RenewOption.CAPITALIZE,
             autoRenew = false,
             status = FdStatus.ACTIVE
         ),
@@ -200,6 +238,8 @@ object SampleData {
             interestRate = 9.5,
             maturityDate = today.plusMonths(4),
             branch = "Colombo 07",
+            payoutFrequency = PayoutFrequency.AT_MATURITY,
+            renewOption = RenewOption.PAYOUT,
             autoRenew = false,
             status = FdStatus.ACTIVE,
             isDeleted = true

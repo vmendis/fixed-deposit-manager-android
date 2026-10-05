@@ -50,6 +50,8 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
+import com.example.fdmanager.data.model.PayoutFrequency
+import com.example.fdmanager.data.model.RenewOption
 import com.example.fdmanager.data.model.SRI_LANKAN_BANKS
 import com.example.fdmanager.domain.Dates
 import com.example.fdmanager.domain.FdMath
@@ -99,6 +101,10 @@ fun AddEditFdScreen(
     var openedDate by remember { mutableStateOf(editing?.openedDate ?: LocalDate.now()) }
     var branch by remember { mutableStateOf(editing?.branch ?: "") }
     var branchCode by remember { mutableStateOf(editing?.branchCode ?: "") }
+    // Issue #25 — payout frequency is always asked on new FDs (owner: no default);
+    // the renew instruction pre-selects CAPITALIZE for new FDs, stored value when editing.
+    var payoutFrequency by remember { mutableStateOf(editing?.payoutFrequency) }
+    var renewOption by remember { mutableStateOf(editing?.renewOption ?: RenewOption.CAPITALIZE) }
     var autoRenew by remember { mutableStateOf(editing?.autoRenew ?: false) }
     var bankMenu by remember { mutableStateOf(false) }
     var showPicker by remember { mutableStateOf(false) }
@@ -112,7 +118,8 @@ fun AddEditFdScreen(
     val amountValid = amount != null && amount > 0
     val rateValid = rate != null && rate > 0 && rate <= 30
     val durationValid = duration != null && duration > 0
-    val allValid = fdNumberValid && amountValid && rateValid && durationValid
+    val payoutValid = payoutFrequency != null // issue #25: no default — must be chosen
+    val allValid = fdNumberValid && amountValid && rateValid && durationValid && payoutValid
 
     val previewReady = amountValid && rateValid && durationValid
     val previewMaturity = if (durationValid) FdMath.maturityDate(openedDate, duration!!) else null
@@ -249,6 +256,51 @@ fun AddEditFdScreen(
             }
             Spacer(Modifier.height(8.dp))
 
+            // ---- Issue #25: interest payout frequency (R1, required — owner: always ask) ----
+            Text("Interest payout", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                PayoutFrequency.entries.forEach { p ->
+                    FilterChip(
+                        selected = payoutFrequency == p,
+                        onClick = { payoutFrequency = p },
+                        label = { Text(p.label) }
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+            }
+            if (attempted && !payoutValid) {
+                Text(
+                    "Select when interest is paid",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.error
+                )
+            }
+            Spacer(Modifier.height(8.dp))
+
+            // ---- Issue #25: stored renewal instruction (R2) ----
+            Text("On renewal", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+            Spacer(Modifier.height(4.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                RenewOption.entries.forEach { o ->
+                    FilterChip(
+                        selected = renewOption == o,
+                        onClick = { renewOption = o },
+                        label = { Text(o.label) }
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+            }
+            Spacer(Modifier.height(8.dp))
+
             // Opened date
             OutlinedButton(
                 onClick = { showPicker = true },
@@ -286,7 +338,7 @@ fun AddEditFdScreen(
                 Column(Modifier.weight(1f)) {
                     Text("Auto-renew", style = MaterialTheme.typography.bodyLarge)
                     Text(
-                        "Renew with the same terms at maturity",
+                        "Renews automatically at maturity per your renewal setting",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -348,6 +400,8 @@ fun AddEditFdScreen(
                             maturityDate = FdMath.maturityDate(openedDate, months),
                             branch = branch.ifBlank { null },
                             branchCode = branchCode.ifBlank { null },
+                            payoutFrequency = payoutFrequency!!,
+                            renewOption = renewOption,
                             autoRenew = autoRenew,
                             isActive = true,
                             status = editing?.status ?: FdStatus.ACTIVE,
