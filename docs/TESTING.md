@@ -118,7 +118,7 @@ The executor creates this file at the project root and hands it to the reviewer:
 # TEST REPORT — <date>
 - Branch / commit: <branch> @ <sha (git rev-parse --short HEAD)>
 - Environment: Windows 11, Android Studio <ver>, AVD <name> / API <level>, gradle <ver>
-- Tiers executed: 1 / 2 (circle)
+- Tiers executed: 2 / 2 (both — only write 1/2 if a tier genuinely was not run)
 
 ## Tier 1 — unit tests
 | Test class | Tests | Passed | Failed | Report path |

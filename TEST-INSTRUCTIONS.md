@@ -84,13 +84,16 @@ gradlew.bat connectedDebugAndroidTest
 Expected **14/14** (counts `3/4/2/1/2/2` — see TESTING.md §3 hard rules). Freshness gate:
 SoftDelete failures must show `openBank=navgate-0250r9` (old `01f2b9e` = stale sources → STOP).
 
-**4. Deliver `TEST-REPORT-V11.md` (Round 9).** Header = real `git log -1` output
-(record the SHA shown — vmendis already verified sync before handoff),
-real AS/gradle values (no `(unknown)` — hard rule), "Tiers executed" = 2/2,
+**4. Deliver `TEST-REPORT-V11.md` (Round 9, rerun).** Header = real `git log -1` output
+(record the SHA shown — vmendis already verified sync before handoff), **"Tiers executed" = 2 / 2**
+(record REAL durations per class — no `0.000s`), real AS/gradle values (no `(unknown)` — hard rule),
 Tier-2 table with per-class counts that **sum to 14**,
 failures (if any) with message + ≤30 **fresh** logcat lines + XML `<failure>` excerpt +
-classification proposal, reruns per standing rules. Visual checks (note under
-observations / "Not covered" if a screen can't be reached): (a) bank-list FD card meta
+classification proposal, reruns per standing rules — **placeholder text in any failure
+section = rejected report**. Visual checks (capture evidence with
+`adb shell screencap -p /sdcard\shot.png` + `adb pull /sdcard\shot.png .\shot-a.png` and
+reference the file paths in the report; note under observations if a screen can't be
+reached): (a) bank-list FD card meta
 line shows the payout segment; (b) detail shows *Interest payout* + **Renewal** card with
 principal preview; (c) renew dialog shows both radio options with one pre-selected;
 (d) Add screen: saving without an *Interest payout* choice shows *"Select when interest

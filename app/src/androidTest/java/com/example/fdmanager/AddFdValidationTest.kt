@@ -34,11 +34,13 @@ class AddFdValidationTest {
     @Test
     fun emptyFormShowsValidationErrors() {
         rule.onNodeWithContentDescription("Add FD").performClick()
-        rule.onNodeWithText("Save FD").performClick()
+        // Issue #25 lengthened the form → Save sits below the fold; scrollTo per contract,
+        // then scrollTo each error (fields sit above the scrolled position).
+        rule.onNodeWithText("Save FD").performScrollTo().performClick()
 
-        rule.onNodeWithText("Required — e.g. NSB-78412").assertIsDisplayed()
-        rule.onNodeWithText("Enter an amount greater than 0").assertIsDisplayed()
-        rule.onNodeWithText("Enter a rate between 0 and 30").assertIsDisplayed()
+        rule.onNodeWithText("Required — e.g. NSB-78412").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Enter an amount greater than 0").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("Enter a rate between 0 and 30").performScrollTo().assertIsDisplayed()
     }
 
     @Test
@@ -86,6 +88,7 @@ class AddFdValidationTest {
 
         // Still on the form with the issue-#25 validation message visible
         rule.onNodeWithText("Select when interest is paid").performScrollTo().assertIsDisplayed()
-        rule.onNodeWithText("FD number").assertIsDisplayed()
+        // FD number label may be scrolled off after the scrollTo above → existence, not display
+        rule.onNodeWithText("FD number").assertExists()
     }
 }
