@@ -62,29 +62,12 @@ instruction; Add/Edit gains *Interest payout* chips (required — error *"Select
 interest is paid"*), *On renewal* chips (pre-selects *Add interest to capital*), updated
 auto-renew subtitle; session-start auto-renew sweep (`autoRenewDue`).
 **Counts changed: unit 25 → 29 (+4), instrumented 13 → 14 (AddFdValidation 2 → 3).**
-Fresh `dev` @ **`ea4cf23`** (issue #25, pushed 2026-10-01). `dialogConfirm` contract kept.
+Fresh `dev` — vmendis runs the sync + verification commands and confirms the SHA BEFORE
+handing this file over. `dialogConfirm` contract kept.
 
-**1. Sync (STOP and report if any check fails):**
+**1. Environment:** `adb devices` shows `emulator-5554  device`, API 34. No device → STOP.
 
-```bat
-dir /b gradlew.bat
-git status
-git fetch origin
-git checkout -B dev origin/dev
-git log -1 --oneline
-findstr /C:"payoutFrequency" app\src\main\java\com\example\fdmanager\data\model\FixedDeposit.kt
-findstr /C:"Select when interest is paid" app\src\main\java\com\example\fdmanager\ui\screens\AddEditFdScreen.kt
-dir app\build\outputs\apk\androidTest\debug\*.apk
-```
-
-- `git status` must be clean BEFORE fetching (local modifications → STOP and report them).
-- `git log -1` must show **`ea4cf23`** (or later SHA if I say so).
-- BOTH findstr lines must print a match (new model field + new validation contract string).
-- Record the APK timestamp shown by `dir` — it must be AFTER the sync (paste it below).
-
-**2. Environment:** `adb devices` shows `emulator-5554  device`, API 34. No device → STOP.
-
-**3. Tier 1 — unit tests:**
+**2. Tier 1 — unit tests:**
 
 ```bat
 gradlew.bat testDebugUnitTest
@@ -92,7 +75,7 @@ gradlew.bat testDebugUnitTest
 
 Expected **29/29** (FdMath 7, FdRepository 15, BankRegistry 7).
 
-**4. Tier 2 — FULL instrumented suite (all 6 classes):**
+**3. Tier 2 — FULL instrumented suite (all 6 classes):**
 
 ```bat
 gradlew.bat connectedDebugAndroidTest
@@ -101,18 +84,17 @@ gradlew.bat connectedDebugAndroidTest
 Expected **14/14** (counts `3/4/2/1/2/2` — see TESTING.md §3 hard rules). Freshness gate:
 SoftDelete failures must show `openBank=navgate-0250r9` (old `01f2b9e` = stale sources → STOP).
 
-**5. Deliver `TEST-REPORT-V11.md` (Round 9).** Header = real `git log -1` (the handoff
-SHA I gave in chat — `ea4cf23` or later),
+**4. Deliver `TEST-REPORT-V11.md` (Round 9).** Header = real `git log -1` output
+(record the SHA shown — vmendis already verified sync before handoff),
 real AS/gradle values (no `(unknown)` — hard rule), "Tiers executed" = 2/2,
-**"Sync proof" subsection** verbatim (git log + both findstr + dir APK timestamp), Tier-2
-table with per-class counts that **sum to 14**, failures (if any) with message + ≤30
-**fresh** logcat lines + XML `<failure>` excerpt + classification proposal, reruns per
-standing rules. Visual checks (note under observations / "Not covered" if a screen can't
-be reached): (a) bank-list FD card meta line shows the payout segment; (b) detail shows
-*Interest payout* + **Renewal** card with principal preview; (c) renew dialog shows both
-radio options with one pre-selected; (d) Add screen: saving without an *Interest payout*
-choice shows *"Select when interest is paid"*, with a choice → saves and the card shows
-the chosen wording.
+Tier-2 table with per-class counts that **sum to 14**,
+failures (if any) with message + ≤30 **fresh** logcat lines + XML `<failure>` excerpt +
+classification proposal, reruns per standing rules. Visual checks (note under
+observations / "Not covered" if a screen can't be reached): (a) bank-list FD card meta
+line shows the payout segment; (b) detail shows *Interest payout* + **Renewal** card with
+principal preview; (c) renew dialog shows both radio options with one pre-selected;
+(d) Add screen: saving without an *Interest payout* choice shows *"Select when interest
+is paid"*, with a choice → saves and the card shows the chosen wording.
 
 ---
 
