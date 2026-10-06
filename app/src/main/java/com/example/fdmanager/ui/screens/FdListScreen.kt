@@ -51,6 +51,7 @@ import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.EmptyState
 import com.example.fdmanager.ui.components.FdCard
+import com.example.fdmanager.ui.components.RenewDialog
 import java.time.LocalDate
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -186,28 +187,14 @@ fun FdListScreen(
     }
 
     renewTarget?.let { fd ->
-        AlertDialog(
-            onDismissRequest = { renewTarget = null },
-            title = { Text("Renew FD?") },
-            text = {
-                Text(
-                    "${fd.fdNumber} will be marked as renewed. A new FD opens on ${Dates.format(fd.maturityDate)} " +
-                        "for ${Lkr.full(fd.amount)} at ${fd.interestRate}% for ${fd.durationMonths} months, linked to this one."
-                )
+        RenewDialog(
+            fd = fd,
+            onConfirm = { option ->
+                val newId = vm.renew(fd.id, option)
+                renewTarget = null
+                onOpenFd(newId)
             },
-            confirmButton = {
-                TextButton(
-                    modifier = Modifier.testTag("dialogConfirm"),
-                    onClick = {
-                        val newId = vm.renew(fd.id)
-                        renewTarget = null
-                        onOpenFd(newId)
-                    }
-                ) { Text("Renew") }
-            },
-            dismissButton = {
-                TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = { renewTarget = null }) { Text("Cancel") }
-            }
+            onDismiss = { renewTarget = null }
         )
     }
 }

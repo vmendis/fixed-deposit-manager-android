@@ -49,6 +49,7 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
+import com.example.fdmanager.data.model.RenewOption
 import com.example.fdmanager.domain.Dates
 import com.example.fdmanager.domain.FdMath
 import com.example.fdmanager.domain.FdQueries
@@ -58,6 +59,7 @@ import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.CountdownChip
 import com.example.fdmanager.ui.components.InfoRow
+import com.example.fdmanager.ui.components.RenewDialog
 import com.example.fdmanager.ui.components.StatusChip
 import com.example.fdmanager.ui.theme.statusPalette
 import java.time.LocalDate
@@ -202,7 +204,37 @@ fun FdDetailScreen(
                     InfoRow("Opened", Dates.format(fd.openedDate))
                     InfoRow("Duration", durationLabel(fd.durationMonths))
                     InfoRow("Maturity", Dates.format(fd.maturityDate))
+                    // Issue #25 (R1) — payout timing also surfaced on the detail card.
+                    InfoRow("Interest payout", fd.payoutFrequency.label)
                     InfoRow("Auto-renew", if (fd.autoRenew) "On" else "Off")
+                }
+            }
+
+            // ---- Renewal instruction (issue #25, R2) ----
+            Card(Modifier.fillMaxWidth()) {
+                Column(Modifier.padding(16.dp)) {
+                    Text(
+                        "Renewal",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    InfoRow("On renewal", fd.renewOption.label)
+                    if (fd.status != FdStatus.RENEWED) {
+                        val nextPrincipal = if (fd.renewOption == RenewOption.CAPITALIZE) maturityValue else fd.amount
+                        InfoRow("New FD principal", Lkr.full(nextPrincipal))
+                        Spacer(Modifier.height(4.dp))
+                        Text(
+                            when (fd.renewOption) {
+                                RenewOption.CAPITALIZE ->
+                                    "Interest ${Lkr.full(interest)} is added to the capital when this FD renews."
+                                RenewOption.PAYOUT ->
+                                    "Interest ${Lkr.full(interest)} is withdrawn at renewal — the new FD opens with your original ${Lkr.full(fd.amount)}."
+                            },
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
                 }
             }
 
@@ -220,7 +252,12 @@ fun FdDetailScreen(
                         )
                         Spacer(Modifier.width(10.dp))
                         Text(
-                            "Auto-renewal is on — this FD is set to renew with the same terms at maturity.",
+                            when (fd.renewOption) {
+                                RenewOption.CAPITALIZE ->
+                                    "Auto-renewal is on — at maturity this FD renews with the interest added to its capital."
+                                RenewOption.PAYOUT ->
+                                    "Auto-renewal is on — at maturity this FD renews with your original sum; the interest is paid out."
+                            },
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onTertiaryContainer
                         )
@@ -344,28 +381,14 @@ fun FdDetailScreen(
     }
 
     if (showRenew) {
-        AlertDialog(
-            onDismissRequest = { showRenew = false },
-            title = { Text("Renew FD?") },
-            text = {
-                Text(
-                    "${fd.fdNumber} will be marked as renewed. A new FD opens on ${Dates.format(fd.maturityDate)} " +
-                        "for ${Lkr.full(fd.amount)} at ${FdMath.formatRate(fd.interestRate)}% for ${fd.durationMonths} months."
-                )
+        RenewDialog(
+            fd = fd,
+            onConfirm = { option ->
+                showRenew = false
+                val newId = vm.renew(fd.id, option)
+                onOpenFd(newId)
             },
-            confirmButton = {
-                TextButton(
-                    modifier = Modifier.testTag("dialogConfirm"),
-                    onClick = {
-                        showRenew = false
-                        val newId = vm.renew(fd.id)
-                        onOpenFd(newId)
-                    }
-                ) { Text("Renew") }
-            },
-            dismissButton = {
-                TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = { showRenew = false }) { Text("Cancel") }
-            }
+            onDismiss = { showRenew = false }
         )
     }
 }

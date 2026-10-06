@@ -3,6 +3,7 @@ package com.example.fdmanager
 import com.example.fdmanager.data.FdRepository
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
+import com.example.fdmanager.data.model.RenewOption
 import com.example.fdmanager.data.model.SortOption
 import com.example.fdmanager.data.model.StatusFilter
 import com.example.fdmanager.domain.FdQueries
@@ -142,5 +143,53 @@ class FdRepositoryTest {
         repo.update(edited)
         assertEquals(250_000.0, repo.get("b")!!.amount, 0.001)
         assertEquals(9.75, repo.get("b")!!.interestRate, 0.001)
+    }
+
+    // ---- Issue #25: renew payout options + auto-renew sweep ----
+
+    @Test
+    fun `renew with CAPITALIZE adds accrued interest to principal`() {
+        val repo = repo()
+        val newId = repo.renew("d", RenewOption.CAPITALIZE)
+        // FD-D: 300,000 @ 8.5% for 6 months → interest 12,750
+        assertEquals(312_750.0, repo.get(newId)!!.amount, 0.001)
+        assertEquals("FD-D-R1", repo.get(newId)!!.fdNumber)
+    }
+
+    @Test
+    fun `renew with PAYOUT reopens with the original principal`() {
+        val repo = repo()
+        val newId = repo.renew("d", RenewOption.PAYOUT)
+        assertEquals(300_000.0, repo.get(newId)!!.amount, 0.001)
+    }
+
+    @Test
+    fun `renew without an explicit option uses the stored instruction`() {
+        val capitalizing = seed().first { it.id == "d" }.copy(renewOption = RenewOption.CAPITALIZE)
+        val repo = FdRepository(seed().map { if (it.id == "d") capitalizing else it })
+        val newId = repo.renew("d")
+        // 300,000 @ 8.5% × 6/12 → +12,750 (stored CAPITALIZE was applied)
+        assertEquals(312_750.0, repo.get(newId)!!.amount, 0.001)
+    }
+
+    @Test
+    fun `auto renew sweep renews only due flagged fds`() {
+        val dueFlagged = seed().first { it.id == "e" }.copy(autoRenew = true)
+        val repo = FdRepository(seed().map { if (it.id == "e") dueFlagged else it })
+
+        val renewedIds = repo.autoRenewDue(today)
+
+        assertEquals(listOf("e"), renewedIds)
+        assertEquals(FdStatus.RENEWED, repo.get("e")!!.status)
+        assertFalse(repo.get("e")!!.isActive)
+        val child = repo.fds.value.first { it.parentFdId == "e" }
+        assertEquals("FD-E-R1", child.fdNumber)
+        assertEquals(FdStatus.ACTIVE, child.status)
+        // e was MATURED @ 150,000, 8.0%, 3m, PAYOUT (model default) → principal unchanged
+        assertEquals(150_000.0, child.amount, 0.001)
+        // Untouched: active-not-due (a, b, d), matured-but-unflagged (none besides e), renewed (c)
+        assertEquals(FdStatus.ACTIVE, repo.get("a")!!.status)
+        assertEquals(FdStatus.ACTIVE, repo.get("b")!!.status)
+        assertEquals(FdStatus.RENEWED, repo.get("c")!!.status)
     }
 }

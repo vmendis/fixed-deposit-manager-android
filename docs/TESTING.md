@@ -25,7 +25,8 @@ report to the architect for triage).
 gradlew.bat testDebugUnitTest
 ```
 
-- **Pass criteria: all tests green** (24 expected as of this plan; if the count is higher, use it).
+- **Pass criteria: all tests green** (29 expected as of issue #25: FdMath 7, FdRepository 15,
+  BankRegistry 7; if the count is higher, use it).
 - Reports (XML, machine-readable):
   `app\build\test-results\testDebugUnitTest\*.xml`
 - Reports (HTML, human-readable):
@@ -70,8 +71,12 @@ debugImplementation("androidx.compose.ui:ui-test-manifest")
   3. `contentDescription` values already on icons: `"Add FD"`, `"Back"`, `"Edit"`,
      `"Sort"`, `"Recycle bin"`, `"Maturing soon"`, `"Delete forever"`
   - `dialogConfirm` / `dialogDismiss` — AlertDialog confirm/dismiss buttons (detail and
-    list dialogs). Use helper `confirmDialog()` from `TestSupport.kt`; never match dialog
-    buttons by text (dialog/root ordering is not guaranteed by the test API).
+    list dialogs, incl. the issue-#25 renew dialog with its two payout options). Use helper
+    `confirmDialog()` from `TestSupport.kt`; never match dialog buttons by text (dialog/root
+    ordering is not guaranteed by the test API). Renew-dialog option labels ("Add interest
+    to capital" / "Withdraw interest") and payout chips ("Monthly payout" / "At maturity")
+    exist in BOTH dialog/form AND list-card surfaces — prefer substring/`onAllNodes` when
+    the list may be composed (FD-card meta line embeds the payout wording).
   - Screen-bottom buttons (`Save FD`, `Renew`, `Delete`) live inside scrollable columns —
     always `performScrollTo().performClick()` on them (the soft keyboard can cover them).
   - Detail screens show an FD number TWICE (app-bar title + info row): assert presence via
@@ -85,7 +90,7 @@ debugImplementation("androidx.compose.ui:ui-test-manifest")
 
 | Class | Covers | Key assertions |
 |---|---|---|
-| `AddFdValidationTest` | Add/Edit form validation | Save with empty FD number / 0 amount / 0 rate → error text visible (e.g. "Enter an amount greater than 0"); valid entry → returns to previous screen and the new FD appears |
+| `AddFdValidationTest` | Add/Edit form validation (3 tests) | Save with empty FD number / 0 amount / 0 rate → error text visible (e.g. "Enter an amount greater than 0"); valid entry (must pick an **Interest payout** chip — issue #25) → returns to previous screen, new FD appears with payout wording on its card; valid-but-no-payout entry → blocked with "Select when interest is paid" |
 | `NavigationFlowTest` | Home → list → detail → back | Summary card tap opens bank list (title = bank name); FD card tap opens detail (amount + "FD number" row visible); back twice returns Home |
 | `BankMonogramUiTest` | Roadmap #18 | `bankMonogram` tags exist on Home summary cards; detail of sample NSB FD shows code `NSB`; detail of sample BOC FD shows `BOC` |
 | `SoftDeleteRestoreTest` | Spec soft delete | Delete via detail menu + confirm → Home active count decreases; FD present in Recycle Bin; restore → visible in active list again |
@@ -105,7 +110,7 @@ gradlew.bat connectedDebugAndroidTest
 
 ---
 
-## 3. Report spec — `TEST-REPORT.md`
+## 3. Report spec — `TEST-REPORT-V<N>.md` (e.g. `TEST-REPORT-V11.md`)
 
 The executor creates this file at the project root and hands it to the reviewer:
 
@@ -113,7 +118,7 @@ The executor creates this file at the project root and hands it to the reviewer:
 # TEST REPORT — <date>
 - Branch / commit: <branch> @ <sha (git rev-parse --short HEAD)>
 - Environment: Windows 11, Android Studio <ver>, AVD <name> / API <level>, gradle <ver>
-- Tiers executed: 1 / 2 (circle)
+- Tiers executed: 2 / 2 (both — only write 1/2 if a tier genuinely was not run)
 
 ## Tier 1 — unit tests
 | Test class | Tests | Passed | Failed | Report path |
@@ -142,9 +147,9 @@ The executor creates this file at the project root and hands it to the reviewer:
   from Device Manager or `adb shell getprop ro.build.version.sdk`; Gradle from
   `gradlew.bat --version`. Literal `$(...)`, `(unknown)`, or guessed values are rejections.
 - **Tier-2 table completeness:** one row per test class (all 6), per-class counts that sum
-  to the suite total — current suite: AddFdValidationTest **2**, BankMonogramUiTest **4**,
+  to the suite total — current suite (issue #25): AddFdValidationTest **3**, BankMonogramUiTest **4**,
   NavigationFlowTest **2**, RenewalChainTest **1**, SoftDeleteRestoreTest **2**,
-  SortFilterTest **2** = **13**. Any test not executed must be NAMED with its reason under
+  SortFilterTest **2** = **14**. Any test not executed must be NAMED with its reason under
   "Not covered". The header's commit must equal the SHA actually tested (`git log -1`).
 - **Every failure section is full:** verbatim assertion message + ≤30 lines of relevant
   logcat + the `<failure>` excerpt (3–10 lines) from

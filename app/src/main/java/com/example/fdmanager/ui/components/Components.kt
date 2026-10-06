@@ -17,6 +17,7 @@ import androidx.compose.material.icons.filled.Autorenew
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ElevatedCard
@@ -24,8 +25,10 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -40,9 +43,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
+import com.example.fdmanager.data.model.RenewOption
 import com.example.fdmanager.domain.Dates
 import com.example.fdmanager.domain.FdMath
 import com.example.fdmanager.domain.Lkr
+import androidx.compose.ui.platform.testTag
 import com.example.fdmanager.ui.theme.statusPalette
 import java.time.LocalDate
 
@@ -172,7 +177,8 @@ fun FdCard(
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    "${FdMath.formatRate(fd.interestRate)}% p.a.  •  matures ${Dates.format(fd.maturityDate)}",
+                    // Issue #25 (R1): payout timing sits between rate and maturity date.
+                    "${FdMath.formatRate(fd.interestRate)}% p.a.  •  ${fd.payoutFrequency.label}  •  matures ${Dates.format(fd.maturityDate)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
@@ -225,4 +231,69 @@ fun StatMini(label: String, value: String, modifier: Modifier = Modifier, onColo
         Text(value, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = onColor)
         Text(label, style = MaterialTheme.typography.labelSmall, color = onColor.copy(alpha = 0.8f))
     }
+}
+
+/**
+ * Issue #25 (R2) — shared renew confirmation. Two payout options, pre-selected from the
+ * FD's stored instruction (owner answer: stored instruction, dialog can override).
+ * Confirm/dismiss keep the `dialogConfirm` / `dialogDismiss` tags (selector contract).
+ */
+@Composable
+fun RenewDialog(
+    fd: FixedDeposit,
+    onConfirm: (RenewOption) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var selected by remember(fd.id) { mutableStateOf(fd.renewOption) }
+    val interest = FdMath.interestEarned(fd.amount, fd.interestRate, fd.durationMonths)
+    val nextAmount = if (selected == RenewOption.CAPITALIZE) fd.amount + interest else fd.amount
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text("Renew FD?") },
+        text = {
+            Column {
+                Text(
+                    "${fd.fdNumber} will be marked as renewed. A new FD opens on ${Dates.format(fd.maturityDate)} " +
+                        "for ${Lkr.full(nextAmount)} at ${FdMath.formatRate(fd.interestRate)}% for " +
+                        "${fd.durationMonths} months, linked to this one."
+                )
+                Spacer(Modifier.height(12.dp))
+                RenewOption.entries.forEach { option ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { selected = option }
+                            .padding(vertical = 4.dp)
+                    ) {
+                        RadioButton(selected = selected == option, onClick = { selected = option })
+                        Spacer(Modifier.width(4.dp))
+                        Column {
+                            Text(option.label, style = MaterialTheme.typography.bodyMedium)
+                            Text(
+                                when (option) {
+                                    RenewOption.CAPITALIZE ->
+                                        "Interest ${Lkr.full(interest)} is added to the new principal."
+                                    RenewOption.PAYOUT ->
+                                        "Interest ${Lkr.full(interest)} is paid out — reopens with ${Lkr.full(fd.amount)}."
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                modifier = Modifier.testTag("dialogConfirm"),
+                onClick = { onConfirm(selected) }
+            ) { Text("Renew") }
+        },
+        dismissButton = {
+            TextButton(modifier = Modifier.testTag("dialogDismiss"), onClick = onDismiss) { Text("Cancel") }
+        }
+    )
 }
