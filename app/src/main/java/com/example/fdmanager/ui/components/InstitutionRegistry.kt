@@ -32,18 +32,19 @@ object InstitutionRegistry {
     const val SOURCE_URL = "https://www.cbsl.gov.lk"
 
     // ---- Reused identities from old BankRegistry (12 banks) for backward compat ----
-    private val NSB = InstitutionIdentity("NSB", 0xFF1B1B1B, textArgb = 0xFFF5A623, type = InstitutionType.BANK, displayName = "National Savings Bank")
-    private val BOC = InstitutionIdentity("BOC", 0xFFF2A900, type = InstitutionType.BANK, displayName = "Bank of Ceylon")
+    // Display names match SRI_LANKAN_BANKS (old list) for test/sample-data compat, while CBSL official names are kept as aliases.
+    private val NSB = InstitutionIdentity("NSB", 0xFF1B1B1B, textArgb = 0xFFF5A623, type = InstitutionType.BANK, displayName = "National Savings Bank (NSB)")
+    private val BOC = InstitutionIdentity("BOC", 0xFFF2A900, type = InstitutionType.BANK, displayName = "Bank of Ceylon (BOC)")
     private val PB = InstitutionIdentity("PB", 0xFFE53935, type = InstitutionType.BANK, displayName = "People's Bank")
-    private val SAMP = InstitutionIdentity("SAMP", 0xFFE87524, type = InstitutionType.BANK, displayName = "Sampath Bank PLC")
-    private val HNB = InstitutionIdentity("HNB", 0xFF003B73, type = InstitutionType.BANK, displayName = "Hatton National Bank PLC")
-    private val COM = InstitutionIdentity("COM", 0xFF1565A8, type = InstitutionType.BANK, displayName = "Commercial Bank of Ceylon PLC")
-    private val NDB = InstitutionIdentity("NDB", 0xFFC62828, type = InstitutionType.BANK, displayName = "National Development Bank PLC")
-    private val DFCC = InstitutionIdentity("DFCC", 0xFF7E2419, type = InstitutionType.BANK, displayName = "DFCC Bank PLC")
-    private val SEY = InstitutionIdentity("SEY", 0xFF9E1B2F, type = InstitutionType.BANK, displayName = "Seylan Bank PLC")
-    private val NTB = InstitutionIdentity("NTB", 0xFFAD1457, type = InstitutionType.BANK, displayName = "Nations Trust Bank PLC")
-    private val PAB = InstitutionIdentity("PAB", 0xFFBF360C, type = InstitutionType.BANK, displayName = "Pan Asia Banking Corporation PLC")
-    private val UB = InstitutionIdentity("UB", 0xFF0288D1, type = InstitutionType.BANK, displayName = "Union Bank of Colombo PLC")
+    private val SAMP = InstitutionIdentity("SAMP", 0xFFE87524, type = InstitutionType.BANK, displayName = "Sampath Bank")
+    private val HNB = InstitutionIdentity("HNB", 0xFF003B73, type = InstitutionType.BANK, displayName = "Hatton National Bank (HNB)")
+    private val COM = InstitutionIdentity("COM", 0xFF1565A8, type = InstitutionType.BANK, displayName = "Commercial Bank")
+    private val NDB = InstitutionIdentity("NDB", 0xFFC62828, type = InstitutionType.BANK, displayName = "NDB Bank")
+    private val DFCC = InstitutionIdentity("DFCC", 0xFF7E2419, type = InstitutionType.BANK, displayName = "DFCC Bank")
+    private val SEY = InstitutionIdentity("SEY", 0xFF9E1B2F, type = InstitutionType.BANK, displayName = "Seylan Bank")
+    private val NTB = InstitutionIdentity("NTB", 0xFFAD1457, type = InstitutionType.BANK, displayName = "Nations Trust Bank")
+    private val PAB = InstitutionIdentity("PAB", 0xFFBF360C, type = InstitutionType.BANK, displayName = "Pan Asia Bank")
+    private val UB = InstitutionIdentity("UB", 0xFF0288D1, type = InstitutionType.BANK, displayName = "Union Bank")
 
     // ---- Additional LCBs (12 more) ----
     private val AMANA = InstitutionIdentity("AMANA", 0xFF1A5C3A, type = InstitutionType.BANK, displayName = "Amana Bank PLC")
