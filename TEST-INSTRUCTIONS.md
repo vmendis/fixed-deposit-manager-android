@@ -1,8 +1,8 @@
-# TEST INSTRUCTIONS — Issue #17 Day-based & 1-month tenors — Round V1
+# TEST INSTRUCTIONS — Issue #17 Day-based & 1-month tenors — Round V16
 
 ## Environment
-- Branch: `dev` (fresh from `origin/master` @ 2499e1c + #17 commits)
-- Commit: `git log -1 --oneline` — tester records actual SHA under test
+- Branch: `dev` (fresh from `origin/master` @ 2499e1c + #17 commits @ 650a677)
+- Commit: `git log -1 --oneline` — tester records actual SHA under test (expect 650a677)
 - Windows 11, Android Studio, AVD API 34, `adb devices` shows device
 - Project root `fd-manager/` — all commands via `gradlew.bat`
 
@@ -68,7 +68,7 @@ gradlew.bat connectedDebugAndroidTest
 - Detail: Tenor row shows "100 days" or "1 month"
 - Renewal preserves unit/value and interest calc
 
-## Report spec — `TEST-REPORT-V1.md` at project root
+## Report spec — `TEST-REPORT-V16.md` at project root
 ```markdown
 # TEST REPORT — <date>
 - Branch / commit: dev @ <short SHA from git rev-parse --short HEAD>
@@ -99,7 +99,7 @@ gradlew.bat connectedDebugAndroidTest
 Hard rules:
 - No placeholders — real SHA, real versions, real logcat
 - Tier2 table: one row per class, counts sum to 16 (5+4+2+1+2+2)
-- Tier1: 46 total
+- Tier1: 46 total (11+17+7+11)
 - Every failure: verbatim message + logcat ≤30 lines + XML excerpt with line number + rerun once with class filter
 - Flake protocol mandatory
 
