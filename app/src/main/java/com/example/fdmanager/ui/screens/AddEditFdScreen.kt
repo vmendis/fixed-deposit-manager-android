@@ -1,6 +1,7 @@
 package com.example.fdmanager.ui.screens
 
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -9,26 +10,28 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.DateRange
+import androidx.compose.material.icons.filled.Info
+import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
-import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExposedDropdownMenuBox
-import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.FilterChip
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.MenuAnchorType
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
@@ -58,7 +61,10 @@ import com.example.fdmanager.domain.FdMath
 import com.example.fdmanager.domain.FdQueries
 import com.example.fdmanager.domain.Lkr
 import com.example.fdmanager.ui.FdViewModel
+import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.InfoRow
+import com.example.fdmanager.ui.components.InstitutionRegistry
+import com.example.fdmanager.ui.components.InstitutionType
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
@@ -78,7 +84,16 @@ fun AddEditFdScreen(
 
     var attempted by remember { mutableStateOf(false) }
     var fdNumber by remember { mutableStateOf(editing?.fdNumber ?: "") }
-    var bank by remember { mutableStateOf(editing?.bank ?: SRI_LANKAN_BANKS[0]) }
+    var bank by remember {
+        mutableStateOf(
+            editing?.bank?.takeIf { InstitutionRegistry.isCBSLRegulated(it) }
+                ?: editing?.bank
+                ?: InstitutionRegistry.find("National Savings Bank (NSB)")?.displayName
+                ?: InstitutionRegistry.find("National Savings Bank")?.displayName
+                ?: InstitutionRegistry.allDisplayNames.firstOrNull()
+                ?: SRI_LANKAN_BANKS[0]
+        )
+    }
     var amountText by remember {
         mutableStateOf(editing?.let { FdMath.formatRate(it.amount) } ?: "")
     }
@@ -101,15 +116,16 @@ fun AddEditFdScreen(
     var openedDate by remember { mutableStateOf(editing?.openedDate ?: LocalDate.now()) }
     var branch by remember { mutableStateOf(editing?.branch ?: "") }
     var branchCode by remember { mutableStateOf(editing?.branchCode ?: "") }
-    // Issue #25 — payout frequency is always asked on new FDs (owner: no default);
-    // the renew instruction pre-selects CAPITALIZE for new FDs, stored value when editing.
     var payoutFrequency by remember { mutableStateOf(editing?.payoutFrequency) }
     var renewOption by remember { mutableStateOf(editing?.renewOption ?: RenewOption.CAPITALIZE) }
     var autoRenew by remember { mutableStateOf(editing?.autoRenew ?: false) }
-    var bankMenu by remember { mutableStateOf(false) }
+    var showInstitutionPicker by remember { mutableStateOf(false) }
+    var institutionSearchQuery by remember { mutableStateOf("") }
     var showPicker by remember { mutableStateOf(false) }
+    var showInfoDialog by remember { mutableStateOf(false) }
+    var showRequestDialog by remember { mutableStateOf(false) }
 
-    // ---- Derived values & validation ----
+    // ---- Derived values & validation — CBSL-only guardrail ----
     val amount = amountText.toDoubleOrNull()
     val rate = rateText.toDoubleOrNull()
     val duration: Int? = if (customMode) customDurationText.toIntOrNull() else selectedDuration
@@ -118,11 +134,32 @@ fun AddEditFdScreen(
     val amountValid = amount != null && amount > 0
     val rateValid = rate != null && rate > 0 && rate <= 30
     val durationValid = duration != null && duration > 0
-    val payoutValid = payoutFrequency != null // issue #25: no default — must be chosen
-    val allValid = fdNumberValid && amountValid && rateValid && durationValid && payoutValid
+    val payoutValid = payoutFrequency != null
+    val bankValid = InstitutionRegistry.isCBSLRegulated(bank)
+    val allValid = fdNumberValid && amountValid && rateValid && durationValid && payoutValid && bankValid
 
     val previewReady = amountValid && rateValid && durationValid
     val previewMaturity = if (durationValid) FdMath.maturityDate(openedDate, duration!!) else null
+
+    val filteredBanks = remember(institutionSearchQuery) {
+        val q = institutionSearchQuery.trim()
+        if (q.isBlank()) InstitutionRegistry.allBanks
+        else InstitutionRegistry.allBanks.filter { inst ->
+            InstitutionRegistry.find(inst.displayName) != null && (
+                inst.displayName.contains(q, ignoreCase = true) ||
+                inst.code.contains(q, ignoreCase = true) ||
+                InstitutionRegistry.find(q)?.displayName == inst.displayName
+            )
+        }
+    }
+    val filteredFinance = remember(institutionSearchQuery) {
+        val q = institutionSearchQuery.trim()
+        if (q.isBlank()) InstitutionRegistry.allFinanceCompanies
+        else InstitutionRegistry.allFinanceCompanies.filter { inst ->
+            inst.displayName.contains(q, ignoreCase = true) ||
+            inst.code.contains(q, ignoreCase = true)
+        }
+    }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -158,29 +195,66 @@ fun AddEditFdScreen(
             )
             Spacer(Modifier.height(8.dp))
 
-            // Bank selector
-            ExposedDropdownMenuBox(
-                expanded = bankMenu,
-                onExpandedChange = { bankMenu = !bankMenu }
-            ) {
-                OutlinedTextField(
-                    value = bank,
-                    onValueChange = {},
-                    readOnly = true,
-                    label = { Text("Bank") },
-                    trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(bankMenu) },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .menuAnchor(MenuAnchorType.PrimaryNotEditable)
-                )
-                ExposedDropdownMenu(
-                    expanded = bankMenu,
-                    onDismissRequest = { bankMenu = false }
+            // ---- CBSL-only Institution selector ----
+            Text(
+                "Institution (CBSL-regulated only)",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(4.dp))
+            OutlinedTextField(
+                value = bank,
+                onValueChange = {},
+                readOnly = true,
+                label = { Text("Institution") },
+                trailingIcon = {
+                    Row {
+                        IconButton(onClick = { showInfoDialog = true }) {
+                            Icon(Icons.Filled.Info, contentDescription = "CBSL info")
+                        }
+                        IconButton(onClick = { showInstitutionPicker = true }) {
+                            Icon(Icons.Filled.Search, contentDescription = "Pick institution")
+                        }
+                    }
+                },
+                isError = attempted && !bankValid,
+                supportingText = {
+                    if (attempted && !bankValid) {
+                        Text(
+                            "For your safety, FD Manager only tracks FDs at CBSL regulated institutions. " +
+                                "Check spelling or tap Request addition. Learn more: cbsl.gov.lk",
+                            color = MaterialTheme.colorScheme.error
+                        )
+                    } else {
+                        val type = InstitutionRegistry.find(bank)?.type
+                        if (type != null) {
+                            Text(
+                                "${type.label} • CBSL licensed • Updated ${InstitutionRegistry.LAST_UPDATED}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth()
+            )
+            if (editing != null && !InstitutionRegistry.isCBSLRegulated(editing.bank)) {
+                Spacer(Modifier.height(4.dp))
+                Card(
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer),
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    SRI_LANKAN_BANKS.forEach { b ->
-                        DropdownMenuItem(
-                            text = { Text(b) },
-                            onClick = { bank = b; bankMenu = false }
+                    Column(Modifier.padding(12.dp)) {
+                        Text(
+                            "Legacy institution not in CBSL list",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onErrorContainer
+                        )
+                        Text(
+                            "\"${editing.bank}\" is not in the current CBSL regulated list. Please select a CBSL-regulated institution to continue.",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onErrorContainer
                         )
                     }
                 }
@@ -256,7 +330,7 @@ fun AddEditFdScreen(
             }
             Spacer(Modifier.height(8.dp))
 
-            // ---- Issue #25: interest payout frequency (R1, required — owner: always ask) ----
+            // Interest payout frequency (required)
             Text("Interest payout", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
             Row(
@@ -282,7 +356,7 @@ fun AddEditFdScreen(
             }
             Spacer(Modifier.height(8.dp))
 
-            // ---- Issue #25: stored renewal instruction (R2) ----
+            // Stored renewal instruction
             Text("On renewal", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
             Row(
@@ -347,7 +421,7 @@ fun AddEditFdScreen(
             }
             Spacer(Modifier.height(12.dp))
 
-            // ---- Live maturity preview ----
+            // Live maturity preview
             if (previewReady && previewMaturity != null) {
                 Spacer(Modifier.height(8.dp))
                 Card(
@@ -392,7 +466,7 @@ fun AddEditFdScreen(
                         val fd = FixedDeposit(
                             id = editing?.id ?: "",
                             fdNumber = fdNumber.trim(),
-                            bank = bank,
+                            bank = bank.trim(),
                             amount = amount!!,
                             openedDate = openedDate,
                             durationMonths = months,
@@ -441,5 +515,189 @@ fun AddEditFdScreen(
         ) {
             DatePicker(state = pickerState, showModeToggle = false)
         }
+    }
+
+    if (showInstitutionPicker) {
+        AlertDialog(
+            onDismissRequest = { showInstitutionPicker = false },
+            title = { Text("Select institution (CBSL-only)") },
+            text = {
+                Column {
+                    OutlinedTextField(
+                        value = institutionSearchQuery,
+                        onValueChange = { institutionSearchQuery = it },
+                        label = { Text("Search banks & finance companies") },
+                        leadingIcon = { Icon(Icons.Filled.Search, contentDescription = null) },
+                        singleLine = true,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    LazyColumn(Modifier.height(360.dp)) {
+                        if (filteredBanks.isNotEmpty()) {
+                            item {
+                                Text(
+                                    "Banks (${filteredBanks.size})",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                            }
+                            items(filteredBanks) { inst ->
+                                InstitutionRow(
+                                    inst = inst,
+                                    onClick = {
+                                        bank = inst.displayName
+                                        showInstitutionPicker = false
+                                        institutionSearchQuery = ""
+                                    }
+                                )
+                            }
+                            item { HorizontalDivider(Modifier.padding(vertical = 8.dp)) }
+                        }
+                        if (filteredFinance.isNotEmpty()) {
+                            item {
+                                Text(
+                                    "Finance Companies (${filteredFinance.size}) — CBSL licensed",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    modifier = Modifier.padding(vertical = 4.dp)
+                                )
+                            }
+                            items(filteredFinance) { inst ->
+                                InstitutionRow(
+                                    inst = inst,
+                                    onClick = {
+                                        bank = inst.displayName
+                                        showInstitutionPicker = false
+                                        institutionSearchQuery = ""
+                                    }
+                                )
+                            }
+                        }
+                        if (filteredBanks.isEmpty() && filteredFinance.isEmpty()) {
+                            item {
+                                Column(Modifier.padding(16.dp)) {
+                                    Text(
+                                        "Not found in CBSL regulated list",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                    Spacer(Modifier.height(4.dp))
+                                    Text(
+                                        "Check spelling or tap Request addition if it's CBSL-licensed. For your safety, FD Manager only tracks FDs at CBSL regulated institutions.",
+                                        style = MaterialTheme.typography.bodySmall
+                                    )
+                                    Spacer(Modifier.height(12.dp))
+                                    OutlinedButton(
+                                        onClick = {
+                                            showInstitutionPicker = false
+                                            showRequestDialog = true
+                                        },
+                                        modifier = Modifier.fillMaxWidth()
+                                    ) {
+                                        Text("Request addition")
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showInstitutionPicker = false }) { Text("Close") }
+            },
+            dismissButton = {
+                TextButton(onClick = {
+                    showInstitutionPicker = false
+                    showRequestDialog = true
+                }) { Text("Request addition") }
+            }
+        )
+    }
+
+    if (showInfoDialog) {
+        AlertDialog(
+            onDismissRequest = { showInfoDialog = false },
+            title = { Text("CBSL-regulated institutions only") },
+            text = {
+                Column {
+                    Text(
+                        "For your safety, FD Manager only tracks Fixed Deposits at CBSL-regulated institutions:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text("• Licensed Commercial Banks (24)\n• Licensed Specialised Banks (6)\n• Licensed Finance Companies (31 allowed, Nation Lanka Finance excluded per CBSL prohibition)", style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Source: CBSL Notice as at ${InstitutionRegistry.LAST_UPDATED} — ${InstitutionRegistry.SOURCE_URL}\n" +
+                            "Total allowed: ${InstitutionRegistry.allInstitutions.size} institutions.\n" +
+                            "Last updated: ${InstitutionRegistry.LAST_UPDATED}\n\n" +
+                            "If your institution is CBSL-licensed but missing, use Request addition. We verify against cbsl.gov.lk and add in next release. Non-regulated entities cannot be stored.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showInfoDialog = false }) { Text("Got it") }
+            }
+        )
+    }
+
+    if (showRequestDialog) {
+        AlertDialog(
+            onDismissRequest = { showRequestDialog = false },
+            title = { Text("Request addition") },
+            text = {
+                Column {
+                    Text(
+                        "If your institution is CBSL-licensed but not in the list, please contact support with the institution name. We verify against cbsl.gov.lk and add it in the next app release.",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    if (institutionSearchQuery.isNotBlank()) {
+                        Text(
+                            "You searched for: \"${institutionSearchQuery}\"",
+                            style = MaterialTheme.typography.bodySmall,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Spacer(Modifier.height(4.dp))
+                    }
+                    Text(
+                        "For your safety, non-CBSL regulated entities cannot be added.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            },
+            confirmButton = {
+                TextButton(onClick = { showRequestDialog = false }) { Text("Close") }
+            }
+        )
+    }
+}
+
+@Composable
+private fun InstitutionRow(
+    inst: com.example.fdmanager.ui.components.InstitutionIdentity,
+    onClick: () -> Unit
+) {
+    Row(
+        Modifier
+            .fillMaxWidth()
+            .padding(vertical = 4.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        BankMonogram(bank = inst.displayName, size = 36.dp)
+        Column(Modifier.weight(1f)) {
+            Text(inst.displayName, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.Medium)
+            Text(
+                "${inst.code} • ${inst.type.label}",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Button(onClick = onClick) { Text("Select") }
     }
 }

@@ -19,7 +19,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AccountBalance
 import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Notifications
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Badge
@@ -55,6 +55,7 @@ import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.CountdownChip
 import com.example.fdmanager.ui.components.EmptyState
+import com.example.fdmanager.ui.components.InstitutionRegistry
 import com.example.fdmanager.ui.components.SectionHeader
 import com.example.fdmanager.ui.components.StatMini
 import java.time.LocalDate
@@ -147,7 +148,7 @@ fun HomeScreen(
                                 onColor = MaterialTheme.colorScheme.onSurface
                             )
                             StatMini(
-                                "Banks", "${summaries.size}",
+                                "Institutions", "${summaries.size}",
                                 Modifier.weight(1f),
                                 onColor = MaterialTheme.colorScheme.onSurface
                             )
@@ -211,9 +212,9 @@ fun HomeScreen(
                 }
             }
 
-            // ---- Bank summary cards ----
+            // ---- Institution summary cards — CBSL-only ----
             item {
-                SectionHeader("By bank", subtitle = "${summaries.size} banks")
+                SectionHeader("By institution", subtitle = "${summaries.size} institutions • CBSL-regulated only")
             }
 
             if (summaries.isEmpty()) {
@@ -277,6 +278,7 @@ fun HomeScreen(
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun BankSummaryCard(summary: BankSummary, onClick: () -> Unit) {
+    val identity = InstitutionRegistry.find(summary.bank)
     ElevatedCard(
         onClick = onClick,
         modifier = Modifier
@@ -298,11 +300,21 @@ private fun BankSummaryCard(summary: BankSummary, onClick: () -> Unit) {
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis
                 )
-                Text(
-                    "${summary.activeCount} active • ${summary.fdCount} total",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Text(
+                        "${summary.activeCount} active • ${summary.fdCount} total",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    if (identity != null) {
+                        Spacer(Modifier.width(6.dp))
+                        Text(
+                            "• ${identity.type.label}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
@@ -317,7 +329,7 @@ private fun BankSummaryCard(summary: BankSummary, onClick: () -> Unit) {
                 )
             }
             Icon(
-                Icons.Filled.KeyboardArrowRight,
+                Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
                 tint = MaterialTheme.colorScheme.onSurfaceVariant
             )

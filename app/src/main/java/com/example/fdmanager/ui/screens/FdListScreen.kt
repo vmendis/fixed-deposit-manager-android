@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
@@ -16,7 +17,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.Check
-import androidx.compose.material.icons.filled.Sort
+import androidx.compose.material.icons.automirrored.filled.Sort
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
@@ -51,6 +52,7 @@ import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.EmptyState
 import com.example.fdmanager.ui.components.FdCard
+import com.example.fdmanager.ui.components.InstitutionRegistry
 import com.example.fdmanager.ui.components.RenewDialog
 import java.time.LocalDate
 
@@ -98,7 +100,7 @@ fun FdListScreen(
             actions = {
                 Box {
                     IconButton(onClick = { sortMenu = true }) {
-                        Icon(Icons.Filled.Sort, contentDescription = "Sort")
+                        Icon(Icons.AutoMirrored.Filled.Sort, contentDescription = "Sort")
                     }
                     DropdownMenu(expanded = sortMenu, onDismissRequest = { sortMenu = false }) {
                         SortOption.entries.forEach { option ->
@@ -120,6 +122,22 @@ fun FdListScreen(
                 actionIconContentColor = MaterialTheme.colorScheme.onPrimary
             )
         )
+
+        // Institution type badge + CBSL info
+        val identity = remember(bank) { InstitutionRegistry.find(bank) }
+        if (identity != null) {
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    "${identity.type.label} • CBSL licensed • Updated ${InstitutionRegistry.LAST_UPDATED}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
 
         // Status filter chips
         Row(
@@ -146,7 +164,7 @@ fun FdListScreen(
                     EmptyState(
                         Icons.Filled.AccountBalanceWallet,
                         "No FDs here",
-                        if (filter == StatusFilter.ALL) "This bank has no deposits." else "No ${filter.label.lowercase()} FDs — try another filter."
+                        if (filter == StatusFilter.ALL) "This institution has no deposits." else "No ${filter.label.lowercase()} FDs — try another filter."
                     )
                 }
             } else {

@@ -41,22 +41,22 @@ class SoftDeleteRestoreTest {
         rule.onNodeWithText("Delete").performScrollTo().performClick()
         rule.confirmDialog()
 
-        // Back on the bank list: now empty. Wait for the empty state to enter the tree.
+        // Back on the institution list: now empty. Wait for the empty state to enter the tree.
         try {
             rule.waitUntil(5_000) {
-                rule.onAllNodesWithText("This bank has no deposits.").fetchSemanticsNodes().isNotEmpty()
+                rule.onAllNodesWithText("This institution has no deposits.").fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: Throwable) {
             // Self-diagnosis: fingerprint which screen is actually up at timeout, so the
             // failure message tells the triager where the flow landed instead of guessing.
             val markers = listOf(
                 "Total invested" to "HOME",
-                "By bank" to "HOME-section",
+                "By institution" to "HOME-section",
                 "FD number" to "DETAIL",
                 "Delete FD?" to "DETAIL+DIALOG-OPEN",
                 "Recycle bin" to "BIN-screen",
                 "NSB-78412" to "NSB-row/title",
-                "This bank has no deposits." to "EMPTY-LIST"
+                "This institution has no deposits." to "EMPTY-LIST"
             )
             val present = markers.filter { (text, _) ->
                 rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
@@ -71,7 +71,7 @@ class SoftDeleteRestoreTest {
                 e
             )
         }
-        rule.onNodeWithText("This bank has no deposits.").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("This institution has no deposits.").performScrollTo().assertIsDisplayed()
 
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("FD Manager").assertIsDisplayed()

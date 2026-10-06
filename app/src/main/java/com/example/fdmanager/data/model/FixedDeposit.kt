@@ -75,3 +75,7 @@ val SRI_LANKAN_BANKS = listOf(
     "Pan Asia Bank",
     "Union Bank"
 )
+
+/** Full CBSL-regulated list — use InstitutionRegistry.allDisplayNames as source of truth in UI. Kept here for backward compat; prefer InstitutionRegistry. */
+@Deprecated("Use InstitutionRegistry.allDisplayNames — CBSL-only ~61 institutions")
+val SRI_LANKAN_INSTITUTIONS = SRI_LANKAN_BANKS

@@ -41,9 +41,9 @@ internal fun ComposeContentTestRule.swipeUntilText(text: String, maxSwipes: Int 
  */
 internal const val OPEN_BANK_GATE = "navgate-0250r9"
 
-/** Scroll Home to "By bank", open the summary card for [bank], and prove the list opened. */
+/** Scroll Home to "By institution", open the summary card for [bank], and prove the list opened. */
 internal fun ComposeContentTestRule.openBank(bank: String) {
-    onNodeWithText("By bank").performScrollTo()
+    onNodeWithText("By institution").performScrollTo()
     waitForIdle()
     swipeUntilTag("summary:$bank")
     // Composed ≠ visible (lazy prefetch): scroll the card fully into the viewport before

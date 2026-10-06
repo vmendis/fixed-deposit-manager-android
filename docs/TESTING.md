@@ -25,8 +25,8 @@ report to the architect for triage).
 gradlew.bat testDebugUnitTest
 ```
 
-- **Pass criteria: all tests green** (29 expected as of issue #25: FdMath 7, FdRepository 15,
-  BankRegistry 7; if the count is higher, use it).
+- **Pass criteria: all tests green** (40 expected as of issue #19: FdMath 7, FdRepository 15,
+  BankRegistry 7, InstitutionRegistry 11; if the count is higher, use it).
 - Reports (XML, machine-readable):
   `app\build\test-results\testDebugUnitTest\*.xml`
 - Reports (HTML, human-readable):
@@ -147,9 +147,9 @@ The executor creates this file at the project root and hands it to the reviewer:
   from Device Manager or `adb shell getprop ro.build.version.sdk`; Gradle from
   `gradlew.bat --version`. Literal `$(...)`, `(unknown)`, or guessed values are rejections.
 - **Tier-2 table completeness:** one row per test class (all 6), per-class counts that sum
-  to the suite total — current suite (issue #25): AddFdValidationTest **3**, BankMonogramUiTest **4**,
+  to the suite total — current suite (issue #19): AddFdValidationTest **3**, BankMonogramUiTest **4**,
   NavigationFlowTest **2**, RenewalChainTest **1**, SoftDeleteRestoreTest **2**,
-  SortFilterTest **2** = **14**. Any test not executed must be NAMED with its reason under
+  SortFilterTest **2** = **14** (unit 40: FdMath 7, FdRepository 15, BankRegistry 7, InstitutionRegistry 11). Any test not executed must be NAMED with its reason under
   "Not covered". The header's commit must equal the SHA actually tested (`git log -1`).
 - **Every failure section is full:** verbatim assertion message + ≤30 lines of relevant
   logcat + the `<failure>` excerpt (3–10 lines) from
