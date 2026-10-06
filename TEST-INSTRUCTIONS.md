@@ -18,7 +18,7 @@
   commands (`grep`, `sed`, `cat`, `bash`, `ls`, `chmod`…), and NO `cd /d` — commands run
   from the agent's default cwd, which IS the project root (rounds ran fine without it);
   the sync block proves location with `dir /b gradlew.bat` instead. Paths in findstr use
-  real backslash-nested folders (`java\\com\\example\\fdmanager\\`), never FQCN-dotted segments.
+  real backslash-nested folders (`java\\com\\example\\fdmanager\\`), never FQCN-dotted segments. **CRITICAL: never use quotes in `dir` commands** — `dir \"app\\build\\reports\\...\"` breaks Roo's execute_command and causes infinite loop (observed 2026-10-06). Use `dir /b app\\build\\reports` and `dir /s /b app\\build\\test-results\\*.xml` without quotes; if folder not found, continue, don't retry same command.
 - Project root: `C:\\LocalApps\\AppDevelopment\\fixed-deposit-manager-android-dev\\fixed-deposit-manager-android-dev`
 - The authoritative test plan is **`docs/TESTING.md`** in the repo — read it first;
   everything below must agree with it (if it ever conflicts, TESTING.md wins).
