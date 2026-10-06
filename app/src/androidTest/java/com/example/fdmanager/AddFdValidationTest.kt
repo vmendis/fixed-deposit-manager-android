@@ -64,11 +64,61 @@ class AddFdValidationTest {
         // Bank defaults to NSB; the new FD must be in that bank's list
         rule.openBank("National Savings Bank (NSB)")
         rule.onNodeWithText("TEST-0001").assertIsDisplayed()
-        // Issue #25 (R1): the chosen payout wording shows on the FD card meta line
-        // (meta line is one long text node → substring match)
+        // Issue #17: card meta now shows tenor, not payout — e.g. "9.5% p.a. • 12 months • matures ..."
         assertTrue(
-            rule.onAllNodesWithText("Monthly payout", substring = true)
+            rule.onAllNodesWithText("months", substring = true)
                 .fetchSemanticsNodes().isNotEmpty()
+        )
+    }
+
+    @Test
+    fun addFdWith1MonthTenor() {
+        rule.onNodeWithContentDescription("Add FD").performClick()
+
+        rule.onNodeWithText("FD number").performClick()
+        rule.onNodeWithText("FD number").performTextInput("TEST-1M")
+        rule.onNodeWithText("Amount").performClick()
+        rule.onNodeWithText("Amount").performTextInput("50000")
+        rule.onNodeWithText("Interest rate").performClick()
+        rule.onNodeWithText("Interest rate").performTextInput("9")
+        closeSoftKeyboard()
+
+        // Tenor = Months (default) → pick 1m preset
+        rule.onNodeWithText("1m").performScrollTo().performClick()
+        rule.onNodeWithText("Monthly payout").performScrollTo().performClick()
+        rule.onNodeWithText("Save FD").performScrollTo().performClick()
+
+        rule.onNodeWithText("FD Manager").assertIsDisplayed()
+        rule.openBank("National Savings Bank (NSB)")
+        rule.onNodeWithText("TEST-1M").assertIsDisplayed()
+        assertTrue(
+            rule.onAllNodesWithText("1 month", substring = true).fetchSemanticsNodes().isNotEmpty()
+        )
+    }
+
+    @Test
+    fun addFdWith100DaysTenor() {
+        rule.onNodeWithContentDescription("Add FD").performClick()
+
+        rule.onNodeWithText("FD number").performClick()
+        rule.onNodeWithText("FD number").performTextInput("TEST-100D")
+        rule.onNodeWithText("Amount").performClick()
+        rule.onNodeWithText("Amount").performTextInput("100000")
+        rule.onNodeWithText("Interest rate").performClick()
+        rule.onNodeWithText("Interest rate").performTextInput("10")
+        closeSoftKeyboard()
+
+        // Switch to Days → pick 100d preset (100/300-day NBFI specials)
+        rule.onNodeWithText("Days").performScrollTo().performClick()
+        rule.onNodeWithText("100d").performScrollTo().performClick()
+        rule.onNodeWithText("Monthly payout").performScrollTo().performClick()
+        rule.onNodeWithText("Save FD").performScrollTo().performClick()
+
+        rule.onNodeWithText("FD Manager").assertIsDisplayed()
+        rule.openBank("National Savings Bank (NSB)")
+        rule.onNodeWithText("TEST-100D").assertIsDisplayed()
+        assertTrue(
+            rule.onAllNodesWithText("100 days", substring = true).fetchSemanticsNodes().isNotEmpty()
         )
     }
 

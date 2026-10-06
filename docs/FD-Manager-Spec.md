@@ -61,6 +61,9 @@ users/{userId}/fds/{fdId}
   "amount": number,
   "openedDate": number,
   "duration": number,
+  "durationMonths": number,
+  "durationDays": number | null,
+  "tenorUnit": "MONTHS | DAYS",
   "interestRate": number,
   "maturityDate": number,
   "branch": "string | null",
@@ -81,6 +84,10 @@ users/{userId}/fds/{fdId}
 ```
 
 > `bank` = display name of a **CBSL-regulated institution** (Licensed Commercial Bank, Licensed Specialised Bank, or Licensed Finance Company) selected from the Institution Registry. Free-text custom institutions are **not allowed** — the app refuses to save an FD if the institution is not in the registry. See §3.3.
+>
+> `duration` = legacy field (months) kept for backward compat — use `durationMonths` / `durationDays` + `tenorUnit` going forward. `durationMonths` = months when `tenorUnit=MONTHS`, `durationDays` = days when `tenorUnit=DAYS` (1–999). `tenorUnit` defaults to `MONTHS` for old data.
+>
+> `tenorUnit` = `MONTHS` (bank-style: 1,3,6,12,24,36,60) or `DAYS` (NBFI odd tenors: 30,60,90,100,180,300,364). 1-month and 100/300-day are first-class presets (issue #17).
 >
 > `payoutFrequency` = when the institution pays the interest (monthly vs at maturity) — always chosen when adding an FD (no default); shown on the FD card and detail.
 >
@@ -148,13 +155,14 @@ users/{userId}/fds/{fdId}
 * FD Number
 * Amount
 * Interest Rate
-* Interest payout frequency (`Monthly payout` / `At maturity`)
+* Tenor (`3 months` / `100 days` / `1 month`) + Interest payout frequency (`Monthly payout` / `At maturity`)
 * Maturity Date
 * Status (color-coded)
 * Institution monogram tile (from InstitutionRegistry)
 
 **Detail view additionally shows:**
 
+* `Tenor` row: `3 months` or `100 days` (unit-aware, from `tenorUnit`)
 * `Interest payout` row (Details card)
 * `Institution` row with type (Bank / Finance Company) and CBSL info link
 * **Renewal card**: stored instruction (`Add interest to capital` / `Withdraw interest`),
@@ -169,13 +177,14 @@ users/{userId}/fds/{fdId}
 
 * Form with validation
 * **Institution picker (CBSL-only):** searchable dialog grouped `Banks` / `Finance Companies`, backed by InstitutionRegistry (~70 entries). No free-text. Selection required. If typed name not in registry → inline error "Not found in CBSL regulated list. Check spelling or tap 'Request addition' if it's CBSL-licensed." Request addition opens feedback intent; no FD saved until institution exists in registry. Hard block on non-CBSL attempt: "For your safety, FD Manager only tracks FDs at CBSL regulated institutions. Learn more: cbsl.gov.lk"
+* **Tenor (issue #17):** segmented toggle `Months | Days`. Months presets: 1,3,6,12,24,36,60 (1-month first-class) + custom 1–120. Days presets: 30,60,90,100,180,300,364 + custom 1–999. 100/300-day are NBFI specials. Live maturity preview. Validation: >0.
 * **Required:** interest payout frequency (`Monthly payout` / `At maturity`) — save is blocked without a choice ("Select when interest is paid")
 * **Renewal instruction** selector, pre-selects `Add interest to capital`
 * `Auto-renew` toggle (default off)
 
 **Modify FD:**
 
-* Pre-filled editable form (including institution — still CBSL-only, cannot change to non-CBSL; payout frequency + renewal instruction)
+* Pre-filled editable form (including institution — still CBSL-only, cannot change to non-CBSL; tenor unit + value + payout frequency + renewal instruction)
 
 **Delete FD:**
 
@@ -194,9 +203,9 @@ users/{userId}/fds/{fdId}
 2. Create new FD:
 
    * `parentFdId = oldFdId`
-   * opens on the old FD's maturity date, same terms
+   * opens on the old FD's maturity date, same terms (tenor unit + value preserved)
    * **principal per the effective renew option:**
-     * `CAPITALIZE` → `amount + interestEarned(amount, interestRate, duration)`
+     * `CAPITALIZE` → `amount + interestEarned(amount, interestRate, durationMonths/days, tenorUnit)`
      * `PAYOUT` → original `amount` (interest paid out, not tracked in-app in v1)
 
 **Renew dialog:** shows both options as radio choices, pre-selected from the
@@ -214,6 +223,16 @@ stored `renewOption` (no user interaction; works while the app opens).
 - **Defensive rendering:** If legacy data contains unknown institution name (e.g., from old backup), UI renders neutral monogram fallback (derived initials) but shows warning badge and blocks editing until user selects CBSL institution.
 - **Transparency:** Picker header info icon → CBSL licensed institutions page. Home and detail screens show institution type. No "Other…" group — only Banks / Finance Companies.
 - **Disclaimer:** App is a tracker, not a financial advisor. Institution list is for information, sourced from CBSL as at `lastUpdated` date.
+
+### 4.6 Tenor Support — Day-Based & 1-Month (Issue #17)
+
+- **Tenor unit:** `MONTHS` (bank-style) or `DAYS` (NBFI odd tenors). Exclusive — an FD is either months or days, not both.
+- **Months:** 1–120, presets 1,3,6,12,24,36,60. 1-month is first-class (common for finance companies). Interest = `amount * rate * months / 12`.
+- **Days:** 1–999, presets 30,60,90,100,180,300,364. 100/300-day are NBFI specials (People's Leasing, LOLC etc.). Interest = `amount * rate * days / 365` (simple, 365-day year). Maturity = `openedDate + days`.
+- **Renewal:** tenor unit + value preserved on child FD. Child opens on old maturity date, matures per its own tenor.
+- **Display:** card meta shows `100 days` or `3 months` + payout frequency; detail shows Tenor row with unit.
+- **Backward compat:** old data has `duration` (months) and no `tenorUnit` → treated as `MONTHS` with `durationMonths = duration`. New data writes `durationMonths`/`durationDays` + `tenorUnit`.
+- **Validation:** tenor value >0, required.
 
 ---
 

@@ -192,4 +192,43 @@ class FdRepositoryTest {
         assertEquals(FdStatus.ACTIVE, repo.get("b")!!.status)
         assertEquals(FdStatus.RENEWED, repo.get("c")!!.status)
     }
+
+    // ---- Issue #17: day-based tenors ----
+    @Test
+    fun `renew preserves day-based tenor and uses days for interest`() {
+        val dayFd = FixedDeposit(
+            id = "day1", fdNumber = "LOLC-100", bank = "LOLC Finance", amount = 500_000.0,
+            openedDate = today.minusDays(100), durationMonths = 0, interestRate = 12.0,
+            maturityDate = today,
+            durationDays = 100, tenorUnit = com.example.fdmanager.data.model.TenorUnit.DAYS,
+            renewOption = RenewOption.CAPITALIZE, autoRenew = true
+        )
+        val repo = FdRepository(listOf(dayFd))
+        val newId = repo.renew("day1")
+        val child = repo.get(newId)!!
+        assertEquals(com.example.fdmanager.data.model.TenorUnit.DAYS, child.tenorUnit)
+        assertEquals(100, child.durationDays)
+        assertEquals(today.plusDays(100), child.maturityDate)
+        // interest = 500k * 12% * 100/365 = ~16,438.356
+        assertEquals(516_438.356, child.amount, 0.1)
+    }
+
+    @Test
+    fun `renew preserves 1-month tenor`() {
+        val monthFd = FixedDeposit(
+            id = "m1", fdNumber = "NSB-1M", bank = "NSB", amount = 100_000.0,
+            openedDate = today.minusMonths(1), durationMonths = 1, interestRate = 10.0,
+            maturityDate = today,
+            tenorUnit = com.example.fdmanager.data.model.TenorUnit.MONTHS,
+            renewOption = RenewOption.PAYOUT
+        )
+        val repo = FdRepository(listOf(monthFd))
+        val newId = repo.renew("m1")
+        val child = repo.get(newId)!!
+        assertEquals(com.example.fdmanager.data.model.TenorUnit.MONTHS, child.tenorUnit)
+        assertEquals(1, child.durationMonths)
+        assertEquals(null, child.durationDays)
+        assertEquals(today.plusMonths(1), child.maturityDate)
+        assertEquals(100_000.0, child.amount, 0.001)
+    }
 }

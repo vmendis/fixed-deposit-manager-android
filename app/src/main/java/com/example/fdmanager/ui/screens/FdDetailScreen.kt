@@ -65,8 +65,12 @@ import com.example.fdmanager.ui.components.StatusChip
 import com.example.fdmanager.ui.theme.statusPalette
 import java.time.LocalDate
 
-private fun durationLabel(months: Int): String =
-    if (months % 12 == 0) "$months months (${months / 12} yr)" else "$months months"
+private fun durationLabel(fd: FixedDeposit): String {
+    val label = FdMath.tenorLabel(fd)
+    return if (fd.tenorUnit == com.example.fdmanager.data.model.TenorUnit.MONTHS && fd.durationMonths % 12 == 0) {
+        "$label (${fd.durationMonths / 12} yr)"
+    } else label
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -92,7 +96,7 @@ fun FdDetailScreen(
     }
 
     val days = FdMath.daysUntil(fd.maturityDate, today)
-    val interest = FdMath.interestEarned(fd.amount, fd.interestRate, fd.durationMonths)
+    val interest = FdMath.interestEarned(fd)
     val maturityValue = fd.amount + interest
     val chain = remember(fds, fdId) { FdQueries.renewalChain(fds, fdId) }
     var showDelete by remember { mutableStateOf(false) }
@@ -210,7 +214,7 @@ fun FdDetailScreen(
                         InfoRow("Branch", fd.branch + (fd.branchCode?.let { " ($it)" } ?: ""))
                     }
                     InfoRow("Opened", Dates.format(fd.openedDate))
-                    InfoRow("Duration", durationLabel(fd.durationMonths))
+                    InfoRow("Tenor", durationLabel(fd))
                     InfoRow("Maturity", Dates.format(fd.maturityDate))
                     // Issue #25 (R1) — payout timing also surfaced on the detail card.
                     InfoRow("Interest payout", fd.payoutFrequency.label)

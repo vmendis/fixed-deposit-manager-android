@@ -61,7 +61,7 @@ class FdRepository(initial: List<FixedDeposit>) {
         }
         val chosen = option ?: old.renewOption
         val childAmount = if (chosen == RenewOption.CAPITALIZE) {
-            old.amount + FdMath.interestEarned(old.amount, old.interestRate, old.durationMonths)
+            old.amount + FdMath.interestEarned(old)
         } else old.amount
         val chainPos = FdQueries.renewalChain(_fds.value, id).size  // root=1 → child becomes -R1
         val baseNumber = old.fdNumber.replace(Regex("-R\\d+$"), "")
@@ -71,7 +71,7 @@ class FdRepository(initial: List<FixedDeposit>) {
             amount = childAmount,
             fdNumber = "$baseNumber-R$chainPos",
             openedDate = old.maturityDate,
-            maturityDate = FdMath.maturityDate(old.maturityDate, old.durationMonths),
+            maturityDate = FdMath.maturityDate(old.maturityDate, old),
             status = FdStatus.ACTIVE,
             isActive = true,
             isDeleted = false,
