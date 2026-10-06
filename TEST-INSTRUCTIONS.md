@@ -27,7 +27,7 @@
   dependency line from TESTING.md §2.1 if absent (they are present — expect zero changes).
   Your job = run, collect evidence, report.
 - Report location: **`TEST-REPORT-V<x>.md`** at project root (x = round number, e.g.
-  `TEST-REPORT-V12.md` for Round 10),
+  `TEST-REPORT-V13.md` for Round 10 fix rerun),
   template in TESTING.md §3.
 - **File lifecycle (user's rule, 2026-10-01):** `TEST-INSTRUCTIONS.md` is pushed to `dev`
   at round start so the tester pulls it like any other file; once the round PASSES it is
@@ -51,11 +51,11 @@
 
 ---
 
-## Current round — ROUND 10 — Issue #19 CBSL-only InstitutionRegistry (61 institutions)
+## Current round — ROUND 10 fix rerun — Issue #19 CBSL-only InstitutionRegistry (61 institutions) — TEST-BUG fix V12 → V13
 
 **What shipped (issue #19 — Option A strict CBSL-only, no custom storage):**
 - **Spec §1 Primary Goal reworded:** "Enable users to securely track, manage, and receive alerts for FDs held at CBSL-regulated institutions (licensed commercial banks, specialised banks, and finance companies) in Sri Lanka — with a safety-first guardrail that only supports regulated institutions, helping users avoid unprotected, unregulated deposits."
-- **InstitutionRegistry (new):** 24 LCB + 6 LSB + 31 LFC = 61 allowed (Nation Lanka Finance PLC excluded per CBSL prohibition as at 2025-12-31). Each: displayName, code (BOC/NSB/COM/HNB/NDB/NTB/PAB/PB/SAMP/SEY/UB/AMANA/BOCN/CARG/CITI/DB/HBL/IB/IOB/MCB/PUBB/SCB/SBI/HSBC/HDFC/RDB/SDB/SLSB/SMIB/ABANS/ALF/AMW/AAF/AFL/AMF/CBCF/CEN/CDB/CCF/DF/FINT/HNBF/JANA/LCBF/LBF/LOLC/MIFL/MERC/MBSL/PLC/PMF/RPF/SDF/SENKA/SFL/SIYA/SMB/SLF/UBF/VALL…), type BANK/FINANCE_COMPANY, colorArgb, textArgb, alias list, LAST_UPDATED 2025-12-31, SOURCE_URL cbsl.gov.lk. No image assets — monogram tiles only.
+- **InstitutionRegistry (new):** 24 LCB + 6 LSB + 31 LFC = 61 allowed (Nation Lanka Finance PLC excluded per CBSL prohibition as at 2025-12-31). Each: displayName, code, type BANK/FINANCE_COMPANY, colorArgb, alias list, LAST_UPDATED 2025-12-31, SOURCE_URL cbsl.gov.lk. No image assets — monogram tiles only.
 - **CBSL-only guardrail:** Add/Edit institution picker is searchable grouped dialog Banks / Finance Companies, backed by InstitutionRegistry. No free-text custom storage. Validation at save time: `isCBSLRegulated(name)` must be true, otherwise block save with safety message "For your safety, FD Manager only tracks FDs at CBSL regulated institutions. Learn more: cbsl.gov.lk" + inline error "Not found in CBSL regulated list. Check spelling or tap Request addition if it's CBSL-licensed."
 - **Request addition flow:** Button in picker → feedback intent with typed name, team verifies against cbsl.gov.lk and adds in next release. No FD saved until institution exists in registry.
 - **Defensive rendering:** `resolve()` falls back to neutral tile with derived initials (significant words filtered: of, the, and, plc, ltd, limited, co, company, bank, finance, leasing, corporation, lanka, sri) — e.g., "Kandy Farmers Bank" → KF, "Serendib" → SER. Entry still blocked.
@@ -64,27 +64,28 @@
 - **FdDetailScreen:** "Bank" → "Institution", shows type + CBSL status row, returns estimate wording "institution's terms".
 - **BankRegistry shim:** now delegates to InstitutionRegistry for backward compat (old 12 banks still resolve).
 - **Tests:** BankRegistryTest updated (fallback KF), InstitutionRegistryTest 11 new tests (61 count, 30 banks / 31 finance, distinct codes, BANK vs FINANCE_COMPANY, CBSL-only check, Nation Lanka exclusion, alias matching, apostrophes, fallback, lastUpdated, distinct codes). Unit 29 → 40 (FdMath 7, FdRepository 15, BankRegistry 7, InstitutionRegistry 11).
-- **Counts:** unit **40/40** expected, instrumented **14/14** expected (3/4/2/1/2/2). Fresh `dev` — vmendis runs the sync + verification commands and confirms the SHA BEFORE handing this file over. `dialogConfirm` contract kept. Gate `navgate-0250r9` still valid.
+- **V12 triage:** TEST-REPORT-V12.md @ 8b9709d — unit 40/40 green, instrumented 4/14 pass (10 failures identical `performScrollTo() failed: Text+EditableText contains 'By bank'`). Root cause: HomeScreen copy changed to "By institution" in 6710ba9, but androidTest selectors (TestSupport.openBank, BankMonogramUiTest, SoftDeleteRestoreTest) still searched "By bank" and "This bank has no deposits." — **TEST-BUG**, not CODE-BUG. Fix committed 41d710b: TestSupport.kt "By bank"→"By institution", BankMonogramUiTest same, SoftDeleteRestoreTest markers "By bank"→"By institution" + "This bank has no deposits."→"This institution has no deposits." Unit re-verified 40/40 @ navgate-0250r9.
+- **Counts:** unit **40/40** expected, instrumented **14/14** expected (3/4/2/1/2/2). Gate `navgate-0250r9` still valid.
 
-**1. Environment:** `adb devices` shows `emulator-5554  device`, API 34. No device → STOP.
+**1. Environment:** `adb devices` shows `emulator-5554  device`, API 34. No device → STOP. Toolchain expected AS 2025.3.4 / API 34 / Gradle 8.7 / AGP 8.5.2 / JDK 21 (do NOT upgrade to 8.13/8.13.2 mid-round — revert if AS prompts).
 
-**2. Tier 1 — unit tests:**
-
-```bat
-gradlew.bat testDebugUnitTest
-```
-
-Expected **40/40** (FdMath 7, FdRepository 15, BankRegistry 7, InstitutionRegistry 11). Check `InstitutionRegistryTest` has 11 tests including Nation Lanka exclusion and CBSL-only check.
-
-**3. Tier 2 — FULL instrumented suite (all 6 classes):**
+**2. Tier 1 — unit tests (force rerun to get real durations, not UP-TO-DATE):**
 
 ```bat
-gradlew.bat connectedDebugAndroidTest
+gradlew.bat cleanTestDebugUnitTest testDebugUnitTest --rerun-tasks
 ```
 
-Expected **14/14** (counts `3/4/2/1/2/2` — see TESTING.md §3 hard rules). Freshness gate: SoftDelete failures must show `openBank=navgate-0250r9` (old `01f2b9e` = stale sources → STOP). Note: AddFdValidationTest still defaults to NSB (National Savings Bank) — picker is now searchable grouped dialog, not dropdown, but default remains NSB for backward compat.
+Expected **40/40** (FdMath 7, FdRepository 15, BankRegistry 7, InstitutionRegistry 11). Check `InstitutionRegistryTest` has 11 tests including Nation Lanka exclusion and CBSL-only check. Record real XML durations (e.g., `findstr time app\build\test-results\testDebugUnitTest\*.xml`), not placeholder `1m 41s`.
 
-**4. Deliver `TEST-REPORT-V12.md` (Round 10).** Header = real `git log -1` output (record the SHA shown — vmendis already verified sync before handoff), **"Tiers executed" = 2 / 2** (record REAL durations per class — no `0.000s`), real AS/gradle values (no `(unknown)` — hard rule), Tier-2 table with per-class counts that **sum to 14**, failures (if any) with message + ≤30 **fresh** logcat lines + XML `<failure>` excerpt + classification proposal, reruns per standing rules — **placeholder text in any failure section = rejected report**. Visual checks (capture evidence with `adb shell screencap -p /sdcard\shot.png` + `adb pull /sdcard\shot.png .\shot-a.png` and reference file paths in report; note under observations if a screen can't be reached): (a) Add screen institution picker shows grouped Banks / Finance Companies with search, selecting e.g., "LOLC Finance PLC" saves and tile shows LOLC; (b) Home shows "By institution" + "N institutions" + type badges; (c) Detail shows Institution row + type + CBSL status; (d) Attempt to save FD with non-CBSL name (e.g., "Acme Investment") is blocked with safety message "For your safety, FD Manager only tracks FDs at CBSL regulated institutions"; (e) Info dialog shows CBSL source + LAST_UPDATED 2025-12-31 + total 61 institutions.
+**3. Tier 2 — FULL instrumented suite (all 6 classes, force rerun):**
+
+```bat
+gradlew.bat connectedDebugAndroidTest --rerun-tasks
+```
+
+Expected **14/14** (counts `3/4/2/1/2/2` — see TESTING.md §3 hard rules). Freshness gate: SoftDelete failures must show `openBank=navgate-0250r9` (old `01f2b9e` = stale sources → STOP). Note: AddFdValidationTest still defaults to NSB (National Savings Bank) — picker is now searchable grouped dialog, not dropdown, but default remains NSB.
+
+**4. Deliver `TEST-REPORT-V13.md` (Round 10 fix rerun).** Header = real `git log -1` output (expect `41d710b` — vmendis already verified sync before handoff), **"Tiers executed" = 2 / 2** (record REAL durations per class — no `0.000s`, no repeated `1m 41s` placeholder — parse `connectedDebugAndroidTest` XML or logcat timing), real AS/gradle values (no `(unknown)` — hard rule), Tier-2 table with per-class counts that **sum to 14**, failures (if any) with message + ≤30 **fresh** logcat lines (run `adb logcat -d` immediately after failure, not placeholder `<30 lines...>`), + XML `<failure>` excerpt + classification proposal, reruns per standing rules — **placeholder text in any failure section = rejected report**. Visual checks (capture evidence with `adb shell screencap -p /sdcard\shot.png` + `adb pull /sdcard\shot.png .\shot-a.png` and reference file paths in report; note under observations if a screen can't be reached): (a) Add screen institution picker shows grouped Banks / Finance Companies with search, selecting e.g., "LOLC Finance PLC" saves and tile shows LOLC; (b) Home shows "By institution" + "N institutions" + type badges; (c) Detail shows Institution row + type + CBSL status; (d) Attempt to save FD with non-CBSL name (e.g., "Acme Investment") is blocked with safety message "For your safety, FD Manager only tracks FDs at CBSL regulated institutions"; (e) Info dialog shows CBSL source + LAST_UPDATED 2025-12-31 + total 61 institutions.
 
 ---
 
@@ -103,4 +104,4 @@ Expected **14/14** (counts `3/4/2/1/2/2` — see TESTING.md §3 hard rules). Fre
 | v9 @ `2732ee4` | **13/13 ✅ MERGED (PR #2 → `e52a6e2`)** | Double-pop fix green on-device; #18 closed; violations noted (headers unknown, table counts misfilled, wrong rerun cmd); user UX sign-off → squash-merge 2026-10-01 |
 | v10 @ `920fb44` | **13/13 + 25/25 ✅ MERGED (PR #3 → `177b963`)** | Fresh-source proof via 25-test count; violations: sync-proof block omitted + AS "(unknown)" — accepted as cosmetic; user sign-off → squash 2026-10-01, #20 closed |
 | v11 @ `8ff759f` (rerun) | **29/29 + 14/14 ✅ MERGED (PR #4 → `6d18687`)** | Round 9: first delivery 2 TEST-BUGs (Save below fold, existence check) + report-quality (placeholder logcat, 1/2 header) → fixed `8ff759f`; rerun green exact SHA, Tiers 2/2, zero failures — accepted with cosmetic notes (identical durations, visual section absent but (a)+(d) proven by AddFd asserts). Round file removed `84a6afd` per lifecycle, #25 closed |
-| v12 pending | — | Round 10 — #19 CBSL-only InstitutionRegistry (61) + searchable picker + safety UX — dev @ `6710ba9` (spec `f74bff8` + impl) — unit 40 expected |
+| v12 @ `8b9709d` | **40/40 + 4/14 — TEST-BUG triaged** | Round 10 — #19 CBSL-only 61 institutions — unit 40/40 green, instrumented 10 failures all `By bank` selector missing (Home now "By institution" after 6710ba9, but TestSupport + 2 tests still searched "By bank") — classified TEST-BUG, not CODE-BUG. Report had placeholder durations `1m 41s` repeated + placeholder logcat `<30 lines...>` — noted for V13 quality gate. Fix shipped `41d710b` (By institution + This institution has no deposits) |
