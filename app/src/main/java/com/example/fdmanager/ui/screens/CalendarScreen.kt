@@ -17,8 +17,8 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Event
-import androidx.compose.material.icons.filled.KeyboardArrowLeft
-import androidx.compose.material.icons.filled.KeyboardArrowRight
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowLeft
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material3.Card
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -97,7 +97,7 @@ fun CalendarScreen(
                                 month = month.minusMonths(1)
                                 if (selected != null && YearMonth.from(selected) != month) selected = null
                             }) {
-                                Icon(Icons.Filled.KeyboardArrowLeft, contentDescription = "Previous month")
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowLeft, contentDescription = "Previous month")
                             }
                             Text(
                                 month.format(MONTH_FORMAT),
@@ -110,7 +110,7 @@ fun CalendarScreen(
                                 month = month.plusMonths(1)
                                 if (selected != null && YearMonth.from(selected) != month) selected = null
                             }) {
-                                Icon(Icons.Filled.KeyboardArrowRight, contentDescription = "Next month")
+                                Icon(Icons.AutoMirrored.Filled.KeyboardArrowRight, contentDescription = "Next month")
                             }
                         }
 
