@@ -63,11 +63,12 @@
 - **FdListScreen:** institution type badge + CBSL licensed subtitle "Licensed • Updated 2025-12-31", empty state "This institution has no deposits."
 - **FdDetailScreen:** "Bank" → "Institution", shows type + CBSL status row, returns estimate wording "institution's terms".
 - **BankRegistry shim:** now delegates to InstitutionRegistry for backward compat (old 12 banks still resolve).
+- **Build hygiene fix `d383ac1` (pre-V13):** deprecated icon imports fixed — `Icons.Filled.KeyboardArrowLeft/Right` → `Icons.AutoMirrored.Filled.KeyboardArrowLeft/Right` (CalendarScreen, HomeScreen), `Icons.Filled.Sort` → `AutoMirrored.Filled.Sort` (FdListScreen) — removes AS build-window warnings. AGP 8.5.2→8.13.2 / Gradle 8.7→8.13 to match AS 2025.3.4 sync (was 'Gradle sync needed — Project was built with AGP 8.5.2 but synced with 8.13.2'). Unit 40/40 + assembleDebug + assembleDebugAndroidTest verified green @ new toolchain.
 - **Tests:** BankRegistryTest updated (fallback KF), InstitutionRegistryTest 11 new tests (61 count, 30 banks / 31 finance, distinct codes, BANK vs FINANCE_COMPANY, CBSL-only check, Nation Lanka exclusion, alias matching, apostrophes, fallback, lastUpdated, distinct codes). Unit 29 → 40 (FdMath 7, FdRepository 15, BankRegistry 7, InstitutionRegistry 11).
 - **V12 triage:** TEST-REPORT-V12.md @ 8b9709d — unit 40/40 green, instrumented 4/14 pass (10 failures identical `performScrollTo() failed: Text+EditableText contains 'By bank'`). Root cause: HomeScreen copy changed to "By institution" in 6710ba9, but androidTest selectors (TestSupport.openBank, BankMonogramUiTest, SoftDeleteRestoreTest) still searched "By bank" and "This bank has no deposits." — **TEST-BUG**, not CODE-BUG. Fix committed 41d710b: TestSupport.kt "By bank"→"By institution", BankMonogramUiTest same, SoftDeleteRestoreTest markers "By bank"→"By institution" + "This bank has no deposits."→"This institution has no deposits." Unit re-verified 40/40 @ navgate-0250r9.
 - **Counts:** unit **40/40** expected, instrumented **14/14** expected (3/4/2/1/2/2). Gate `navgate-0250r9` still valid.
 
-**1. Environment:** `adb devices` shows `emulator-5554  device`, API 34. No device → STOP. Toolchain expected AS 2025.3.4 / API 34 / Gradle 8.7 / AGP 8.5.2 / JDK 21 (do NOT upgrade to 8.13/8.13.2 mid-round — revert if AS prompts).
+**1. Environment:** `adb devices` shows `emulator-5554  device`, API 34. No device → STOP. Toolchain expected AS 2025.3.4 / API 34 / Gradle 8.13 / AGP 8.13.2 / JDK 21 (upgraded from 8.7/8.5.2 to fix 'Gradle sync needed' + deprecated icon warnings — see dev `d383ac1`).
 
 **2. Tier 1 — unit tests (force rerun to get real durations, not UP-TO-DATE):**
 
