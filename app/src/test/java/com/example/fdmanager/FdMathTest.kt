@@ -67,4 +67,49 @@ class FdMathTest {
         assertEquals("8.5", FdMath.formatRate(8.5))
         assertEquals("11.25", FdMath.formatRate(11.25))
     }
+
+    // Issue #17 — day-based tenors
+    @Test
+    fun `maturity date plusDays for day-based tenor`() {
+        val opened = LocalDate.of(2026, 1, 1)
+        assertEquals(LocalDate.of(2026, 4, 11), FdMath.maturityDate(opened, 0, 100, com.example.fdmanager.data.model.TenorUnit.DAYS))
+        assertEquals(LocalDate.of(2026, 10, 28), FdMath.maturityDate(opened, 0, 300, com.example.fdmanager.data.model.TenorUnit.DAYS))
+        assertEquals(LocalDate.of(2026, 1, 31), FdMath.maturityDate(opened, 0, 30, com.example.fdmanager.data.model.TenorUnit.DAYS))
+        assertEquals(LocalDate.of(2026, 1, 2), FdMath.maturityDate(opened, 0, 1, com.example.fdmanager.data.model.TenorUnit.DAYS))
+    }
+
+    @Test
+    fun `interest days over 365`() {
+        // 1,000,000 at 10% for 100 days = 1,000,000 * 0.10 * 100/365 = 27,397.26...
+        assertEquals(27_397.26027, FdMath.interestEarned(1_000_000.0, 10.0, 0, 100, com.example.fdmanager.data.model.TenorUnit.DAYS), 0.01)
+        // 300 days
+        assertEquals(82_191.78082, FdMath.interestEarned(1_000_000.0, 10.0, 0, 300, com.example.fdmanager.data.model.TenorUnit.DAYS), 0.01)
+        // 30 days
+        assertEquals(6_164.38356, FdMath.interestEarned(750_000.0, 10.0, 0, 30, com.example.fdmanager.data.model.TenorUnit.DAYS), 0.01)
+    }
+
+    @Test
+    fun `1-month first-class tenor`() {
+        val opened = LocalDate.of(2026, 1, 31)
+        // Jan 31 + 1 month = Feb 28 (clamped)
+        assertEquals(LocalDate.of(2026, 2, 28), FdMath.maturityDate(opened, 1, null, com.example.fdmanager.data.model.TenorUnit.MONTHS))
+        assertEquals(8_333.333, FdMath.interestEarned(1_000_000.0, 10.0, 1, null, com.example.fdmanager.data.model.TenorUnit.MONTHS), 0.01)
+        assertEquals("1 month", FdMath.tenorLabel(1, null, com.example.fdmanager.data.model.TenorUnit.MONTHS))
+        assertEquals("1 day", FdMath.tenorLabel(0, 1, com.example.fdmanager.data.model.TenorUnit.DAYS))
+        assertEquals("100 days", FdMath.tenorLabel(0, 100, com.example.fdmanager.data.model.TenorUnit.DAYS))
+        assertEquals("300 days", FdMath.tenorLabel(0, 300, com.example.fdmanager.data.model.TenorUnit.DAYS))
+    }
+
+    @Test
+    fun `tenor label from FD`() {
+        val fdMonths = com.example.fdmanager.data.model.FixedDeposit(
+            id = "x", fdNumber = "X", bank = "NSB", amount = 1000.0,
+            openedDate = LocalDate.of(2026,1,1), durationMonths = 3, interestRate = 10.0,
+            maturityDate = LocalDate.of(2026,4,1),
+            tenorUnit = com.example.fdmanager.data.model.TenorUnit.MONTHS
+        )
+        val fdDays = fdMonths.copy(durationMonths = 0, durationDays = 100, tenorUnit = com.example.fdmanager.data.model.TenorUnit.DAYS)
+        assertEquals("3 months", FdMath.tenorLabel(fdMonths))
+        assertEquals("100 days", FdMath.tenorLabel(fdDays))
+    }
 }

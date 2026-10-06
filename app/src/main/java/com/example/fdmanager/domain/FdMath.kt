@@ -14,12 +14,48 @@ object FdMath {
     fun maturityDate(opened: LocalDate, durationMonths: Int): LocalDate =
         opened.plusMonths(durationMonths.toLong())
 
+    // Issue #17 — day-based tenors
+    fun maturityDate(opened: LocalDate, durationMonths: Int, durationDays: Int?, tenorUnit: com.example.fdmanager.data.model.TenorUnit): LocalDate =
+        if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS && durationDays != null) {
+            opened.plusDays(durationDays.toLong())
+        } else {
+            opened.plusMonths(durationMonths.toLong())
+        }
+
+    fun maturityDate(opened: LocalDate, fd: com.example.fdmanager.data.model.FixedDeposit): LocalDate =
+        maturityDate(opened, fd.durationMonths, fd.durationDays, fd.tenorUnit)
+
     /** Simple-interest estimate (typical for LKR FDs paid at maturity). */
     fun interestEarned(amount: Double, annualRatePercent: Double, durationMonths: Int): Double =
         amount * (annualRatePercent / 100.0) * (durationMonths / 12.0)
 
+    // Issue #17 — day-based: days/365
+    fun interestEarned(amount: Double, annualRatePercent: Double, durationMonths: Int, durationDays: Int?, tenorUnit: com.example.fdmanager.data.model.TenorUnit): Double =
+        if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS && durationDays != null) {
+            amount * (annualRatePercent / 100.0) * (durationDays / 365.0)
+        } else {
+            interestEarned(amount, annualRatePercent, durationMonths)
+        }
+
+    fun interestEarned(fd: com.example.fdmanager.data.model.FixedDeposit): Double =
+        interestEarned(fd.amount, fd.interestRate, fd.durationMonths, fd.durationDays, fd.tenorUnit)
+
     fun maturityValue(amount: Double, annualRatePercent: Double, durationMonths: Int): Double =
         amount + interestEarned(amount, annualRatePercent, durationMonths)
+
+    fun maturityValue(fd: com.example.fdmanager.data.model.FixedDeposit): Double =
+        fd.amount + interestEarned(fd)
+
+    /** Human-readable tenor label: "3 months" / "1 month" / "100 days" / "1 day" */
+    fun tenorLabel(months: Int, days: Int?, unit: com.example.fdmanager.data.model.TenorUnit): String =
+        if (unit == com.example.fdmanager.data.model.TenorUnit.DAYS && days != null) {
+            if (days == 1) "1 day" else "$days days"
+        } else {
+            if (months == 1) "1 month" else "$months months"
+        }
+
+    fun tenorLabel(fd: com.example.fdmanager.data.model.FixedDeposit): String =
+        tenorLabel(fd.durationMonths, fd.durationDays, fd.tenorUnit)
 
     fun daysUntil(maturity: LocalDate, today: LocalDate): Long =
         ChronoUnit.DAYS.between(today, maturity)

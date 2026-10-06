@@ -177,8 +177,8 @@ fun FdCard(
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    // Issue #25 (R1): payout timing sits between rate and maturity date.
-                    "${FdMath.formatRate(fd.interestRate)}% p.a.  •  ${fd.payoutFrequency.label}  •  matures ${Dates.format(fd.maturityDate)}",
+                    // Issue #17 + #25 (R1): tenor replaces payout in compact meta — spec 4.2 card shows "9.5% p.a. • 100 days • matures ..."
+                    "${FdMath.formatRate(fd.interestRate)}% p.a.  •  ${FdMath.tenorLabel(fd)}  •  matures ${Dates.format(fd.maturityDate)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)
@@ -245,7 +245,7 @@ fun RenewDialog(
     onDismiss: () -> Unit
 ) {
     var selected by remember(fd.id) { mutableStateOf(fd.renewOption) }
-    val interest = FdMath.interestEarned(fd.amount, fd.interestRate, fd.durationMonths)
+    val interest = FdMath.interestEarned(fd)
     val nextAmount = if (selected == RenewOption.CAPITALIZE) fd.amount + interest else fd.amount
 
     AlertDialog(
@@ -256,7 +256,7 @@ fun RenewDialog(
                 Text(
                     "${fd.fdNumber} will be marked as renewed. A new FD opens on ${Dates.format(fd.maturityDate)} " +
                         "for ${Lkr.full(nextAmount)} at ${FdMath.formatRate(fd.interestRate)}% for " +
-                        "${fd.durationMonths} months, linked to this one."
+                        "${FdMath.tenorLabel(fd)}, linked to this one."
                 )
                 Spacer(Modifier.height(12.dp))
                 RenewOption.entries.forEach { option ->

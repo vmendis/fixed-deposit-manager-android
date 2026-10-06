@@ -69,7 +69,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
 
-private val DURATION_PRESETS = listOf(3, 6, 12, 24, 36, 60)
+private val MONTH_PRESETS = listOf(1, 3, 6, 12, 24, 36, 60)
+private val DAY_PRESETS = listOf(30, 60, 90, 100, 180, 300, 364)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -100,17 +101,34 @@ fun AddEditFdScreen(
     var rateText by remember {
         mutableStateOf(editing?.let { FdMath.formatRate(it.interestRate) } ?: "")
     }
-    var customMode by remember {
-        mutableStateOf(editing != null && editing.durationMonths !in DURATION_PRESETS)
+    // Issue #17 — tenor unit + day-based
+    var tenorUnit by remember {
+        mutableStateOf(editing?.tenorUnit ?: com.example.fdmanager.data.model.TenorUnit.MONTHS)
     }
-    var selectedDuration by remember {
+    var customMonthMode by remember {
+        mutableStateOf(editing != null && editing.tenorUnit == com.example.fdmanager.data.model.TenorUnit.MONTHS && editing.durationMonths !in MONTH_PRESETS)
+    }
+    var selectedMonthDuration by remember {
         mutableStateOf(
-            if (editing != null && editing.durationMonths in DURATION_PRESETS) editing.durationMonths else 12
+            if (editing != null && editing.tenorUnit == com.example.fdmanager.data.model.TenorUnit.MONTHS && editing.durationMonths in MONTH_PRESETS) editing.durationMonths else 12
         )
     }
-    var customDurationText by remember {
+    var customMonthText by remember {
         mutableStateOf(
-            if (editing != null && editing.durationMonths !in DURATION_PRESETS) editing.durationMonths.toString() else ""
+            if (editing != null && editing.tenorUnit == com.example.fdmanager.data.model.TenorUnit.MONTHS && editing.durationMonths !in MONTH_PRESETS) editing.durationMonths.toString() else ""
+        )
+    }
+    var customDayMode by remember {
+        mutableStateOf(editing != null && editing.tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS && (editing.durationDays ?: 0) !in DAY_PRESETS)
+    }
+    var selectedDayDuration by remember {
+        mutableStateOf(
+            if (editing != null && editing.tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS && (editing.durationDays ?: 0) in DAY_PRESETS) editing.durationDays!! else 100
+        )
+    }
+    var customDayText by remember {
+        mutableStateOf(
+            if (editing != null && editing.tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS && (editing.durationDays ?: 0) !in DAY_PRESETS) (editing.durationDays ?: 0).toString() else ""
         )
     }
     var openedDate by remember { mutableStateOf(editing?.openedDate ?: LocalDate.now()) }
@@ -125,21 +143,36 @@ fun AddEditFdScreen(
     var showInfoDialog by remember { mutableStateOf(false) }
     var showRequestDialog by remember { mutableStateOf(false) }
 
-    // ---- Derived values & validation — CBSL-only guardrail ----
+    // ---- Derived values & validation — CBSL-only guardrail + tenor ----
     val amount = amountText.toDoubleOrNull()
     val rate = rateText.toDoubleOrNull()
-    val duration: Int? = if (customMode) customDurationText.toIntOrNull() else selectedDuration
+    val durationMonths: Int? = if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.MONTHS) {
+        if (customMonthMode) customMonthText.toIntOrNull() else selectedMonthDuration
+    } else null
+    val durationDays: Int? = if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS) {
+        if (customDayMode) customDayText.toIntOrNull() else selectedDayDuration
+    } else null
+    val durationValid = if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.MONTHS) {
+        durationMonths != null && durationMonths > 0 && durationMonths <= 120
+    } else {
+        durationDays != null && durationDays > 0 && durationDays <= 999
+    }
 
     val fdNumberValid = fdNumber.isNotBlank()
     val amountValid = amount != null && amount > 0
     val rateValid = rate != null && rate > 0 && rate <= 30
-    val durationValid = duration != null && duration > 0
     val payoutValid = payoutFrequency != null
     val bankValid = InstitutionRegistry.isCBSLRegulated(bank)
     val allValid = fdNumberValid && amountValid && rateValid && durationValid && payoutValid && bankValid
 
     val previewReady = amountValid && rateValid && durationValid
-    val previewMaturity = if (durationValid) FdMath.maturityDate(openedDate, duration!!) else null
+    val previewMaturity = if (durationValid) {
+        if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS) {
+            FdMath.maturityDate(openedDate, 0, durationDays, tenorUnit)
+        } else {
+            FdMath.maturityDate(openedDate, durationMonths!!, null, tenorUnit)
+        }
+    } else null
 
     val filteredBanks = remember(institutionSearchQuery) {
         val q = institutionSearchQuery.trim()
@@ -291,42 +324,94 @@ fun AddEditFdScreen(
             )
             Spacer(Modifier.height(16.dp))
 
-            // Duration
-            Text("Duration", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
+            // Tenor — Issue #17 Months | Days
+            Text("Tenor", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
             Row(
                 Modifier
                     .fillMaxWidth()
                     .horizontalScroll(rememberScrollState())
             ) {
-                DURATION_PRESETS.forEach { months ->
+                com.example.fdmanager.data.model.TenorUnit.entries.forEach { unit ->
                     FilterChip(
-                        selected = !customMode && selectedDuration == months,
-                        onClick = { customMode = false; selectedDuration = months },
-                        label = { Text("${months}m") }
+                        selected = tenorUnit == unit,
+                        onClick = { tenorUnit = unit },
+                        label = { Text(unit.label) }
                     )
                     Spacer(Modifier.width(8.dp))
                 }
-                FilterChip(
-                    selected = customMode,
-                    onClick = { customMode = true },
-                    label = { Text("Custom") }
-                )
             }
-            if (customMode) {
-                Spacer(Modifier.height(8.dp))
-                OutlinedTextField(
-                    value = customDurationText,
-                    onValueChange = { customDurationText = it.filter { c -> c.isDigit() } },
-                    label = { Text("Duration (months)") },
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                    isError = attempted && !durationValid,
-                    supportingText = {
-                        if (attempted && !durationValid) Text("Enter a duration greater than 0")
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                )
+            Spacer(Modifier.height(8.dp))
+            if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.MONTHS) {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    MONTH_PRESETS.forEach { months ->
+                        FilterChip(
+                            selected = !customMonthMode && selectedMonthDuration == months,
+                            onClick = { customMonthMode = false; selectedMonthDuration = months },
+                            label = { Text(if (months == 1) "1m" else "${months}m") }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    FilterChip(
+                        selected = customMonthMode,
+                        onClick = { customMonthMode = true },
+                        label = { Text("Custom") }
+                    )
+                }
+                if (customMonthMode) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customMonthText,
+                        onValueChange = { customMonthText = it.filter { c -> c.isDigit() } },
+                        label = { Text("Duration (months 1–120)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = attempted && !durationValid,
+                        supportingText = {
+                            if (attempted && !durationValid) Text("Enter months 1–120")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            } else {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState())
+                ) {
+                    DAY_PRESETS.forEach { days ->
+                        FilterChip(
+                            selected = !customDayMode && selectedDayDuration == days,
+                            onClick = { customDayMode = false; selectedDayDuration = days },
+                            label = { Text("${days}d") }
+                        )
+                        Spacer(Modifier.width(8.dp))
+                    }
+                    FilterChip(
+                        selected = customDayMode,
+                        onClick = { customDayMode = true },
+                        label = { Text("Custom") }
+                    )
+                }
+                if (customDayMode) {
+                    Spacer(Modifier.height(8.dp))
+                    OutlinedTextField(
+                        value = customDayText,
+                        onValueChange = { customDayText = it.filter { c -> c.isDigit() } },
+                        label = { Text("Duration (days 1–999)") },
+                        singleLine = true,
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        isError = attempted && !durationValid,
+                        supportingText = {
+                            if (attempted && !durationValid) Text("Enter days 1–999 (100/300-day NBFI specials)")
+                        },
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
             }
             Spacer(Modifier.height(8.dp))
 
@@ -439,13 +524,26 @@ fun AddEditFdScreen(
                         )
                         Spacer(Modifier.height(8.dp))
                         InfoRow("Matures on", Dates.format(previewMaturity))
+                        InfoRow("Tenor", FdMath.tenorLabel(durationMonths ?: 0, durationDays, tenorUnit))
                         InfoRow(
                             "Est. interest",
-                            Lkr.full(FdMath.interestEarned(amount!!, rate!!, duration!!))
+                            Lkr.full(
+                                if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS) {
+                                    FdMath.interestEarned(amount!!, rate!!, 0, durationDays, tenorUnit)
+                                } else {
+                                    FdMath.interestEarned(amount!!, rate!!, durationMonths!!)
+                                }
+                            )
                         )
                         InfoRow(
                             "Est. maturity value",
-                            Lkr.full(FdMath.maturityValue(amount!!, rate!!, duration!!))
+                            Lkr.full(
+                                if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS) {
+                                    amount!! + FdMath.interestEarned(amount!!, rate!!, 0, durationDays, tenorUnit)
+                                } else {
+                                    FdMath.maturityValue(amount!!, rate!!, durationMonths!!)
+                                }
+                            )
                         )
                         Spacer(Modifier.height(2.dp))
                         Text(
@@ -462,16 +560,22 @@ fun AddEditFdScreen(
                 onClick = {
                     attempted = true
                     if (allValid) {
-                        val months = duration!!
+                        val m = if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.MONTHS) durationMonths!! else 0
+                        val d = if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS) durationDays else null
+                        val mat = if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS) {
+                            FdMath.maturityDate(openedDate, 0, d, tenorUnit)
+                        } else {
+                            FdMath.maturityDate(openedDate, m, null, tenorUnit)
+                        }
                         val fd = FixedDeposit(
                             id = editing?.id ?: "",
                             fdNumber = fdNumber.trim(),
                             bank = bank.trim(),
                             amount = amount!!,
                             openedDate = openedDate,
-                            durationMonths = months,
+                            durationMonths = m,
                             interestRate = rate!!,
-                            maturityDate = FdMath.maturityDate(openedDate, months),
+                            maturityDate = mat,
                             branch = branch.ifBlank { null },
                             branchCode = branchCode.ifBlank { null },
                             payoutFrequency = payoutFrequency!!,
@@ -481,7 +585,9 @@ fun AddEditFdScreen(
                             status = editing?.status ?: FdStatus.ACTIVE,
                             parentFdId = editing?.parentFdId,
                             createdAt = editing?.createdAt ?: System.currentTimeMillis(),
-                            isDeleted = false
+                            isDeleted = false,
+                            durationDays = d,
+                            tenorUnit = tenorUnit
                         )
                         if (editing == null) vm.addFd(fd) else vm.updateFd(fd)
                         onBack()

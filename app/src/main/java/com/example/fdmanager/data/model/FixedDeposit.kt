@@ -31,6 +31,12 @@ enum class RenewOption(val label: String) {
     PAYOUT("Withdraw interest")
 }
 
+/** Issue #17 — tenor unit: months (bank-style) or days (NBFI odd tenors 100/300-day, 1-month). */
+enum class TenorUnit(val label: String) {
+    MONTHS("Months"),
+    DAYS("Days")
+}
+
 data class FixedDeposit(
     val id: String,
     val fdNumber: String,
@@ -49,7 +55,10 @@ data class FixedDeposit(
     val status: FdStatus = FdStatus.ACTIVE,
     val parentFdId: String? = null,  // links a renewal to the FD it replaced
     val createdAt: Long = System.currentTimeMillis(),
-    val isDeleted: Boolean = false   // soft delete (spec: never destroy data)
+    val isDeleted: Boolean = false,   // soft delete (spec: never destroy data)
+    // Issue #17 — day-based tenors
+    val durationDays: Int? = null,                // used when tenorUnit=DAYS (1–999)
+    val tenorUnit: TenorUnit = TenorUnit.MONTHS   // MONTHS (default, backward compat) or DAYS
 )
 
 /** Bank-wise aggregate shown on the home screen. */
