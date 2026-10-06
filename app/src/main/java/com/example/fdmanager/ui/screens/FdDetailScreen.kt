@@ -59,6 +59,7 @@ import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.CountdownChip
 import com.example.fdmanager.ui.components.InfoRow
+import com.example.fdmanager.ui.components.InstitutionRegistry
 import com.example.fdmanager.ui.components.RenewDialog
 import com.example.fdmanager.ui.components.StatusChip
 import com.example.fdmanager.ui.theme.statusPalette
@@ -178,7 +179,7 @@ fun FdDetailScreen(
                     InfoRow("Est. maturity value", Lkr.full(maturityValue))
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Simple-interest estimate — the actual payout depends on the bank's terms.",
+                        "Simple-interest estimate — the actual payout depends on the institution's terms.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -187,7 +188,7 @@ fun FdDetailScreen(
 
             Spacer(Modifier.height(12.dp))
 
-            // ---- Details ----
+            // ---- Details — CBSL-only ----
             Card(Modifier.fillMaxWidth()) {
                 Column(Modifier.padding(16.dp)) {
                     Text(
@@ -197,7 +198,14 @@ fun FdDetailScreen(
                     )
                     Spacer(Modifier.height(8.dp))
                     InfoRow("FD number", fd.fdNumber)
-                    InfoRow("Bank", fd.bank)
+                    val instIdentity = InstitutionRegistry.find(fd.bank)
+                    InfoRow("Institution", fd.bank)
+                    if (instIdentity != null) {
+                        InfoRow("Institution type", instIdentity.type.label)
+                        InfoRow("CBSL status", "Licensed • Updated ${InstitutionRegistry.LAST_UPDATED}")
+                    } else {
+                        InfoRow("CBSL status", "Not in CBSL list — legacy data")
+                    }
                     if (fd.branch != null) {
                         InfoRow("Branch", fd.branch + (fd.branchCode?.let { " ($it)" } ?: ""))
                     }

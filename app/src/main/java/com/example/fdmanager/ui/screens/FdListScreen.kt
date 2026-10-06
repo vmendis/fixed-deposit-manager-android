@@ -51,6 +51,7 @@ import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.EmptyState
 import com.example.fdmanager.ui.components.FdCard
+import com.example.fdmanager.ui.components.InstitutionRegistry
 import com.example.fdmanager.ui.components.RenewDialog
 import java.time.LocalDate
 
@@ -121,6 +122,22 @@ fun FdListScreen(
             )
         )
 
+        // Institution type badge + CBSL info
+        val identity = remember(bank) { InstitutionRegistry.find(bank) }
+        if (identity != null) {
+            Row(
+                Modifier
+                    .fillMaxSize()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+            ) {
+                Text(
+                    "${identity.type.label} • CBSL licensed • Updated ${InstitutionRegistry.LAST_UPDATED}",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+
         // Status filter chips
         Row(
             Modifier
@@ -146,7 +163,7 @@ fun FdListScreen(
                     EmptyState(
                         Icons.Filled.AccountBalanceWallet,
                         "No FDs here",
-                        if (filter == StatusFilter.ALL) "This bank has no deposits." else "No ${filter.label.lowercase()} FDs — try another filter."
+                        if (filter == StatusFilter.ALL) "This institution has no deposits." else "No ${filter.label.lowercase()} FDs — try another filter."
                     )
                 }
             } else {

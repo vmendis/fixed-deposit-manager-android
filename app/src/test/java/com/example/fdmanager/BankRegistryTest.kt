@@ -59,7 +59,8 @@ class BankRegistryTest {
 
     @Test
     fun `unknown banks fall back to derived initials on a neutral tile`() {
-        assertEquals("KFB", BankRegistry.resolve("Kandy Farmers Bank").code)
+        // New InstitutionRegistry filters generic words (bank, finance, etc.) for initials — CBSL-only guardrail
+        assertEquals("KF", BankRegistry.resolve("Kandy Farmers Bank").code)
         assertEquals("SER", BankRegistry.resolve("Serendib").code)
         assertEquals("?", BankRegistry.resolve("").code)
         assertNull(BankRegistry.find("Kandy Farmers Bank"))
