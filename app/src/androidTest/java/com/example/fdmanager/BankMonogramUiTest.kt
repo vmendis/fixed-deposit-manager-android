@@ -30,7 +30,7 @@ class BankMonogramUiTest {
 
     @Test
     fun summaryCardsCarryMonogramTiles() {
-        rule.onNodeWithText("By bank").performScrollTo()
+        rule.onNodeWithText("By institution").performScrollTo()
         rule.swipeUntilTag("summary:National Savings Bank (NSB)")
 
         rule.onNode(
