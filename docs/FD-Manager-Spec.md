@@ -129,18 +129,19 @@ users/{userId}/fds/{fdId}
 
 **Displays:**
 
-* Total invested amount
-* Institution-wise summary cards (grouped by Banks / Finance Companies):
+* Total invested amount — hero uses natural wording `Lkr.words()` (e.g. "Rs 3.2 Million") + exact secondary `Lkr.exact()` ("Rs 3,200,000.00") — issue #20
+* Institution-wise summary cards (grouped by Banks / Finance Companies) — **issue #22 Option B**:
 
   * Institution name (from CBSL registry)
   * Institution type badge (Bank / Finance Company)
-  * Total invested
+  * Total invested — **leads with natural wording `Lkr.words()` (e.g. "Rs 3.25 Million", sub-million "Rs 750 K" per #20 K family) + exact secondary `Lkr.exact()` ("Rs 3,250,000.00") + "invested" label — Option B (words + exact + invested, 3 lines right column)**
   * Active FD count
 
 **Behavior:**
 
 * Tap card → FD Details Screen
 * Copy: "By institution", "N institutions" (not "By bank")
+* Home hero unchanged by #22 — only By-institution cards updated to words + exact
 
 ---
 

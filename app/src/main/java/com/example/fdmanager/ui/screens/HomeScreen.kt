@@ -318,9 +318,15 @@ private fun BankSummaryCard(summary: BankSummary, onClick: () -> Unit) {
             }
             Column(horizontalAlignment = Alignment.End) {
                 Text(
-                    Lkr.compact(summary.totalInvested),
+                    Lkr.words(summary.totalInvested),
                     style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Text(
+                    Lkr.exact(summary.totalInvested),
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     "invested",
