@@ -15,8 +15,10 @@ import androidx.compose.ui.test.swipeUp
 /**
  * Swipe up on the root until [tag] is composed. LazyColumn only builds items near
  * the viewport, so onNodeWithTag alone can miss cards further down.
+ * Issue #22 Option B: cards taller (words + exact + invested = 3 lines) vs 2 lines before,
+ * so need more swipes — 12 → 20.
  */
-internal fun ComposeContentTestRule.swipeUntilTag(tag: String, maxSwipes: Int = 12) {
+internal fun ComposeContentTestRule.swipeUntilTag(tag: String, maxSwipes: Int = 20) {
     repeat(maxSwipes) {
         if (onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()) return
         onRoot().performTouchInput { swipeUp() }
@@ -25,7 +27,7 @@ internal fun ComposeContentTestRule.swipeUntilTag(tag: String, maxSwipes: Int = 
 }
 
 /** Same idea as [swipeUntilTag], for lazy lists addressed by visible text. */
-internal fun ComposeContentTestRule.swipeUntilText(text: String, maxSwipes: Int = 12) {
+internal fun ComposeContentTestRule.swipeUntilText(text: String, maxSwipes: Int = 20) {
     repeat(maxSwipes) {
         if (onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()) return
         onRoot().performTouchInput { swipeUp() }
@@ -38,8 +40,9 @@ internal fun ComposeContentTestRule.swipeUntilText(text: String, maxSwipes: Int 
  * a checkout missing this constant cannot even build the suite). If a report's failure message
  * lacks `openBank=$OPEN_BANK_GATE`, the device ran STALE test sources (as v7 did — its
  * signature was byte-identical to v6 despite claiming 01f2b9e).
+ * Updated for #22 Option B (taller cards).
  */
-internal const val OPEN_BANK_GATE = "navgate-0250r9"
+internal const val OPEN_BANK_GATE = "navgate-0300r9"
 
 /** Scroll Home to "By institution", open the summary card for [bank], and prove the list opened. */
 internal fun ComposeContentTestRule.openBank(bank: String) {
