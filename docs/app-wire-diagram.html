@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FD Manager — Wire Diagram</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  :root{--primary:#0f766e;--bg:#f6f7f8;--card:#fff;--muted:#667085;--chip:#e6f4f1;--chip-fg:#0f766e;--border:#e5e7eb}
+  *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#111}
+  header{padding:20px 24px;background:var(--primary);color:#fff;position:sticky;top:0;z-index:10}
+  header h1{margin:0;font-size:22px} header p{margin:6px 0 0;opacity:.9;font-size:13px}
+  .wrap{max-width:1200px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr}}
+  .phone{border:1px solid var(--border);border-radius:20px;background:var(--card);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.06)}
+  .topbar{background:var(--primary);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;font-weight:700}
+  .topbar small{font-weight:400;opacity:.9}
+  .content{padding:14px}
+  .hero{border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;background:linear-gradient(180deg,#fff,#fbfdfc)}
+  .hero .label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .hero .words{font-size:26px;font-weight:800;color:var(--primary);margin:4px 0 2px}
+  .hero .exact{font-size:12px;color:var(--muted)}
+  .stats{display:flex;gap:8px;margin-top:12px;text-align:center}
+  .stat{flex:1;background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:8px}
+  .stat b{display:block;font-size:14px} .stat span{font-size:11px;color:var(--muted)}
+  .section{font-weight:700;font-size:14px;margin:14px 2px 8px}
+  .section small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
+  .rowCards{display:flex;gap:10px;overflow:auto;padding-bottom:6px}
+  .miniCard{min-width:200px;border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
+  .card{border:1px solid var(--border);border-radius:14px;padding:12px;background:#fff;margin-bottom:10px}
+  .card .row1{display:flex;align-items:center;justify-content:space-between}
+  .chip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--chip);color:var(--chip-fg);display:inline-block}
+  .chip.matured{background:#fef3c7;color:#92400e} .chip.countdown{background:#e0f2fe;color:#075985}
+  .monogram{width:46px;height:46px;border-radius:10px;background:#0f766e;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0}
+  .amountWords{font-size:18px;font-weight:800;color:var(--primary)}
+  .amountExact{font-size:11px;color:var(--muted);margin-top:2px}
+  .meta{font-size:12px;color:var(--muted);margin-top:6px}
+  .tag{font-size:10px;background:#f3f4f6;border:1px solid var(--border);padding:2px 6px;border-radius:6px;color:#374151}
+  .legend{padding:16px;border:1px dashed var(--border);border-radius:12px;background:#fff}
+  .legend h3{margin:0 0 8px;font-size:14px}
+  .legend ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}
+  .k{font-family:ui-monospace,monospace;background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:12px}
+  .arrow{color:var(--muted)}
+</style>
+</head>
+<body>
+<header>
+  <h1>FD Manager — Wire Diagram (Official Compose Names)</h1>
+  <p>HomeScreen • BankSummaryCard • BankMonogram • FdListScreen • FdCard • FdDetailScreen • AddEditFdScreen • CalendarScreen • SettingsScreen • InstitutionRegistry • Lkr.words / Lkr.exact — Option B extended 2026-10-07</p>
+</header>
+<div class="wrap">
+  <!-- Home -->
+  <div class="phone">
+    <div class="topbar"><span>HomeScreen</span><small>TopAppBar + Notifications + RecycleBin</small></div>
+    <div class="content">
+      <div class="hero">
+        <div class="label">Total invested <span class="tag">StatMini ×3</span></div>
+        <div class="words">Rs 3.2 Million <span class="tag">Lkr.words(total)</span></div>
+        <div class="exact">Rs 3,200,000.00 <span class="tag">Lkr.exact(total)</span></div>
+        <div class="stats">
+          <div class="stat"><b>4</b><span>Active FDs</span></div>
+          <div class="stat"><b>3</b><span>Institutions</span></div>
+          <div class="stat"><b>in 4d</b><span>Next maturity</span></div>
+        </div>
+      </div>
+      <div class="section">Maturing soon <small>LazyRow • compact cards • Lkr.compact + CountdownChip</small></div>
+      <div class="rowCards">
+        <div class="miniCard"><div style="font-size:11px;color:#667085">BOC</div><div style="font-weight:700">BOC-33018</div><div class="meta">Rs 750 K • 12 Dec • <span class="chip countdown">in 4d</span></div></div>
+        <div class="miniCard"><div style="font-size:11px;color:#667085">NSB</div><div style="font-weight:700">NSB-78412</div><div class="meta">Rs 1 M • 07 Oct • <span class="chip countdown">today</span></div></div>
+      </div>
+      <div class="section">By institution <small>SectionHeader • N institutions • CBSL-only</small></div>
+      <div class="card">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="monogram">NSB</div>
+          <div style="flex:1"><div style="font-weight:600">NSB</div><div class="meta">2 active • 2 total • Bank</div></div>
+          <div style="text-align:right"><div class="amountWords" style="font-size:15px">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div><div class="amountExact">invested</div></div>
+          <div class="arrow">›</div>
+        </div>
+        <div class="meta"><span class="tag">testTag summary:NSB</span> <span class="tag">BankSummaryCard</span> <span class="tag">BankMonogram 46.dp</span></div>
+      </div>
+      <div class="card">
+        <div style="display:flex;gap:12px;align-items:center">
+          <div class="monogram" style="background:#1d4ed8">SAMP</div>
+          <div style="flex:1"><div style="font-weight:600">Sampath Bank</div><div class="meta">1 active • 1 total • Bank</div></div>
+          <div style="text-align:right"><div class="amountWords" style="font-size:15px">Rs 750 K</div><div class="amountExact">Rs 750,000.00</div><div class="amountExact">invested</div></div>
+          <div class="arrow">›</div>
+        </div>
+        <div class="meta"><span class="tag">Option B: words + exact + invested</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FdList -->
+  <div class="phone">
+    <div class="topbar"><span>FdListScreen</span><small>TopAppBar BankMonogram + Sort + Back</small></div>
+    <div class="content">
+      <div style="display:flex;gap:6px;margin-bottom:10px"><span class="chip">All</span><span class="chip" style="background:#f3f4f6;color:#374151">Active</span><span class="chip" style="background:#f3f4f6;color:#374151">Matured</span></div>
+      <div class="meta" style="margin-bottom:8px"><span class="tag">StatusFilter chips</span></div>
+
+      <div class="card">
+        <div class="row1"><div style="font-weight:700">NSB-78412</div><div class="chip">ACTIVE</div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+          <div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div>
+          <div class="chip countdown">in 4d</div>
+        </div>
+        <div class="meta">9.5% p.a. • 12 months • matures 12 Dec 2026 <span style="float:right">⋮ More actions</span></div>
+        <div class="meta" style="margin-top:6px"><span class="tag">FdCard</span> <span class="tag">StatusChip</span> <span class="tag">CountdownChip</span> <span class="tag">Lkr.words + Lkr.exact</span></div>
+      </div>
+
+      <div class="card">
+        <div class="row1"><div style="font-weight:700">NSB-78413</div><div class="chip matured">MATURED</div></div>
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
+          <div><div class="amountWords">Rs 750 K</div><div class="amountExact">Rs 750,000.00</div></div>
+          <div class="chip countdown">today</div>
+        </div>
+        <div class="meta">8% p.a. • 100 days • matures 07 Oct 2026 <span style="float:right">⋮</span></div>
+        <div class="meta"><span class="tag">Extended #22 — words+exact (was Lkr.full only)</span></div>
+      </div>
+
+      <div class="card" style="border-style:dashed">
+        <div style="font-weight:600">RenewDialog</div>
+        <div class="meta">Trigger via FdCard overflow → Renew. Tags <span class="k">dialogConfirm</span> / <span class="k">dialogDismiss</span>. Options: "Add interest to capital" / "Withdraw interest", preview next principal Lkr.full()</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="topbar"><span>FdDetailScreen</span><small>TopAppBar fdNumber + Edit + Delete</small></div>
+    <div class="content">
+      <div class="hero"><div class="words">Rs 1 Million</div><div class="exact">Rs 1,000,000.00</div><div style="margin-top:8px"><span class="chip">ACTIVE</span> <span class="chip countdown">in 4d</span></div></div>
+      <div class="card"><div style="font-weight:600">Details</div><div class="meta">Institution: NSB <span class="tag">BankMonogram</span> + type Bank + CBSL link<br>Tenor: 12 months (tenorUnit MONTHS)<br>Payout: At maturity<br>Branch, Dates, Status</div></div>
+      <div class="card"><div style="font-weight:600">Returns estimate</div><div class="meta">FdMath.interestEarned + maturityValue</div></div>
+      <div class="card"><div style="font-weight:600">Renewal chain</div><div class="meta">parentFdId oldest→newest, tap navigates</div></div>
+    </div>
+  </div>
+
+  <div class="phone">
+    <div class="topbar"><span>AddEditFdScreen</span><small>Validated form + live preview</small></div>
+    <div class="content">
+      <div class="card"><div style="font-weight:600">Institution picker <span class="tag">InstitutionRegistry</span></div><div class="meta">Grouped Banks / Finance Companies, search, info icon → CBSL, "Request addition". No free-text. Block if not CBSL.</div></div>
+      <div class="card"><div style="font-weight:600">Tenor</div><div class="meta">Toggle Months|Days. Months presets 1,3,6,12,24,36,60 + custom 1-120. Days 30,60,90,100,180,300,364 + custom 1-999. Live maturity preview.</div></div>
+      <div class="card"><div style="font-weight:600">Payout + Renew</div><div class="meta">Chips Monthly payout / At maturity (required). Radio CAPITALIZE / PAYOUT + autoRenew switch.</div></div>
+      <div style="text-align:center;padding:12px"><span style="background:var(--primary);color:#fff;padding:10px 18px;border-radius:10px;display:inline-block;font-weight:700">Save FD</span><div class="meta">Bottom button — performScrollTo().performClick() needed (keyboard)</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="wrap" style="grid-template-columns:1fr">
+  <div class="legend">
+    <h3>Component ↔ File map (official)</h3>
+    <ul>
+      <li><span class="k">HomeScreen</span> — <span class="k">ui/screens/HomeScreen.kt</span> — hero <span class="k">Lkr.words</span>+<span class="k">Lkr.exact</span>, <span class="k">StatMini</span>, <span class="k">SectionHeader</span>, <span class="k">BankSummaryCard</span> private + <span class="k">BankMonogram</span> 46.dp testTag <span class="k">summary:&lt;bank&gt;</span></li>
+      <li><span class="k">FdListScreen</span> — <span class="k">ui/screens/FdListScreen.kt</span> — TopAppBar <span class="k">BankMonogram</span>, <span class="k">StatusFilter</span> chips, sort menu, LazyColumn <span class="k">FdCard</span></li>
+      <li><span class="k">FdCard</span> — <span class="k">ui/components/Components.kt</span> — Row1 fdNumber+<span class="k">StatusChip</span>, Row2 <span class="k">Lkr.words</span> titleLarge bold primary + <span class="k">Lkr.exact</span> labelSmall gray + <span class="k">CountdownChip</span>, Row3 meta rate•tenor•matures + autoRenew icon + overflow <span class="k">More actions</span></li>
+      <li><span class="k">FdDetailScreen</span> — <span class="k">ui/screens/FdDetailScreen.kt</span> — amount words+exact, <span class="k">BankMonogram</span>, renewal chain via <span class="k">parentFdId</span>, <span class="k">RenewDialog</span></li>
+      <li><span class="k">AddEditFdScreen</span> — <span class="k">ui/screens/AddEditFdScreen.kt</span> — Institution picker <span class="k">InstitutionRegistry</span>, tenorUnit, payout chips, renewOption</li>
+      <li><span class="k">CalendarScreen</span> — <span class="k">ui/screens/CalendarScreen.kt</span> — month grid dots, day list <span class="k">FdCard</span></li>
+      <li><span class="k">SettingsScreen</span> — <span class="k">ui/screens/SettingsScreen.kt</span> — theme, notifications leadDays</li>
+      <li><span class="k">Lkr</span> — <span class="k">domain/FdMath.kt</span> — <span class="k">full</span>=Rs 1,000,000 legacy, <span class="k">words</span>=Rs 1 Million / Rs 750 K, <span class="k">exact</span>=Rs 1,000,000.00, <span class="k">compact</span>=Rs 1 M</li>
+      <li><span class="k">InstitutionRegistry</span> — <span class="k">ui/components/InstitutionRegistry.kt</span> — ~70 CBSL entries, <span class="k">find/resolve</span>, grouped banks/financeCompanies, <span class="k">lastUpdated</span></li>
+    </ul>
+  </div>
+</div>
+</body>
+</html>

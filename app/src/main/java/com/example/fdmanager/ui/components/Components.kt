@@ -165,13 +165,23 @@ fun FdCard(
             }
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    Lkr.full(fd.amount),
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary,
-                    modifier = Modifier.weight(1f)
-                )
+                // Issue #22 extended: FD cards also lead with natural wording Option B
+                // FDCARD_GATE = fdcard-0100r9 — freshness marker for V21
+                // Primary: Lkr.words(amount) e.g. "Rs 1 Million" / "Rs 750 K"
+                // Secondary: Lkr.exact(amount) e.g. "Rs 1,000,000.00"
+                Column(Modifier.weight(1f)) {
+                    Text(
+                        Lkr.words(fd.amount),
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.primary
+                    )
+                    Text(
+                        Lkr.exact(fd.amount),
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
                 CountdownChip(days)
             }
             Spacer(Modifier.height(6.dp))

@@ -129,42 +129,50 @@ users/{userId}/fds/{fdId}
 
 **Displays:**
 
-* Total invested amount
-* Institution-wise summary cards (grouped by Banks / Finance Companies):
+* Total invested amount — hero uses natural wording `Lkr.words()` (e.g. "Rs 3.2 Million") + exact secondary `Lkr.exact()` ("Rs 3,200,000.00") — issue #20 — `StatMini` components for Active FDs / Institutions / Next maturity
+* Institution-wise summary cards (grouped by Banks / Finance Companies) — **issue #22 Option B (now extended to FD cards per 2026-10-07):**
 
-  * Institution name (from CBSL registry)
-  * Institution type badge (Bank / Finance Company)
-  * Total invested
+  * Component: `BankSummaryCard` in `HomeScreen.kt` — ElevatedCard with `BankMonogram` (46.dp) left, institution name + active/total counts center, amount right column
+  * Institution name (from CBSL registry via `InstitutionRegistry`)
+  * Institution type badge (Bank / Finance Company) — `identity.type.label`
+  * Total invested — **leads with natural wording `Lkr.words()` (e.g. "Rs 3.25 Million", sub-million "Rs 750 K" per #20 K family) + exact secondary `Lkr.exact()` ("Rs 3,250,000.00") + "invested" label — Option B (words + exact + invested, 3 lines right column)**
   * Active FD count
+  * Maturing soon strip: LazyRow of compact cards (`Lkr.compact()` + `CountdownChip`) — not changed by #22 (compact remains)
 
 **Behavior:**
 
-* Tap card → FD Details Screen
+* Tap card → FD Details Screen (`FdListScreen` filtered by institution via `onOpenBank`)
 * Copy: "By institution", "N institutions" (not "By bank")
+* Home hero unchanged by #22 — By-institution cards updated to words + exact; FD cards now also Option B (see §4.2)
 
 ---
 
-### 4.2 FD Details Screen
+### 4.2 FD List / FD Cards (FdListScreen + FdCard component)
 
 **Displays:**
 
-* List of FDs sorted by maturity date (ascending)
+* List of FDs sorted by maturity date (ascending) — `FdListScreen`
+* Filter chips: `StatusFilter` (All / Active / Matured) + sort menu
+* TopAppBar with `BankMonogram` for institution header
 
-**Each FD Card Shows:**
+**Each FD Card (`FdCard` in `Components.kt`) Shows — Issue #22 Option B extended:**
 
-* FD Number
-* Amount
-* Interest Rate
-* Tenor (`3 months` / `100 days` / `1 month`) + Interest payout frequency (`Monthly payout` / `At maturity`)
-* Maturity Date
-* Status (color-coded)
-* Institution monogram tile (from InstitutionRegistry)
+* FD Number (titleMedium bold) + `StatusChip` (ACTIVE/MATURED/RENEWED, color-coded via `statusPalette()`)
+* **Amount — Option B natural wording (extended from By-institution to FD cards):**
+  * Primary: `Lkr.words(amount)` — e.g. `Rs 1 Million`, `Rs 3.25 Million`, sub-million `Rs 750 K` (same K family as #20)
+  * Secondary: `Lkr.exact(amount)` — e.g. `Rs 1,000,000.00`, `Rs 750,000.00` (labelSmall, onSurfaceVariant)
+  * Both in left column, `CountdownChip` (days-to-maturity, `FdMath.countdownShort`) on right
+* Tenor (`3 months` / `100 days` / `1 month`) + Interest rate (`9.5% p.a.`) + maturity date (`matures 12 Dec 2026`) — bodySmall
+* Institution monogram tile is in `FdListScreen` header, not per card (per-card institution shown via fdNumber grouping)
+* Overflow menu: Edit / Renew / Delete (when callbacks provided) → `RenewDialog` / `AlertDialog`
+* Auto-renew icon when `fd.autoRenew`
 
-**Detail view additionally shows:**
+**Detail view (`FdDetailScreen`) additionally shows:**
 
 * `Tenor` row: `3 months` or `100 days` (unit-aware, from `tenorUnit`)
 * `Interest payout` row (Details card)
-* `Institution` row with type (Bank / Finance Company) and CBSL info link
+* `Amount` rows: both words + exact (reuses `Lkr.words()` / `Lkr.exact()`)
+* `Institution` row with type (Bank / Finance Company) and CBSL info link, `BankMonogram`
 * **Renewal card**: stored instruction (`Add interest to capital` / `Withdraw interest`),
   new-FD principal preview (principal + accrued interest for `CAPITALIZE`, principal only
   for `PAYOUT`), and an instruction-aware auto-renew banner
