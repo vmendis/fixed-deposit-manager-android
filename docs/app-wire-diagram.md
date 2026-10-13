@@ -63,7 +63,7 @@ MainActivity
 
 | Composable | File | Purpose | Key props / tags |
 |---|---|---|---|
-| `FdCard` | Components.kt | **Core FD row** — used by FdListScreen, CalendarScreen, RecycleBin, maturing strip (compact variant uses same data but compact wording) | `fd: FixedDeposit`, `today: LocalDate`, callbacks `onClick/onEdit/onRenew/onDelete`. Layout: fdNumber + StatusChip top row, **Option B amount** (Lkr.words primary titleLarge bold primary + Lkr.exact secondary labelSmall gray) + CountdownChip middle row, meta line `rate • tenorLabel • matures date` bodySmall, autoRenew icon, overflow menu MoreVert → DropdownMenu Edit/Renew/Delete |
+| `FdCard` | Components.kt | **Core FD row** — used by FdListScreen, CalendarScreen, RecycleBin, maturing strip (compact variant uses same data but compact wording) | `fd: FixedDeposit`, `today: LocalDate`, callbacks `onClick/onEdit/onRenew/onDelete`. Layout: fdNumber + StatusChip top row, **Option B amount** (Lkr.words primary titleLarge bold primary + Lkr.exact secondary labelSmall gray) + CountdownChip middle row, **meta line `rate • tenorLabel • payoutFrequency.label • matures date` bodySmall (fix 2026-10-07: was missing payout, now `10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026`)**, autoRenew icon, overflow menu MoreVert → DropdownMenu Edit/Renew/Delete |
 | `StatusChip` | Components.kt | Status pill | `status: FdStatus` → colors from `statusPalette()` |
 | `CountdownChip` | Components.kt | Days-to-maturity pill | `days: Long` → FdMath.countdownShort, red ≤5d, amber ≤30d |
 | `SectionHeader` | Components.kt | Section title + optional subtitle | `title, subtitle` |
@@ -89,7 +89,7 @@ MainActivity
 >
 > **By-institution cards (BankSummaryCard):** Right column 3 lines — Primary `Lkr.words(totalInvested)` titleMedium bold primary, Secondary `Lkr.exact(totalInvested)` labelSmall gray, Tertiary `"invested"` labelSmall gray — issue #22 Option B
 >
-> **FD cards (FdCard) — extended 2026-10-07:** Left column 2 lines — Primary `Lkr.words(amount)` titleLarge bold primary (e.g. `Rs 1 Million`), Secondary `Lkr.exact(amount)` labelSmall gray (e.g. `Rs 1,000,000.00`) — Option B extended from BankSummaryCard to FdCard. CountdownChip stays right. Legacy `Lkr.full()` no longer used in FdCard.
+> **FD cards (FdCard) — extended 2026-10-07 + payout fix 2026-10-07:** Left column 2 lines — Primary `Lkr.words(amount)` titleLarge bold primary (e.g. `Rs 1 Million`), Secondary `Lkr.exact(amount)` labelSmall gray (e.g. `Rs 1,000,000.00`) — Option B extended from BankSummaryCard to FdCard. **Meta line now `rate • tenor • payoutFrequency.label • matures` e.g. `10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026` (was missing payout in V21, fixed per spec §4.2 + §4.6)**. CountdownChip stays right. Legacy `Lkr.full()` no longer used in FdCard.
 >
 > **Maturing soon strip (HomeScreen LazyRow):** Compact `Lkr.compact()` remains (space-constrained) — not changed by #22.
 
@@ -163,20 +163,21 @@ app/src/main/java/com/example/fdmanager/
 │ │ NSB-78412                          [ACTIVE Chip]  ││
 │ │ Rs 1 Million                       [in 4d Chip]   ││
 │ │ Rs 1,000,000.00                                    ││
-│ │ 9.5% p.a. • 12 months • matures 12 Dec 2026  [⋮] ││
+│ │ 10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026 [⋮] ││
 │ └───────────────────────────────────────────────────┘│
 │ ┌─ FdCard ──────────────────────────────────────────┐│
 │ │ NSB-78413                          [MATURED]      ││
 │ │ Rs 750 K                           [today]        ││
 │ │ Rs 750,000.00                                      ││
-│ │ 8% p.a. • 100 days • matures 07 Oct 2026     [⋮] ││
+│ │ 8% p.a. • 100 days • At maturity • matures 07 Oct 2026 [⋮] ││
 │ └───────────────────────────────────────────────────┘│
 └───────────────────────────────────────────────────────┘
 
-FdCard (official) — Components.kt
+FdCard (official) — Components.kt — FDCARD_PAYOUT_GATE = fdcard-0200r9
   Row1: fdNumber titleMedium bold weight1 + StatusChip
   Row2: Column weight1 { Lkr.words titleLarge bold primary + Lkr.exact labelSmall gray } + CountdownChip
-  Row3: meta bodySmall onSurfaceVariant weight1 + autoRenew icon + overflow menu Box DropdownMenu
+  Row3: meta bodySmall onSurfaceVariant weight1 = rate • tenorLabel • payoutFrequency.label • matures date (e.g. "10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026") + autoRenew icon + overflow menu Box DropdownMenu
+  Options: A inline 4 bullets (implemented), B two-line meta, C payout chip, D icon — see docs/fdcard-payout-options.html
 ```
 
 ---

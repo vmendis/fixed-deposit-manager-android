@@ -155,17 +155,23 @@ users/{userId}/fds/{fdId}
 * Filter chips: `StatusFilter` (All / Active / Matured) + sort menu
 * TopAppBar with `BankMonogram` for institution header
 
-**Each FD Card (`FdCard` in `Components.kt`) Shows — Issue #22 Option B extended:**
+**Each FD Card (`FdCard` in `Components.kt`) Shows — Issue #22 Option B extended + payout frequency fix (2026-10-07):**
 
 * FD Number (titleMedium bold) + `StatusChip` (ACTIVE/MATURED/RENEWED, color-coded via `statusPalette()`)
 * **Amount — Option B natural wording (extended from By-institution to FD cards):**
   * Primary: `Lkr.words(amount)` — e.g. `Rs 1 Million`, `Rs 3.25 Million`, sub-million `Rs 750 K` (same K family as #20)
   * Secondary: `Lkr.exact(amount)` — e.g. `Rs 1,000,000.00`, `Rs 750,000.00` (labelSmall, onSurfaceVariant)
   * Both in left column, `CountdownChip` (days-to-maturity, `FdMath.countdownShort`) on right
-* Tenor (`3 months` / `100 days` / `1 month`) + Interest rate (`9.5% p.a.`) + maturity date (`matures 12 Dec 2026`) — bodySmall
+* **Meta line — Rate • Tenor • Payout • Matures — bodySmall onSurfaceVariant (spec fix 2026-10-07, was missing payout):**
+  * Interest rate: `FdMath.formatRate(fd.interestRate)% p.a.` — e.g. `10% p.a.`, `9.5% p.a.`
+  * Tenor: `FdMath.tenorLabel(fd)` — e.g. `12 months`, `3 months`, `100 days`, `1 month` (unit-aware from `tenorUnit`)
+  * **Payout frequency: `fd.payoutFrequency.label` — `Monthly payout` / `At maturity` (required, from `PayoutFrequency` enum, issue #25) — THIS WAS MISSING in V21 FdCard, now added**
+  * Maturity: `matures ${Dates.format(fd.maturityDate)}` — e.g. `matures 10 Oct 2026`
+  * Full example: `10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026` or `9.5% p.a. • 100 days • At maturity • matures 07 Oct 2026`
+  * Spacing: single Text with ` • ` separators (Option A minimal), wraps to 2 lines on small screens if needed; alternative Option B two-line meta (Rate•Tenor / Payout•Matures) documented in `docs/fdcard-payout-options.html`
 * Institution monogram tile is in `FdListScreen` header, not per card (per-card institution shown via fdNumber grouping)
 * Overflow menu: Edit / Renew / Delete (when callbacks provided) → `RenewDialog` / `AlertDialog`
-* Auto-renew icon when `fd.autoRenew`
+* Auto-renew icon when `fd.autoRenew` — `Icons.Filled.Autorenew` 16.dp primary
 
 **Detail view (`FdDetailScreen`) additionally shows:**
 

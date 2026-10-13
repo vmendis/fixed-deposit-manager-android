@@ -187,8 +187,11 @@ fun FdCard(
             Spacer(Modifier.height(6.dp))
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Text(
-                    // Issue #17 + #25 (R1): tenor replaces payout in compact meta — spec 4.2 card shows "9.5% p.a. • 100 days • matures ..."
-                    "${FdMath.formatRate(fd.interestRate)}% p.a.  •  ${FdMath.tenorLabel(fd)}  •  matures ${Dates.format(fd.maturityDate)}",
+                    // Issue #22 fix: FD card must show payout frequency per spec §4.2 (was missing in V21)
+                    // FDCARD_PAYOUT_GATE = fdcard-0200r9 — freshness marker V22
+                    // Spec: Rate • Tenor • Payout • Matures e.g. "10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026"
+                    // Option A implemented (inline 4 bullets) — see docs/fdcard-payout-options.html for B/C/D alternatives
+                    "${FdMath.formatRate(fd.interestRate)}% p.a.  •  ${FdMath.tenorLabel(fd)}  •  ${fd.payoutFrequency.label}  •  matures ${Dates.format(fd.maturityDate)}",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.weight(1f)

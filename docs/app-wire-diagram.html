@@ -102,8 +102,8 @@
           <div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div>
           <div class="chip countdown">in 4d</div>
         </div>
-        <div class="meta">9.5% p.a. • 12 months • matures 12 Dec 2026 <span style="float:right">⋮ More actions</span></div>
-        <div class="meta" style="margin-top:6px"><span class="tag">FdCard</span> <span class="tag">StatusChip</span> <span class="tag">CountdownChip</span> <span class="tag">Lkr.words + Lkr.exact</span></div>
+        <div class="meta">10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026 <span style="float:right">⋮ More actions</span></div>
+        <div class="meta" style="margin-top:6px"><span class="tag">FdCard</span> <span class="tag">StatusChip</span> <span class="tag">CountdownChip</span> <span class="tag">Lkr.words + Lkr.exact</span> <span class="tag">payoutFrequency.label</span> <span class="tag">fdcard-0200r9</span></div>
       </div>
 
       <div class="card">
@@ -112,7 +112,7 @@
           <div><div class="amountWords">Rs 750 K</div><div class="amountExact">Rs 750,000.00</div></div>
           <div class="chip countdown">today</div>
         </div>
-        <div class="meta">8% p.a. • 100 days • matures 07 Oct 2026 <span style="float:right">⋮</span></div>
+        <div class="meta">8% p.a. • 100 days • At maturity • matures 07 Oct 2026 <span style="float:right">⋮</span></div>
         <div class="meta"><span class="tag">Extended #22 — words+exact (was Lkr.full only)</span></div>
       </div>
 
@@ -150,7 +150,7 @@
     <ul>
       <li><span class="k">HomeScreen</span> — <span class="k">ui/screens/HomeScreen.kt</span> — hero <span class="k">Lkr.words</span>+<span class="k">Lkr.exact</span>, <span class="k">StatMini</span>, <span class="k">SectionHeader</span>, <span class="k">BankSummaryCard</span> private + <span class="k">BankMonogram</span> 46.dp testTag <span class="k">summary:&lt;bank&gt;</span></li>
       <li><span class="k">FdListScreen</span> — <span class="k">ui/screens/FdListScreen.kt</span> — TopAppBar <span class="k">BankMonogram</span>, <span class="k">StatusFilter</span> chips, sort menu, LazyColumn <span class="k">FdCard</span></li>
-      <li><span class="k">FdCard</span> — <span class="k">ui/components/Components.kt</span> — Row1 fdNumber+<span class="k">StatusChip</span>, Row2 <span class="k">Lkr.words</span> titleLarge bold primary + <span class="k">Lkr.exact</span> labelSmall gray + <span class="k">CountdownChip</span>, Row3 meta rate•tenor•matures + autoRenew icon + overflow <span class="k">More actions</span></li>
+      <li><span class="k">FdCard</span> — <span class="k">ui/components/Components.kt</span> — Row1 fdNumber+<span class="k">StatusChip</span>, Row2 <span class="k">Lkr.words</span> titleLarge bold primary + <span class="k">Lkr.exact</span> labelSmall gray + <span class="k">CountdownChip</span>, Row3 meta rate•tenor•<span class="k">payoutFrequency.label</span>•matures + autoRenew icon + overflow <span class="k">More actions</span> — gate <span class="k">fdcard-0200r9</span></li>
       <li><span class="k">FdDetailScreen</span> — <span class="k">ui/screens/FdDetailScreen.kt</span> — amount words+exact, <span class="k">BankMonogram</span>, renewal chain via <span class="k">parentFdId</span>, <span class="k">RenewDialog</span></li>
       <li><span class="k">AddEditFdScreen</span> — <span class="k">ui/screens/AddEditFdScreen.kt</span> — Institution picker <span class="k">InstitutionRegistry</span>, tenorUnit, payout chips, renewOption</li>
       <li><span class="k">CalendarScreen</span> — <span class="k">ui/screens/CalendarScreen.kt</span> — month grid dots, day list <span class="k">FdCard</span></li>

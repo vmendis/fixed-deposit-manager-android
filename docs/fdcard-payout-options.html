@@ -1,0 +1,141 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>FdCard Payout Frequency Options — Issue #22 fix</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+:root{--primary:#0f766e;--bg:#f6f7f8;--card:#fff;--muted:#667085;--border:#e5e7eb;--chip:#e6f4f1;--chip-fg:#0f766e}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#111}
+header{padding:20px 24px;background:var(--primary);color:#fff}
+header h1{margin:0;font-size:20px} header p{margin:6px 0 0;opacity:.9;font-size:13px}
+.wrap{max-width:1100px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
+@media(max-width:900px){.wrap{grid-template-columns:1fr}}
+.card{border:1px solid var(--border);border-radius:14px;padding:14px;background:var(--card);margin-bottom:12px}
+.row1{display:flex;align-items:center;justify-content:space-between}
+.chip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--chip);color:var(--chip-fg);display:inline-block}
+.chip.active{background:#dcfce7;color:#166534} .chip.matured{background:#fef3c7;color:#92400e}
+.chip.countdown{background:#e0f2fe;color:#075985} .chip.payout{background:#f3e8ff;color:#6b21a8}
+.fdnum{font-weight:700;font-size:15px}
+.amountWords{font-size:20px;font-weight:800;color:var(--primary);margin-top:6px}
+.amountExact{font-size:11px;color:var(--muted)}
+.meta{font-size:12px;color:var(--muted);margin-top:8px;line-height:1.4}
+.meta b{color:#111;font-weight:600}
+.opt{border:1px dashed var(--border);border-radius:12px;padding:12px;background:#fff;margin-bottom:16px}
+.opt h3{margin:0 0 6px;font-size:14px}
+.opt .label{font-size:11px;color:var(--muted);margin-bottom:8px}
+.k{font-family:ui-monospace,monospace;background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:11px}
+.pros{font-size:12px;margin-top:8px}
+.pros li{margin:2px 0}
+</style>
+</head>
+<body>
+<header>
+<h1>FdCard — Payout Frequency Placement Options</h1>
+<p>Issue #22 follow-up: FDListScreen must show interest payout frequency (Monthly payout / At maturity). Current FdCard shows Rate • Tenor • Matures but missing payout. Spec §4.2 says card meta shows tenor + payout. Official component: FdCard in ui/components/Components.kt</p>
+</header>
+
+<div class="wrap">
+
+<div>
+<div class="opt">
+<h3>Current (V21) — Missing payout</h3>
+<div class="label">Row3 meta: Rate • Tenor • Matures — spec says should include payout</div>
+<div class="card">
+<div class="row1"><div class="fdnum">NSB-78412</div><div class="chip active">Active</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div><div class="chip countdown">in 3d</div></div>
+<div class="meta">10% p.a. • 12 months • matures 10 Oct 2026 <span style="float:right">⋮</span></div>
+</div>
+<div class="pros"><b>Problem:</b> User can't see if interest is monthly or at maturity without opening detail.</div>
+</div>
+
+<div class="opt" style="border-color:var(--primary);border-style:solid">
+<h3>Option A — Inline 4 bullets (Recommended, spec-compliant, minimal)</h3>
+<div class="label"><span class="k">FdCard</span> Row3: Rate • Tenor • Payout • Matures — single line, may wrap on small screens</div>
+<div class="card">
+<div class="row1"><div class="fdnum">NSB-78412</div><div class="chip active">Active</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div><div class="chip countdown">in 3d</div></div>
+<div class="meta">10% p.a. • 12 months • <b>Monthly payout</b> • matures 10 Oct 2026 <span style="float:right">↻ ⋮</span></div>
+</div>
+<div class="card">
+<div class="row1"><div class="fdnum">COM-33018</div><div class="chip matured">Matured</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><div><div class="amountWords">Rs 300 K</div><div class="amountExact">Rs 300,000.00</div></div><div class="chip countdown">today</div></div>
+<div class="meta">9.5% p.a. • 100 days • <b>At maturity</b> • matures 07 Oct 2026 <span style="float:right">⋮</span></div>
+</div>
+<div class="pros">
+<b>Pros:</b> Minimal code change, uses existing meta Text, spec says "100 days + payout frequency", matches detail InfoRow. Height unchanged unless wraps.
+<br><b>Cons:</b> Long line — on 320dp width may wrap to 2 lines. "Monthly payout" longer than "At maturity".
+<br><b>Implementation:</b> <span class="k">Lkr.words + Lkr.exact + "${formatRate}% p.a. • ${tenorLabel} • ${payout.label} • matures ${date}"</span>
+</div>
+</div>
+
+<div class="opt">
+<h3>Option B — Two-line meta (More breathing room)</h3>
+<div class="label">Row3: Rate • Tenor + Row4: Payout • Matures — taller card, clearer</div>
+<div class="card">
+<div class="row1"><div class="fdnum">NSB-78412</div><div class="chip active">Active</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div><div class="chip countdown">in 3d</div></div>
+<div class="meta">10% p.a. • 12 months</div>
+<div class="meta" style="margin-top:2px">Monthly payout • matures 10 Oct 2026 <span style="float:right">↻ ⋮</span></div>
+</div>
+<div class="pros">
+<b>Pros:</b> No long single line, easier to scan, spacing better for accessibility.
+<br><b>Cons:</b> Card taller by ~14dp, list shows fewer cards on screen, maxSwipes 50 still ok but more scroll.
+</div>
+</div>
+
+</div>
+
+<div>
+
+<div class="opt">
+<h3>Option C — Payout as chip (Visual distinction)</h3>
+<div class="label">Payout frequency as small purple chip next to CountdownChip or below meta</div>
+<div class="card">
+<div class="row1"><div class="fdnum">NSB-78412</div><div class="chip active">Active</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div><div style="display:flex;gap:6px"><div class="chip payout">Monthly</div><div class="chip countdown">in 3d</div></div></div>
+<div class="meta">10% p.a. • 12 months • matures 10 Oct 2026 <span style="float:right">↻ ⋮</span></div>
+</div>
+<div class="card">
+<div class="row1"><div class="fdnum">NSB-78412</div><div class="chip active">Active</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div><div class="chip countdown">in 3d</div></div>
+<div class="meta">10% p.a. • 12 months • matures 10 Oct 2026 <span style="float:right">⋮</span></div>
+<div class="meta" style="margin-top:6px"><span class="chip payout">Monthly payout</span> <span class="chip payout" style="background:#ffedd5;color:#9a3412">At maturity</span></div>
+</div>
+<div class="pros">
+<b>Pros:</b> Payout stands out, easy to filter visually, matches StatusChip pattern.
+<br><b>Cons:</b> Two chips on right may crowd, chip color needs palette, adds UI element not in spec.
+</div>
+</div>
+
+<div class="opt">
+<h3>Option D — Icon + label (Compact)</h3>
+<div class="label">Use short labels "Monthly" / "At maturity" with • separator, maybe icon</div>
+<div class="card">
+<div class="row1"><div class="fdnum">NSB-78412</div><div class="chip active">Active</div></div>
+<div style="display:flex;justify-content:space-between;align-items:center;margin-top:6px"><div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div><div class="chip countdown">in 3d</div></div>
+<div class="meta">10% p.a. • 12 months • 💰 Monthly • matures 10 Oct 2026 <span style="float:right">⋮</span></div>
+</div>
+<div class="pros">
+<b>Pros:</b> Shorter than "Monthly payout", saves space.
+<br><b>Cons:</b> Emoji/icon not in M3, "Monthly" ambiguous vs "Monthly payout" (spec label is "Monthly payout").
+</div>
+</div>
+
+<div class="opt" style="background:#f0fdf4;border-color:#16a34a">
+<h3>Recommendation</h3>
+<div class="label">For spec compliance + low impact + your earlier Option B words+exact</div>
+<ul class="pros">
+<li><b>Option A</b> is best for V22 fix — minimal, spec says card meta shows tenor + payout, implementation is one line change in <span class="k">Components.kt</span> FdCard: <span class="k">${rate}% • ${tenor} • ${payout.label} • matures ${date}</span></li>
+<li>If spacing feels tight on small screens, fallback to <b>Option B</b> two-line meta — same info, more breathing room, card height +14dp, still passes maxSwipes 50.</li>
+<li>Avoid Option C chip for now — adds new visual element not in spec, but could be V2 enhancement for filtering by payout.</li>
+<li>Update spec §4.2 to be explicit: "Each FdCard shows Rate • Tenor • PayoutFrequency • Matures" and keep Detail shows Interest payout row.</li>
+<li>Tests: AddFdValidationTest already asserts tenor exists, we should add assertion for payout label exists (Monthly payout / At maturity) — new UI test.</li>
+</ul>
+</div>
+
+</div>
+
+</div>
+</body>
+</html>
