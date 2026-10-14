@@ -1,7 +1,7 @@
 # FD Manager — App Wire Diagram & Component Map (Official Names)
 
 > Purpose: single source of truth for screen ↔ composable ↔ testTag ↔ data so conversations don't drift.
-> Updated: 2026-10-07 — Issue #22 Option B extended to FD cards (`FdCard`).
+> Updated: 2026-10-13 — Issue #22 Option B + #28 payout + #21 back-nav scroll fix (hero visible).
 
 ## 1. Navigation graph (official screen composables)
 
@@ -9,13 +9,13 @@
 MainActivity
  ├─ BottomNav: Home | Calendar | Settings  +  FAB Add FD  +  AppBar actions (Notifications, RecycleBin)
  │
- ├─ HomeScreen (ui/screens/HomeScreen.kt)
+ ├─ HomeScreen (ui/screens/HomeScreen.kt) — #21 fix: rememberLazyListState() + LaunchedEffect scrollToItem(0) gate home-scroll-0100r9
  │   ├─ TopAppBar: title "FD Manager", actions Notifications (badge), RecycleBin
  │   ├─ Hero card: Total invested → Lkr.words(total) headlineLarge + Lkr.exact(total) bodySmall + StatMini ×3
  │   │   └─ StatMini (ui/components/Components.kt): label/value mini stat
  │   ├─ SectionHeader ("Maturing soon") → LazyRow of compact cards
  │   │   └─ Each: bank labelSmall, fdNumber titleMedium, Lkr.compact(amount) + Dates.format(maturity), CountdownChip
- │   └─ SectionHeader ("By institution") → LazyColumn of BankSummaryCard
+ │   └─ SectionHeader ("By institution") → LazyColumn(state = listState) of BankSummaryCard — back from bank resets to top (hero visible) per #21
  │       └─ BankSummaryCard (private in HomeScreen.kt, official name BankSummaryCard)
  │           ├─ BankMonogram (ui/components/BankMonogram.kt) size 46.dp testTag "bankMonogram"
  │           ├─ Center Column: bank name titleMedium, "active • total" bodySmall + InstitutionType label
