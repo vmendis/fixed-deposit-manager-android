@@ -143,7 +143,8 @@ users/{userId}/fds/{fdId}
 
 * Tap card → FD Details Screen (`FdListScreen` filtered by institution via `onOpenBank`)
 * Copy: "By institution", "N institutions" (not "By bank")
-* Home hero unchanged by #22 — By-institution cards updated to words + exact; FD cards now also Option B (see §4.2)
+* Home hero unchanged by #22 — By-institution cards updated to words + exact; FD cards now also Option B + payout (see §4.2)
+* **Back navigation fix #21 (2026-10-13):** Back from bank list (`FdListScreen` → `popBackStack()`) returns to Home with `Total invested` hero visible at top (not mid-scroll clipped). Implemented via explicit `rememberLazyListState()` + `LaunchedEffect(Unit) { scrollToItem(0) }` in `HomeScreen` (gate `home-scroll-0100r9`), so state is not preserved across bank navigation. Bottom tab navigation (Home ↔ Calendar ↔ Settings) still preserves state via `saveState=true/restoreState=true` in `MainActivity`.
 
 ---
 

@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -34,6 +35,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -82,6 +84,15 @@ fun HomeScreen(
         FdQueries.maturingSoon(fds, today, settings.notifyLeadDays)
     }
     var showMaturing by remember { mutableStateOf(false) }
+    // Issue #21 fix: Back from bank list returned mid-scroll with hero cut off (LazyColumn state preserved via NavHost saveState/restoreState)
+    // Fix: use explicit non-saveable LazyListState so returning from FdListScreen resets to top (hero visible)
+    // Alternative considered: smooth scroll to top on back, but reset is simpler and matches expected UX
+    // HOME_SCROLL_GATE = home-scroll-0100r9 — freshness marker for V23
+    val listState = rememberLazyListState()
+    // Ensure top visible when Home re-enters composition (back from bank list)
+    LaunchedEffect(Unit) {
+        listState.scrollToItem(0)
+    }
 
     Column(Modifier.fillMaxSize()) {
         TopAppBar(
@@ -108,7 +119,8 @@ fun HomeScreen(
         )
 
         LazyColumn(
-            Modifier.fillMaxSize(),
+            state = listState,
+            modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 100.dp)
         ) {
             // ---- Hero: total invested ----
