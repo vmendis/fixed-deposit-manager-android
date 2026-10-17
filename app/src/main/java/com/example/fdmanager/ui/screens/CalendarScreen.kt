@@ -184,14 +184,15 @@ fun CalendarScreen(
 
             if (selected == null || YearMonth.from(selected) != month) {
                 item {
-                    EmptyState(Icons.Filled.Event, "Pick a day", "Days with dots have FD maturities.")
+                    // #1 empty state — illustration-free, clear copy + CTA not needed (pick day)
+                    EmptyState(Icons.Filled.Event, "Pick a day", "Days with dots have FD maturities. Add FDs to see them here.")
                 }
             } else if (dayFds.isNullOrEmpty()) {
                 item {
                     EmptyState(
                         Icons.Filled.Event,
                         "Quiet day",
-                        "No FDs mature on ${Dates.format(selected!!)}."
+                        "No FDs mature on ${Dates.format(selected!!)}. Add an FD or check another date."
                     )
                 }
             } else {

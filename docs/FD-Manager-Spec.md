@@ -292,7 +292,55 @@ stored `renewOption` (no user interaction; works while the app opens).
 - Home footer shows Built by vssbox + cube
 - Settings About shows 72dp cube + vssbox + version + ©
 - Spec both copies identical, wire diagram updated
-- Tests still GREEN (46/16) — onboarding flag defaults false, but SettingsStore in-memory, tests set hasSeenOnboarding true via init or vm
+- Tests still GREEN (46/16) — onboarding flag defaults false, but SettingsStore in-memory, tests set hasSeenOnboarding true via @Before
+
+### 4.8 Onboarding Funnel & Empty States (Issue #1)
+
+**Scope — from roadmap #1:**
+- Welcome screen on first launch with plain-English trust line: "we never ask for your bank login; your data is encrypted and only you can see it"
+- Guided "Add your first FD" flow leading straight into the form
+- Proper empty states for Home, FD list, Calendar and Recycle bin (illustration-free is fine; clear copy + primary action button)
+- Sample data becomes an opt-in demo mode (Settings toggle) instead of always-seeded
+
+**OnboardingScreen implementation (extends #27 branding):**
+- Gate `onboarding-0100r9` + `demo-0100r9`
+- Shown when `SettingsStore.hasSeenOnboarding == false` (fresh install default false per #1)
+- NavHost startDestination = ONBOARDING if not seen, else HOME
+- 96dp cube `vssboxLogoOnboarding` + vssbox name + FD Manager + by vssbox tagline
+- Trust card `trustCard`: lock icon + "Your data stays yours" + trust line from #1
+- FeatureRow ×3: Track all FDs CBSL-only, Rate•Tenor•Payout•Matures, Renewal chain & Recycle bin
+- CTA: `Get Started — Add your first FD` `getStartedButton` → `setHasSeenOnboarding(true)` + `nav.navigate(ADD)` with popUpTo ONBOARDING inclusive — leads straight into form
+- Secondary: `Explore demo data first` `exploreDemoButton` → `setHasSeenOnboarding(true)` + `toggleDemoMode(true)` + navigate HOME — opt-in demo
+- Footer `builtByVssboxFooter` 16dp cube + © 2026 vssbox
+- TestTags: `onboardingScreen`, `vssboxLogoOnboarding`, `vssboxNameOnboarding`, `trustCard`, `getStartedButton`, `exploreDemoButton`, `builtByVssboxFooter`
+
+**Guided Add first FD flow:**
+- Fresh install → Onboarding → Get Started → AddEditFdScreen (form with validation, CBSL picker, Months|Days presets, payout required)
+- Save → FD visible on Home with correct totals (total invested, active count, next maturity, by institution)
+- Acceptance: fresh install → welcome → add first FD → FD visible on Home with correct totals
+
+**Empty states — all screens deliberate, illustration-free, clear copy + primary action button (where applicable):**
+- **HomeScreen** (when summaries empty): `EmptyState` icon AccountBalance, title "No deposits yet", message "Welcome! Add your first fixed deposit to see totals, maturing soon, and by institution. Your data is encrypted and only you can see it." (or demo hint if demo on), actionLabel "Add your first FD" → onAddFd (navigates to ADD), testTag `emptyStateAction:No deposits yet`
+- **FdListScreen** (bank-filtered, list empty): "No FDs here" + "This institution has no deposits. Add your first FD for ${bank} or try demo mode in Settings." + action "Add FD" → onAdd when filter ALL, else no action (filter message)
+- **CalendarScreen**: "Pick a day" + "Days with dots have FD maturities. Add FDs to see them here." when no day selected; "Quiet day" + "No FDs mature on ${date}. Add an FD or check another date." when selected day has none — no CTA (pick day)
+- **RecycleBinScreen**: "Bin is empty" + "Deleted FDs land here thanks to soft-delete — restored with one tap." — no CTA needed, but clear copy
+- **Component**: `EmptyState(icon, title, message, actionLabel?, onAction?)` — optional Button with testTag `emptyStateAction:$title`
+
+**Demo mode opt-in:**
+- `SettingsStore.isDemoMode` default **false** per #1 (opt-in, not always-seeded)
+- `FdRepository.get()` initial: empty if demo off, SampleData.seed if demo on (checks SettingsStore flag)
+- `setDemoMode(enabled, sample)`: on → add sample FDs (fd1..fd8) if missing, keep user FDs; off → remove sample FDs by id, keep user FDs — preserves user data, no corruption
+- `FdViewModel.toggleDemoMode(enabled)`: sets SettingsStore + repo setDemoMode
+- SettingsScreen: Demo section with Switch `isDemoMode`, subtitle "Sample FDs visible (opt-in demo)" / "Hide sample data — clean start", plus Reset demo data and Show onboarding rows
+- Tests: @Before sets `SettingsStore.setHasSeenOnboarding(true)` + `setDemoMode(true)` + `FdRepository.reset(sample)` to keep 46/16 GREEN, since defaults are false for fresh install
+- Acceptance: demo on/off works without corrupting user data — user-added FDs survive toggle
+
+**Acceptance #1:**
+- Fresh install (hasSeenOnboarding=false, isDemoMode=false) → welcome → Get Started → Add first FD → FD visible on Home with correct totals
+- Every screen has deliberate empty state with CTA where applicable
+- Demo mode on/off works without corrupting user data
+- Tests still GREEN 46/16 with @Before setting flags true
+- Spec both copies identical, wire diagram updated with onboarding funnel + empty states
 
 ---
 

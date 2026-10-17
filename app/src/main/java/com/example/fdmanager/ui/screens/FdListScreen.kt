@@ -161,10 +161,13 @@ fun FdListScreen(
         ) {
             if (list.isEmpty()) {
                 item {
+                    // #1 empty state with CTA
                     EmptyState(
                         Icons.Filled.AccountBalanceWallet,
                         "No FDs here",
-                        if (filter == StatusFilter.ALL) "This institution has no deposits." else "No ${filter.label.lowercase()} FDs — try another filter."
+                        if (filter == StatusFilter.ALL) "This institution has no deposits. Add your first FD for ${bank} or try demo mode in Settings." else "No ${filter.label.lowercase()} FDs — try another filter.",
+                        actionLabel = if (filter == StatusFilter.ALL) "Add FD" else null,
+                        onAction = if (filter == StatusFilter.ALL) onAdd else null
                     )
                 }
             } else {

@@ -1,13 +1,13 @@
 # FD Manager — App Wire Diagram & Component Map (Official Names)
 
 > Purpose: single source of truth for screen ↔ composable ↔ testTag ↔ data so conversations don't drift.
-> Updated: 2026-10-17 — Issue #27 vssbox branding + onboarding (cube 96dp hero, by vssbox, built-by footer, About 72dp) + #21/#28.
+> Updated: 2026-10-18 — Issue #1 onboarding funnel + empty states + demo opt-in + #27 vssbox branding + #21/#28.
 
 ## 1. Navigation graph (official screen composables)
 
 ```
 MainActivity
- ├─ OnboardingScreen (ui/screens/OnboardingScreen.kt) — #27 vssbox branding gate onboarding-0100r9, shown if SettingsStore.hasSeenOnboarding=false
+ ├─ OnboardingScreen (ui/screens/OnboardingScreen.kt) — #1 onboarding funnel + #27 vssbox branding gates onboarding-0100r9 + demo-0100r9, shown if hasSeenOnboarding=false, Get Started → ADD, Explore demo → HOME + demo true
  │   ├─ Image vssbox_cube 96dp testTag vssboxLogoOnboarding
  │   ├─ Text vssbox headlineMedium bold primary testTag vssboxNameOnboarding + FD Manager titleLarge + "by vssbox • Secure box for your deposits" labelMedium
  │   ├─ Trust Card ElevatedCard testTag trustCard: lock icon + "Your data stays yours" + trust line "We never ask for your bank login..."
@@ -17,7 +17,7 @@ MainActivity
  │
  ├─ BottomNav: Home | Calendar | Settings  +  FAB Add FD  +  AppBar actions (Notifications, RecycleBin)
  │
- ├─ HomeScreen (ui/screens/HomeScreen.kt) — #21 fix: rememberLazyListState() + LaunchedEffect scrollToItem(0) gate home-scroll-0100r9 + #27 footer
+ ├─ HomeScreen (ui/screens/HomeScreen.kt) — #21 fix: rememberLazyListState() + scrollToItem(0) gate home-scroll-0100r9 + #27 footer + #1 empty state CTA Add your first FD + demo opt-in
  │   ├─ TopAppBar: title Column "FD Manager" bold + "by vssbox" labelSmall onPrimary 80%, actions Notifications (badge), RecycleBin
  │   ├─ Hero card: Total invested → Lkr.words(total) headlineLarge + Lkr.exact(total) bodySmall + StatMini ×3
  │   │   └─ StatMini (ui/components/Components.kt): label/value mini stat
@@ -62,7 +62,7 @@ MainActivity
  ├─ RecycleBinScreen (ui/screens/RecycleBinScreen.kt)
  │   └─ List of isDeleted=true FDs, FdCard + Restore / Delete forever actions
  │
- └─ SettingsScreen (ui/screens/SettingsScreen.kt) — #27 vssbox About branding 72dp cube + Built by vssbox
+ └─ SettingsScreen (ui/screens/SettingsScreen.kt) — #27 About 72dp cube + #1 Demo opt-in toggle isDemoMode + Show onboarding + Reset
      ├─ Theme: System/Light/Dark
      ├─ Notifications: toggle + leadDays slider (feeds Home maturing strip + bell badge)
      ├─ Security: Biometric lock placeholder
@@ -130,7 +130,7 @@ Screenshots reference:
 ```
 app/src/main/java/com/example/fdmanager/
  ├─ data/model/FixedDeposit.kt
- ├─ data/FdRepository.kt, SampleData.kt, SettingsStore.kt (hasSeenOnboarding, isDemoMode)
+ ├─ data/FdRepository.kt (setDemoMode adds/removes fd1..fd8 preserving user data, clearAll), SampleData.kt, SettingsStore.kt (hasSeenOnboarding false default #1, isDemoMode false default opt-in)
  ├─ domain/FdMath.kt (Lkr, Dates, FdMath), FdQueries.kt
  └─ ui/
      ├─ components/
