@@ -1,15 +1,19 @@
-# TEST INSTRUCTIONS — Issue #1 Onboarding funnel & empty states — Round V25
+# TEST INSTRUCTIONS — Issue #1 Onboarding funnel & empty states — Round V26
 
 ## Environment
-- Branch: `dev` (fresh from `origin/master` @ 6574e92 + #1 onboarding funnel + empty states + demo opt-in)
-- Commit: `git log -1 --oneline` — tester records actual SHA (expect new SHA after 6574e92, current dev @ d0b43f6 after DEMO_GATE fix)
+- Branch: `dev` (fresh from `origin/master` @ 6574e92 + #1 onboarding funnel + empty states + demo opt-in + SoftDeleteRestore fix)
+- Commit: `git log -1 --oneline` — tester records actual SHA (expect bf5f719 — fix SoftDeleteRestoreTest 15/16 → 16/16)
 - Freshness gates: `OPEN_BANK_GATE = navgate-0500r9` in `TestSupport.kt`, `FDCARD_PAYOUT_GATE = fdcard-0200r9` in `Components.kt`, `HOME_SCROLL_GATE = home-scroll-0100r9` in `HomeScreen.kt`, `ONBOARDING_GATE = onboarding-0100r9` + `DEMO_GATE = demo-0100r9` in `FdRepository.kt` companion object, `VSSBOX_CUBE = vssbox_cube.png` drawable exists, `EMPTY_CTA = emptyStateAction` in `Components.kt`
 - Windows 11, Android Studio, AVD Pixel_7_API_34 / API 34, `adb devices` shows device
-- Project root `fd-manager/` — all commands via `.\gradlew.bat` in PowerShell or `gradlew.bat` in CMD
+- Project root `fd-manager/` — all commands via `.\\gradlew.bat` in PowerShell or `gradlew.bat` in CMD
 - **CRITICAL RULE — Executor (Roo) must NOT edit app code**: Stop editing app code. Do NOT fix FdRepository.kt or any *.kt file. Report formatting issue as CODE-BUG if gate fails, don't edit. You are Executor — never edit app code, never invent selectors. Only Architect (arena.ai) edits code. If you see formatting issue or missing DEMO_GATE, record SELECTOR-MISSING or CODE-BUG in report, do not fix.
 
-## Why V25 — Issue #1 Onboarding funnel & empty states
+## Why V26 — Issue #1 Onboarding funnel & empty states — FIX V25 failure
 **Title:** New-user onboarding funnel & empty states
+
+**V25 result:** Tier1 46/46 GREEN, Tier2 15/16 GREEN 1 FAILED `SoftDeleteRestoreTest.deleteSoftlyThenRestore` — `AssertionError: Empty state never appeared. openBank=navgate-0500r9 Screen markers [FDLIST<Sort>]` + `ComposeTimeoutException 5000ms` at SoftDeleteRestoreTest.kt:49. Root cause: FdListScreen empty message changed from exact "This institution has no deposits." to longer "This institution has no deposits. Add your first FD for ${bank} or try demo mode in Settings." per spec §4.8, but test used exact `onAllNodesWithText("This institution has no deposits.")` (substring=false). So waitUntil never found it.
+
+**Fix in dev @ bf5f719:** `SoftDeleteRestoreTest.kt` now robust — waits for title "No FDs here" OR substring "This institution has no deposits." with `substring=true`, markers use substring=true, assert title "No FDs here". App code unchanged (FdListScreen message per spec stays longer with CTA). Expected 16/16 GREEN.
 
 **Scope (from roadmap #1 body):**
 - Welcome screen on first launch with plain-English trust line ("we never ask for your bank login; your data is encrypted and only you can see it")
@@ -29,55 +33,55 @@
 - **CalendarScreen:** Empty "Pick a day" + "Days with dots have FD maturities. Add FDs to see them here." and "Quiet day" + "No FDs mature on ${date}. Add an FD or check another date." — illustration-free, clear copy, no CTA needed (pick day)
 - **RecycleBinScreen:** Empty "Bin is empty" + "Deleted FDs land here thanks to soft-delete — restored with one tap." — clear copy
 - **SettingsScreen:** Demo section with Switch isDemoMode, subtitle Sample FDs visible / Hide sample data — clean start, plus Reset demo data and Show onboarding rows
-- **Tests:** All instrumented tests @Before now set `SettingsStore.setHasSeenOnboarding(true)` + `setDemoMode(true)` + `FdRepository.reset(sample)` to keep 46/16 GREEN despite defaults false
+- **Tests:** All instrumented tests @Before now set `SettingsStore.setHasSeenOnboarding(true)` + `setDemoMode(true)` + `FdRepository.reset(sample)` to keep 46/16 GREEN despite defaults false. SoftDeleteRestoreTest fixed for new message (V26).
 
 **Acceptance #1:**
 - Fresh install (hasSeenOnboarding=false, isDemoMode=false) → welcome → Get Started → Add first FD → Save → FD visible on Home with correct totals
 - Every screen has deliberate empty state with CTA where applicable
 - Demo mode on/off works without corrupting user data — user FDs survive toggle
-- Tests still GREEN 46/16
+- Tests 46/46 + 16/16 GREEN
 
 **No change to #27 vssbox branding (cube, by vssbox, footer, About) — remains**
 
 ## Tier 1 — JVM unit tests
 PowerShell:
 ```powershell
-.\gradlew.bat cleanTestDebugUnitTest testDebugUnitTest --rerun-tasks
+.\\gradlew.bat cleanTestDebugUnitTest testDebugUnitTest --rerun-tasks
 ```
 - Expected: 46 tests (FdMath 11, FdRepository 17, BankRegistry 7, InstitutionRegistry 11) — all GREEN
-- Durations from: `findstr time app\build\test-results\testDebugUnitTest\*.xml`
+- Durations from: `findstr time app\\build\\test-results\\testDebugUnitTest\\*.xml`
 
 ## Tier 2 — Instrumented Compose UI tests
-### Test suite — 16 tests (existing, now with SettingsStore flags set true in @Before)
+### Test suite — 16 tests (existing, now with SettingsStore flags set true in @Before + V26 fix)
 | Class | Tests | Covers |
 |---|---|---|
 | `AddFdValidationTest` | 5 | form validation, payout required, tenor |
 | `BankMonogramUiTest` | 4 | monogram tags |
 | `NavigationFlowTest` | 2 | Home → list → detail → back — hero visible after back still, now with onboarding true |
 | `RenewalChainTest` | 1 | renew chain |
-| `SoftDeleteRestoreTest` | 2 | soft delete |
+| `SoftDeleteRestoreTest` | 2 | soft delete — FIXED V26 waits for No FDs here + substring |
 | `SortFilterTest` | 2 | filter chips |
 
 ### Run (clean build mandatory --rerun-tasks)
 PowerShell:
 ```powershell
 adb devices
-.\gradlew.bat connectedDebugAndroidTest --rerun-tasks
+.\\gradlew.bat connectedDebugAndroidTest --rerun-tasks
 ```
 - Pass: 0 failures, 16/16 GREEN
-- Reports XML: `app\build\outputs\androidTest-results\connected\*.xml`
-- HTML: `app\build\reports\androidTests\connected\index.html`
-- Durations from: `findstr time app\build\outputs\androidTest-results\connected\*.xml`
+- Reports XML: `app\\build\\outputs\\androidTest-results\\connected\\*.xml`
+- HTML: `app\\build\\reports\\androidTests\\connected\\index.html`
+- Durations from: `findstr time app\\build\\outputs\\androidTest-results\\connected\\*.xml`
 
 ### Logcat extraction (≤30 lines filtered, must include gates if failure) — store in temp folder, not root
 PowerShell:
 ```powershell
-mkdir test-artifacts-v25 -Force
-adb logcat -d | findstr /i "TestRunner AssertionError summary:National openBank=navgate-0500r9 fdcard home-scroll onboarding demo emptyStateAction" > test-artifacts-v25\logcat-v25.txt
-type test-artifacts-v25\logcat-v25.txt
+mkdir test-artifacts-v26 -Force
+adb logcat -d | findstr /i "TestRunner AssertionError summary:National openBank=navgate-0500r9 fdcard home-scroll onboarding demo emptyStateAction" > test-artifacts-v26\\logcat-v26.txt
+type test-artifacts-v26\\logcat-v26.txt
 ```
 - If GREEN: `run started: 16 tests` ... `run finished: 16 tests, 0 failed`
-- Do NOT leave logcat-v25.txt at repo root — must be in test-artifacts-v25\
+- Do NOT leave logcat-v26.txt at repo root — must be in test-artifacts-v26\\
 
 ### Screenshots (must be app, not launcher — fix timing!) — store in temp folder, not root
 Need 4 screenshots for #1 + #27:
@@ -89,29 +93,29 @@ Need 4 screenshots for #1 + #27:
 3. **Home after adding first FD** — Total invested hero visible + By institution + footer + FD visible with correct totals (fresh install → welcome → Get Started → Add FD → Save → Home)
 4. **Settings Demo toggle** — Demo section showing Switch isDemoMode + subtitle Sample FDs visible / Hide sample data + Show onboarding row + About 72dp cube + vssbox + ©
 
-PowerShell (correct timing — app foreground) — all artifacts in test-artifacts-v25\ not root:
+PowerShell (correct timing — app foreground) — all artifacts in test-artifacts-v26\\ not root:
 ```powershell
-mkdir test-artifacts-v25 -Force
+mkdir test-artifacts-v26 -Force
 adb shell dumpsys window | findstr mCurrentFocus
 adb shell screencap -p /sdcard/shot-onboarding.png
-adb pull /sdcard/shot-onboarding.png .\test-artifacts-v25\shot-nsb-v25-onboarding.png
+adb pull /sdcard/shot-onboarding.png .\\test-artifacts-v26\\shot-nsb-v26-onboarding.png
 adb shell screencap -p /sdcard/shot-home-empty.png
-adb pull /sdcard/shot-home-empty.png .\test-artifacts-v25\shot-nsb-v25-home-empty.png
+adb pull /sdcard/shot-home-empty.png .\\test-artifacts-v26\\shot-nsb-v26-home-empty.png
 adb shell screencap -p /sdcard/shot-home-after-first.png
-adb pull /sdcard/shot-home-after-first.png .\test-artifacts-v25\shot-nsb-v25-home-after-first.png
+adb pull /sdcard/shot-home-after-first.png .\\test-artifacts-v26\\shot-nsb-v26-home-after-first.png
 adb shell screencap -p /sdcard/shot-settings-demo.png
-adb pull /sdcard/shot-settings-demo.png .\test-artifacts-v25\shot-nsb-v25-settings-demo.png
-dir test-artifacts-v25
-:: Must show 4 png + logcat-v25.txt + TEST-REPORT-V25.md inside, NOT at root
+adb pull /sdcard/shot-settings-demo.png .\\test-artifacts-v26\\shot-nsb-v26-settings-demo.png
+dir test-artifacts-v26
+:: Must show 4 png + logcat-v26.txt + TEST-REPORT-V26.md inside, NOT at root
 ```
-- Wrong: launcher home with Play Store/Gmail/Photos/YouTube, or files at repo root like .\shot-nsb-v25-*.png littering root
-- Right: app onboarding/Home empty/Home with FD/Settings with vssbox cube + demo toggle, all inside test-artifacts-v25\
-- **CRITICAL**: Do NOT leave shot-*.png or logcat-*.txt at repo root — repo root must stay clean. All test artifacts go in test-artifacts-v25\
+- Wrong: launcher home with Play Store/Gmail/Photos/YouTube, or files at repo root like .\\shot-nsb-v26-*.png littering root
+- Right: app onboarding/Home empty/Home with FD/Settings with vssbox cube + demo toggle, all inside test-artifacts-v26\\
+- **CRITICAL**: Do NOT leave shot-*.png or logcat-*.txt at repo root — repo root must stay clean. All test artifacts go in test-artifacts-v26\\
 
 ### New behavior to verify
 - Fresh install (hasSeenOnboarding=false, isDemoMode=false) → onboarding shows vssbox cube 96dp + trust line → Get Started → Add FD form → Save → Home shows Total invested hero + FD visible with correct totals
 - Home empty state has Button "Add your first FD" with testTag emptyStateAction:No deposits yet
-- FdList empty has Button Add FD when filter ALL
+- FdList empty has Button Add FD when filter ALL — title "No FDs here" + message "This institution has no deposits..." + CTA
 - Calendar empty has clear copy "Pick a day" / "Quiet day"
 - RecycleBin empty "Bin is empty" + soft-delete message
 - Demo mode toggle on → sample FDs appear (fd1..fd8) + user FDs preserved, off → sample removed, user FDs remain (no corruption)
@@ -119,17 +123,18 @@ dir test-artifacts-v25
 - Settings About still shows 72dp cube + vssbox + © 2026
 - FdCard still shows payout `Monthly payout / At maturity` per #28
 - Back from bank list still shows hero visible per #21
+- V25 failure fixed: SoftDeleteRestoreTest now 16/16 GREEN (was 15/16)
 
-## Report spec — `TEST-REPORT-V25.md` inside temp folder (not littering root)
-Create folder `test-artifacts-v25\` and write report there: `test-artifacts-v25\TEST-REPORT-V25.md` — do NOT leave TEST-REPORT-V*.md at repo root. Repo root must stay clean, all test artifacts in temp folder.
+## Report spec — `TEST-REPORT-V26.md` inside temp folder (not littering root)
+Create folder `test-artifacts-v26\\` and write report there: `test-artifacts-v26\\TEST-REPORT-V26.md` — do NOT leave TEST-REPORT-V*.md at repo root. Repo root must stay clean, all test artifacts in temp folder.
 
 ```markdown
 # TEST REPORT — <date>
-- Branch / commit: dev @ <short SHA>
+- Branch / commit: dev @ bf5f719
 - Environment: Windows 11, Android Studio <ver>, AVD <name> / API 34, gradle <ver>, JDK <ver>
 - Tiers executed: 2 / 2
 - Freshness gates: navgate-0500r9 yes, fdcard-0200r9 yes, home-scroll-0100r9 yes, onboarding-0100r9 yes, demo-0100r9 yes, vssbox_cube.png yes, emptyStateAction yes
-- Artifacts folder: test-artifacts-v25\ contains 4 png + logcat-v25.txt + TEST-REPORT-V25.md, nothing at root
+- Artifacts folder: test-artifacts-v26\\ contains 4 png + logcat-v26.txt + TEST-REPORT-V26.md, nothing at root
 
 ## Tier 1 — unit tests
 | Test class | Tests | Passed | Failed | Duration | Report path |
@@ -137,13 +142,13 @@ Create folder `test-artifacts-v25\` and write report there: `test-artifacts-v25\
 
 ## Tier 2 — instrumented tests
 | Test class | Tests | Passed | Failed | Duration | Report path |
-- Real, sums to 16
+- Real, sums to 16 — V25 15/16 failure fixed in V26
 
 ## Evidence of GREEN + #1 fix
-- Logcat final lines: run started: 16 ... run finished: 16 tests, 0 failed (from test-artifacts-v25\logcat-v25.txt)
-- Screenshots: test-artifacts-v25\shot-nsb-v25-onboarding.png shows onboarding 96dp cube + trust line + Get Started, test-artifacts-v25\shot-nsb-v25-home-empty.png shows Home empty No deposits yet + Add your first FD CTA + footer, test-artifacts-v25\shot-nsb-v25-home-after-first.png shows Home after first FD with Total invested hero + FD visible, test-artifacts-v25\shot-nsb-v25-settings-demo.png shows Settings Demo toggle + About 72dp cube
-- Manual verification: fresh install → welcome → add first FD → FD visible on Home with correct totals, empty states with CTA, demo on/off preserves user data
-- Repo root clean: dir at root shows no shot-*.png, no logcat-*.txt, no TEST-REPORT-*.md — all inside test-artifacts-v25\
+- Logcat final lines: run started: 16 ... run finished: 16 tests, 0 failed (from test-artifacts-v26\\logcat-v26.txt)
+- Screenshots: test-artifacts-v26\\shot-nsb-v26-onboarding.png shows onboarding 96dp cube + trust line + Get Started, test-artifacts-v26\\shot-nsb-v26-home-empty.png shows Home empty No deposits yet + Add your first FD CTA + footer, test-artifacts-v26\\shot-nsb-v26-home-after-first.png shows Home after first FD with Total invested hero + FD visible, test-artifacts-v26\\shot-nsb-v26-settings-demo.png shows Settings Demo toggle + About 72dp cube
+- Manual verification: fresh install → welcome → add first FD → FD visible on Home with correct totals, empty states with CTA, demo on/off preserves user data, SoftDeleteRestore 16/16 now GREEN
+- Repo root clean: dir at root shows no shot-*.png, no logcat-*.txt, no TEST-REPORT-*.md — all inside test-artifacts-v26\\
 
 ## Failures (if any)
 ...
@@ -157,10 +162,10 @@ Create folder `test-artifacts-v25\` and write report there: `test-artifacts-v25\
 
 Hard rules:
 - **Executor must NOT edit app code** — Stop editing app code. Do NOT fix FdRepository.kt or any *.kt. Report as CODE-BUG / SELECTOR-MISSING if gate fails, don't edit. Architect (arena.ai) only edits code. Roo tried to fix DEMO_GATE formatting — forbidden.
-- **No littering repo root** — Do NOT leave shot-*.png, logcat-*.txt, TEST-REPORT-*.md at repo root. All test artifacts must go in test-artifacts-v25\ folder. Repo root must stay clean. Create folder with mkdir test-artifacts-v25 -Force, store everything there. Report REJECTED if root has shot-*.png or logcat-*.txt.
+- **No littering repo root** — Do NOT leave shot-*.png, logcat-*.txt, TEST-REPORT-*.md at repo root. All test artifacts must go in test-artifacts-v26\\ folder. Repo root must stay clean. Create folder with mkdir test-artifacts-v26 -Force, store everything there. Report REJECTED if root has shot-*.png or logcat-*.txt.
 - No placeholders — real SHA, real versions, real logcat ≤30 lines pasted, real durations from findstr time (like 0.014, 10.038), not rounded 1.2s
 - Tier2 sums to 16, Tier1 46
-- Screenshots app foreground, not launcher, need 4 shots proving #1 onboarding funnel + empty CTA + first FD + demo toggle — verify with dumpsys mCurrentFocus, stored in test-artifacts-v25\
+- Screenshots app foreground, not launcher, need 4 shots proving #1 onboarding funnel + empty CTA + first FD + demo toggle — verify with dumpsys mCurrentFocus, stored in test-artifacts-v26\\
 - Clean build mandatory --rerun-tasks
 - Freshness gates: navgate-0500r9, fdcard-0200r9, home-scroll-0100r9, onboarding-0100r9, demo-0100r9, vssbox_cube.png, emptyStateAction
 
