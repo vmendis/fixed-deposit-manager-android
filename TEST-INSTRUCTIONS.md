@@ -2,10 +2,11 @@
 
 ## Environment
 - Branch: `dev` (fresh from `origin/master` @ 6574e92 + #1 onboarding funnel + empty states + demo opt-in)
-- Commit: `git log -1 --oneline` — tester records actual SHA (expect new SHA after 6574e92)
-- Freshness gates: `OPEN_BANK_GATE = navgate-0500r9` in `TestSupport.kt`, `FDCARD_PAYOUT_GATE = fdcard-0200r9` in `Components.kt`, `HOME_SCROLL_GATE = home-scroll-0100r9` in `HomeScreen.kt`, `ONBOARDING_GATE = onboarding-0100r9` + `DEMO_GATE = demo-0100r9` in `OnboardingScreen.kt` + `SettingsStore.kt` + `FdRepository.kt`, `VSSBOX_CUBE = vssbox_cube.png` drawable exists, `EMPTY_CTA = emptyStateAction` in `Components.kt`
+- Commit: `git log -1 --oneline` — tester records actual SHA (expect new SHA after 6574e92, current dev @ d0b43f6 after DEMO_GATE fix)
+- Freshness gates: `OPEN_BANK_GATE = navgate-0500r9` in `TestSupport.kt`, `FDCARD_PAYOUT_GATE = fdcard-0200r9` in `Components.kt`, `HOME_SCROLL_GATE = home-scroll-0100r9` in `HomeScreen.kt`, `ONBOARDING_GATE = onboarding-0100r9` + `DEMO_GATE = demo-0100r9` in `FdRepository.kt` companion object, `VSSBOX_CUBE = vssbox_cube.png` drawable exists, `EMPTY_CTA = emptyStateAction` in `Components.kt`
 - Windows 11, Android Studio, AVD Pixel_7_API_34 / API 34, `adb devices` shows device
 - Project root `fd-manager/` — all commands via `.\gradlew.bat` in PowerShell or `gradlew.bat` in CMD
+- **CRITICAL RULE — Executor (Roo) must NOT edit app code**: Stop editing app code. Do NOT fix FdRepository.kt or any *.kt file. Report formatting issue as CODE-BUG if gate fails, don't edit. You are Executor — never edit app code, never invent selectors. Only Architect (arena.ai) edits code. If you see formatting issue or missing DEMO_GATE, record SELECTOR-MISSING or CODE-BUG in report, do not fix.
 
 ## Why V25 — Issue #1 Onboarding funnel & empty states
 **Title:** New-user onboarding funnel & empty states
@@ -145,6 +146,7 @@ adb pull /sdcard/shot-settings-demo.png .\shot-nsb-v25-settings-demo.png
 ```
 
 Hard rules:
+- **Executor must NOT edit app code** — Stop editing app code. Do NOT fix FdRepository.kt or any *.kt. Report as CODE-BUG / SELECTOR-MISSING if gate fails, don't edit. Architect (arena.ai) only edits code. Roo tried to fix DEMO_GATE formatting — forbidden.
 - No placeholders — real SHA, real versions, real logcat ≤30 lines pasted, real durations from findstr time (like 0.014, 10.038), not rounded 1.2s
 - Tier2 sums to 16, Tier1 46
 - Screenshots app foreground, not launcher, need 4 shots proving #1 onboarding funnel + empty CTA + first FD + demo toggle — verify with dumpsys mCurrentFocus
