@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fdmanager.data.FdRepository
+import com.example.fdmanager.data.SettingsStore
 import com.example.fdmanager.data.SampleData
 import org.junit.Before
 import org.junit.Rule
@@ -29,6 +30,8 @@ class SoftDeleteRestoreTest {
 
     @Before
     fun resetState() {
+        SettingsStore.setHasSeenOnboarding(true)
+        SettingsStore.setDemoMode(true)
         FdRepository.get().reset(SampleData.seed(LocalDate.now()))
     }
 
@@ -42,9 +45,12 @@ class SoftDeleteRestoreTest {
         rule.confirmDialog()
 
         // Back on the institution list: now empty. Wait for the empty state to enter the tree.
+        // #1 empty state now has longer message "This institution has no deposits. Add your first FD..."
+        // plus CTA "Add FD" and title "No FDs here". Use substring + title for robustness.
         try {
             rule.waitUntil(5_000) {
-                rule.onAllNodesWithText("This institution has no deposits.").fetchSemanticsNodes().isNotEmpty()
+                rule.onAllNodesWithText("No FDs here").fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText("This institution has no deposits.", substring = true).fetchSemanticsNodes().isNotEmpty()
             }
         } catch (e: Throwable) {
             // Self-diagnosis: fingerprint which screen is actually up at timeout, so the
@@ -56,10 +62,11 @@ class SoftDeleteRestoreTest {
                 "Delete FD?" to "DETAIL+DIALOG-OPEN",
                 "Recycle bin" to "BIN-screen",
                 "NSB-78412" to "NSB-row/title",
-                "This institution has no deposits." to "EMPTY-LIST"
+                "No FDs here" to "EMPTY-LIST-title",
+                "This institution has no deposits." to "EMPTY-LIST-msg"
             )
             val present = markers.filter { (text, _) ->
-                rule.onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()
+                rule.onAllNodesWithText(text, substring = true).fetchSemanticsNodes().isNotEmpty()
             }.map { "${it.second}<${it.first}>" }.toMutableList()
             // FdList-only probe: the "Sort" icon proves the bank list (not Home) is up —
             // the decisive screen the v6/v7 markers could not otherwise separate.
@@ -71,7 +78,7 @@ class SoftDeleteRestoreTest {
                 e
             )
         }
-        rule.onNodeWithText("This institution has no deposits.").performScrollTo().assertIsDisplayed()
+        rule.onNodeWithText("No FDs here").performScrollTo().assertIsDisplayed()
 
         rule.onNodeWithContentDescription("Back").performClick()
         rule.onNodeWithText("FD Manager").assertIsDisplayed()

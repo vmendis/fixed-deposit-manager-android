@@ -33,11 +33,22 @@ class FdViewModel : ViewModel() {
     fun renew(id: String, option: RenewOption? = null): String = repo.renew(id, option)
     fun resetDemoData() = repo.reset(SampleData.seed(LocalDate.now()))
 
+    // #1 demo mode opt-in — toggle without corrupting user data
+    fun toggleDemoMode(enabled: Boolean) {
+        SettingsStore.setDemoMode(enabled)
+        repo.setDemoMode(enabled, SampleData.seed(LocalDate.now()))
+    }
+
+    fun clearAllFds() = repo.clearAll()
+
     // --- Settings ---
     fun setThemeMode(mode: ThemeMode) = SettingsStore.setThemeMode(mode)
     fun setNotificationsEnabled(enabled: Boolean) = SettingsStore.setNotificationsEnabled(enabled)
     fun setNotifyLeadDays(days: Int) = SettingsStore.setNotifyLeadDays(days)
     fun setBiometricEnabled(enabled: Boolean) = SettingsStore.setBiometricEnabled(enabled)
     fun setHasSeenOnboarding(seen: Boolean) = SettingsStore.setHasSeenOnboarding(seen)
-    fun setDemoMode(enabled: Boolean) = SettingsStore.setDemoMode(enabled)
+    fun setDemoMode(enabled: Boolean) {
+        // Keep old method for backward compat, but delegate to toggle that preserves user data
+        toggleDemoMode(enabled)
+    }
 }

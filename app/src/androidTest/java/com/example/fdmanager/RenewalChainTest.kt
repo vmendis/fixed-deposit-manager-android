@@ -9,6 +9,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fdmanager.data.FdRepository
+import com.example.fdmanager.data.SettingsStore
 import com.example.fdmanager.data.SampleData
 import org.junit.Assert.assertTrue
 import org.junit.Before
@@ -26,6 +27,8 @@ class RenewalChainTest {
 
     @Before
     fun resetState() {
+        SettingsStore.setHasSeenOnboarding(true)
+        SettingsStore.setDemoMode(true)
         FdRepository.get().reset(SampleData.seed(LocalDate.now()))
     }
 

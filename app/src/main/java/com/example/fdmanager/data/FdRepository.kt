@@ -89,6 +89,31 @@ class FdRepository(initial: List<FixedDeposit>) {
     }
 
     /**
+     * Issue #1 — Demo mode opt-in: sample data becomes opt-in, not always-seeded.
+     * Toggle on/off without corrupting user data:
+     * - on: add sample FDs (fd1..fd8) if not already present, keep user FDs
+     * - off: remove sample FDs by id, keep user FDs
+     * Sample ids are fd1..fd8 from SampleData.seed
+     */
+    fun setDemoMode(enabled: Boolean, sample: List<FixedDeposit> = SampleData.seed(LocalDate.now())) {
+        val sampleIds = sample.map { it.id }.toSet()
+        val current = _fds.value
+        _fds.value = if (enabled) {
+            // Add sample FDs that are missing, keep user FDs
+            val existingIds = current.map { it.id }.toSet()
+            val toAdd = sample.filter { it.id !in existingIds }
+            current + toAdd
+        } else {
+            // Remove sample FDs, keep user FDs (ids not in sample set)
+            current.filterNot { it.id in sampleIds }
+        }
+    }
+
+    fun clearAll() {
+        _fds.value = emptyList()
+    }
+
+    /**
      * Issue #25 — session-start sweep: every due FD (maturity reached, auto-renew on,
      * not yet renewed/deleted) renews itself per its stored instruction. Returns the ids
      * of the parents that were renewed.
@@ -104,11 +129,22 @@ class FdRepository(initial: List<FixedDeposit>) {
     }
 
     companion object {
+        // DEMO_GATE = demo-0100r9 — freshness marker for V25 #1 opt-in demo
+        const val DEMO_GATE = "demo-0100r9"
+
         @Volatile
         private var instance: FdRepository? = null
 
         fun get(): FdRepository = instance ?: synchronized(this) {
-            instance ?: FdRepository(SampleData.seed(LocalDate.now())).also { instance = it }
+            // #1 opt-in demo: fresh install starts empty if demo off, sample if demo on
+            // Check SettingsStore flag (in-memory) — default false per #1
+            val demoOn = try {
+                SettingsStore.state.value.isDemoMode
+            } catch (_: Exception) {
+                false
+            }
+            val initial = if (demoOn) SampleData.seed(LocalDate.now()) else emptyList()
+            instance ?: FdRepository(initial).also { instance = it }
         }
     }
 }

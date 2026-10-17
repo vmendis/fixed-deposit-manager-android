@@ -117,7 +117,13 @@ fun InfoRow(label: String, value: String) {
 }
 
 @Composable
-fun EmptyState(icon: ImageVector, title: String, message: String) {
+fun EmptyState(
+    icon: ImageVector,
+    title: String,
+    message: String,
+    actionLabel: String? = null,
+    onAction: (() -> Unit)? = null
+) {
     Column(
         Modifier.fillMaxWidth().padding(40.dp),
         horizontalAlignment = Alignment.CenterHorizontally
@@ -126,7 +132,16 @@ fun EmptyState(icon: ImageVector, title: String, message: String) {
         Spacer(Modifier.height(12.dp))
         Text(title, style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold)
         Spacer(Modifier.height(4.dp))
-        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(message, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant, textAlign = androidx.compose.ui.text.style.TextAlign.Center)
+        if (actionLabel != null && onAction != null) {
+            Spacer(Modifier.height(16.dp))
+            androidx.compose.material3.Button(
+                onClick = onAction,
+                modifier = Modifier.testTag("emptyStateAction:$title")
+            ) {
+                Text(actionLabel)
+            }
+        }
     }
 }
 

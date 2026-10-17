@@ -15,8 +15,8 @@ data class SettingsState(
     val notificationsEnabled: Boolean = true,
     val notifyLeadDays: Int = 5,      // spec default: alert 5 days before maturity
     val biometricEnabled: Boolean = false,
-    val hasSeenOnboarding: Boolean = true,  // #27 onboarding gate — vssbox branding on new-user screen; default true for existing tests GREEN, set false to show onboarding on fresh install (V24)
-    val isDemoMode: Boolean = true           // #1 demo mode opt-in (sample data)
+    val hasSeenOnboarding: Boolean = false,  // #1 fresh install → welcome screen, #27 vssbox branding; default false for onboarding funnel, tests set true in @Before
+    val isDemoMode: Boolean = false           // #1 opt-in demo mode — sample data not always-seeded, toggle in Settings
 )
 
 /** In-memory stand-in for per-user preferences (would live in Firestore/user doc later). */

@@ -72,7 +72,8 @@ fun HomeScreen(
     vm: FdViewModel,
     onOpenBank: (String) -> Unit,
     onOpenFd: (String) -> Unit,
-    onOpenBin: () -> Unit
+    onOpenBin: () -> Unit,
+    onAddFd: (() -> Unit)? = null // #1 empty state CTA
 ) {
     val fds by vm.fds.collectAsStateWithLifecycle()
     val settings by vm.settings.collectAsStateWithLifecycle()
@@ -244,10 +245,13 @@ fun HomeScreen(
 
             if (summaries.isEmpty()) {
                 item {
+                    // #1 empty state with CTA — illustration-free, clear copy + primary action
                     EmptyState(
                         Icons.Filled.AccountBalance,
                         "No deposits yet",
-                        "Tap + to add your first fixed deposit."
+                        if (settings.isDemoMode) "Tap + to add your first fixed deposit, or turn off demo mode in Settings for a clean start." else "Welcome! Add your first fixed deposit to see totals, maturing soon, and by institution. Your data is encrypted and only you can see it.",
+                        actionLabel = if (onAddFd != null) "Add your first FD" else null,
+                        onAction = onAddFd
                     )
                 }
             } else {

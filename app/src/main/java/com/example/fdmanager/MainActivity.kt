@@ -88,18 +88,9 @@ fun FdManagerApp() {
     val vm: FdViewModel = viewModel()
     val settings by vm.settings.collectAsStateWithLifecycle()
 
-    // #27 onboarding — if user hasn't seen onboarding, show it full-screen with vssbox branding gate onboarding-0100r9
-    if (!settings.hasSeenOnboarding) {
-        OnboardingScreen(
-            onGetStarted = {
-                vm.setHasSeenOnboarding(true)
-            },
-            onExploreDemo = {
-                vm.setHasSeenOnboarding(true)
-            }
-        )
-        return
-    }
+    // #1 onboarding funnel + #27 vssbox branding — fresh install → welcome → add first FD → Home
+    // ONBOARDING_GATE = onboarding-0100r9, HOME_SCROLL_GATE = home-scroll-0100r9, DEMO_GATE = demo-0100r9
+    val startDest = if (!settings.hasSeenOnboarding) Routes.ONBOARDING else Routes.HOME
 
     val backStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -136,15 +127,34 @@ fun FdManagerApp() {
     ) { padding ->
         NavHost(
             navController = nav,
-            startDestination = Routes.HOME,
+            startDestination = startDest,
             modifier = Modifier.padding(padding)
         ) {
+            // #1 onboarding funnel — welcome screen with trust line, vssbox branding, CTA to Add first FD
+            composable(Routes.ONBOARDING) {
+                OnboardingScreen(
+                    onGetStarted = {
+                        vm.setHasSeenOnboarding(true)
+                        nav.navigate(Routes.ADD) {
+                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        }
+                    },
+                    onExploreDemo = {
+                        vm.setHasSeenOnboarding(true)
+                        vm.toggleDemoMode(true)
+                        nav.navigate(Routes.HOME) {
+                            popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        }
+                    }
+                )
+            }
             composable(Routes.HOME) {
                 HomeScreen(
                     vm = vm,
                     onOpenBank = { nav.navigate(Routes.bank(it)) },
                     onOpenFd = { nav.navigate(Routes.fdDetail(it)) },
-                    onOpenBin = { nav.navigate(Routes.BIN) }
+                    onOpenBin = { nav.navigate(Routes.BIN) },
+                    onAddFd = { nav.navigate(Routes.ADD) }
                 )
             }
             composable(Routes.CALENDAR) {
