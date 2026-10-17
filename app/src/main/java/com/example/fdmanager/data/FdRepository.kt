@@ -129,6 +129,9 @@ class FdRepository(initial: List<FixedDeposit>) {
     }
 
     companion object {
+        // DEMO_GATE = demo-0100r9 — freshness marker for V25 #1 opt-in demo
+        const val DEMO_GATE = "demo-0100r9"
+
         @Volatile
         private var instance: FdRepository? = null
 
