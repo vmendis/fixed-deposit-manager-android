@@ -36,6 +36,7 @@ import com.example.fdmanager.ui.screens.CalendarScreen
 import com.example.fdmanager.ui.screens.FdDetailScreen
 import com.example.fdmanager.ui.screens.FdListScreen
 import com.example.fdmanager.ui.screens.HomeScreen
+import com.example.fdmanager.ui.screens.OnboardingScreen
 import com.example.fdmanager.ui.screens.RecycleBinScreen
 import com.example.fdmanager.ui.screens.SettingsScreen
 import com.example.fdmanager.ui.theme.FdManagerTheme
@@ -49,6 +50,7 @@ object Routes {
     const val BANK = "bank/{bank}"
     const val FD_DETAIL = "fd/{fdId}"
     const val EDIT = "edit/{fdId}"
+    const val ONBOARDING = "onboarding" // #27 vssbox branding on new-user screen
 
     fun bank(bank: String) = "bank/${Uri.encode(bank)}"
     fun fdDetail(id: String) = "fd/$id"
@@ -84,6 +86,20 @@ private val TABS = listOf(
 fun FdManagerApp() {
     val nav = rememberNavController()
     val vm: FdViewModel = viewModel()
+    val settings by vm.settings.collectAsStateWithLifecycle()
+
+    // #27 onboarding — if user hasn't seen onboarding, show it full-screen with vssbox branding gate onboarding-0100r9
+    if (!settings.hasSeenOnboarding) {
+        OnboardingScreen(
+            onGetStarted = {
+                vm.setHasSeenOnboarding(true)
+            },
+            onExploreDemo = {
+                vm.setHasSeenOnboarding(true)
+            }
+        )
+        return
+    }
 
     val backStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route

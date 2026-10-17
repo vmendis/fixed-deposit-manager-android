@@ -1,28 +1,37 @@
 # FD Manager — App Wire Diagram & Component Map (Official Names)
 
 > Purpose: single source of truth for screen ↔ composable ↔ testTag ↔ data so conversations don't drift.
-> Updated: 2026-10-13 — Issue #22 Option B + #28 payout + #21 back-nav scroll fix (hero visible).
+> Updated: 2026-10-17 — Issue #27 vssbox branding + onboarding (cube 96dp hero, by vssbox, built-by footer, About 72dp) + #21/#28.
 
 ## 1. Navigation graph (official screen composables)
 
 ```
 MainActivity
+ ├─ OnboardingScreen (ui/screens/OnboardingScreen.kt) — #27 vssbox branding gate onboarding-0100r9, shown if SettingsStore.hasSeenOnboarding=false
+ │   ├─ Image vssbox_cube 96dp testTag vssboxLogoOnboarding
+ │   ├─ Text vssbox headlineMedium bold primary testTag vssboxNameOnboarding + FD Manager titleLarge + "by vssbox • Secure box for your deposits" labelMedium
+ │   ├─ Trust Card ElevatedCard testTag trustCard: lock icon + "Your data stays yours" + trust line "We never ask for your bank login..."
+ │   ├─ FeatureRow ×3: Track all FDs CBSL-only, Rate•Tenor•Payout•Matures, Renewal chain & Recycle bin
+ │   ├─ Button Get Started testTag getStartedButton → setHasSeenOnboarding(true), TextButton Explore demo testTag exploreDemoButton
+ │   └─ Footer Row testTag builtByVssboxFooter: cube 16dp + "Built by vssbox • © 2026 vssbox"
+ │
  ├─ BottomNav: Home | Calendar | Settings  +  FAB Add FD  +  AppBar actions (Notifications, RecycleBin)
  │
- ├─ HomeScreen (ui/screens/HomeScreen.kt) — #21 fix: rememberLazyListState() + LaunchedEffect scrollToItem(0) gate home-scroll-0100r9
- │   ├─ TopAppBar: title "FD Manager", actions Notifications (badge), RecycleBin
+ ├─ HomeScreen (ui/screens/HomeScreen.kt) — #21 fix: rememberLazyListState() + LaunchedEffect scrollToItem(0) gate home-scroll-0100r9 + #27 footer
+ │   ├─ TopAppBar: title Column "FD Manager" bold + "by vssbox" labelSmall onPrimary 80%, actions Notifications (badge), RecycleBin
  │   ├─ Hero card: Total invested → Lkr.words(total) headlineLarge + Lkr.exact(total) bodySmall + StatMini ×3
  │   │   └─ StatMini (ui/components/Components.kt): label/value mini stat
  │   ├─ SectionHeader ("Maturing soon") → LazyRow of compact cards
  │   │   └─ Each: bank labelSmall, fdNumber titleMedium, Lkr.compact(amount) + Dates.format(maturity), CountdownChip
- │   └─ SectionHeader ("By institution") → LazyColumn(state = listState) of BankSummaryCard — back from bank resets to top (hero visible) per #21
- │       └─ BankSummaryCard (private in HomeScreen.kt, official name BankSummaryCard)
- │           ├─ BankMonogram (ui/components/BankMonogram.kt) size 46.dp testTag "bankMonogram"
- │           ├─ Center Column: bank name titleMedium, "active • total" bodySmall + InstitutionType label
- │           ├─ Right Column (Option B): Lkr.words(total) titleMedium bold primary
- │           │                          Lkr.exact(total) labelSmall gray
- │           │                          "invested" labelSmall gray
- │           └─ KeyboardArrowRight icon + testTag "summary:<bankName>"  e.g. "summary:NSB"
+ │   ├─ SectionHeader ("By institution") → LazyColumn(state = listState) of BankSummaryCard — back from bank resets to top (hero visible) per #21
+ │   │   └─ BankSummaryCard (private in HomeScreen.kt, official name BankSummaryCard)
+ │   │       ├─ BankMonogram (ui/components/BankMonogram.kt) size 46.dp testTag "bankMonogram"
+ │   │       ├─ Center Column: bank name titleMedium, "active • total" bodySmall + InstitutionType label
+ │   │       ├─ Right Column (Option B): Lkr.words(total) titleMedium bold primary
+ │   │       │                          Lkr.exact(total) labelSmall gray
+ │   │       │                          "invested" labelSmall gray
+ │   │       └─ KeyboardArrowRight icon + testTag "summary:<bankName>"  e.g. "summary:NSB"
+ │   └─ Footer Row testTag builtByVssboxHome: cube 16dp + "Built by vssbox • © 2026 vssbox • FD Manager by vssbox" labelSmall gray
  │
  ├─ FdListScreen (ui/screens/FdListScreen.kt) — bank-filtered list
  │   ├─ TopAppBar: BankMonogram (institution header) + bank name title, Back, Sort menu
@@ -53,10 +62,13 @@ MainActivity
  ├─ RecycleBinScreen (ui/screens/RecycleBinScreen.kt)
  │   └─ List of isDeleted=true FDs, FdCard + Restore / Delete forever actions
  │
- └─ SettingsScreen (ui/screens/SettingsScreen.kt)
+ └─ SettingsScreen (ui/screens/SettingsScreen.kt) — #27 vssbox About branding 72dp cube + Built by vssbox
      ├─ Theme: System/Light/Dark
      ├─ Notifications: toggle + leadDays slider (feeds Home maturing strip + bell badge)
-     └─ About, Reset demo data, Currency LKR
+     ├─ Security: Biometric lock placeholder
+     ├─ Data: Currency LKR, Export CSV placeholder, Reset demo data
+     ├─ About: Image vssbox_cube 72dp testTag vssboxLogoAbout + vssbox titleLarge bold primary + FD Manager titleMedium + by vssbox labelSmall + Version 1.0 © 2026 vssbox + description + Row Built by vssbox • vssbox.com testTag aboutBranding
+     └─ Demo: Demo mode toggle isDemoMode → SettingsStore.setDemoMode (opt-in per #1)
 ```
 
 ## 2. Shared components (ui/components/)
@@ -101,8 +113,9 @@ Screenshots reference:
 
 - `testTag("bankMonogram")` — any monogram tile
 - `testTag("summary:<full bank name>")` — e.g. `summary:NSB`, `summary:Bank of Ceylon (BOC)` — Home → openBank helper uses swipeUntilTag + waitUntil + onAllNodes[0].click (no performScrollTo, maxSwipes 50, gate navgate-0500r9)
-- Visible text: fdNumber like `"NSB-78412"`, amount words like `"Rs 1 Million"`, exact like `"Rs 1,000,000.00"`, chips `"Matured"`, `"Active"`, buttons `"Save FD"`, `"Renew"`, `"Delete"`, `"Restore"`, `"Cancel"`
-- contentDescription: `"Add FD"`, `"Back"`, `"Edit"`, `"Sort"`, `"Recycle bin"`, `"Maturing soon"`, `"More actions"`, `"Auto-renew on"`
+- `testTag("onboardingScreen")`, `vssboxLogoOnboarding`, `vssboxNameOnboarding`, `trustCard`, `getStartedButton`, `exploreDemoButton`, `builtByVssboxFooter`, `builtByVssboxHome`, `aboutBranding`, `vssboxLogoAbout` — #27 branding gates
+- Visible text: fdNumber like `"NSB-78412"`, amount words like `"Rs 1 Million"`, exact like `"Rs 1,000,000.00"`, chips `"Matured"`, `"Active"`, buttons `"Save FD"`, `"Renew"`, `"Delete"`, `"Restore"`, `"Cancel"`, onboarding `"Get Started — Add your first FD"`, `"Built by vssbox"`, `"vssbox"`
+- contentDescription: `"Add FD"`, `"Back"`, `"Edit"`, `"Sort"`, `"Recycle bin"`, `"Maturing soon"`, `"More actions"`, `"Auto-renew on"`, `"vssbox logo"`
 - Dialog tags: `dialogConfirm` / `dialogDismiss` — use `confirmDialog()` helper, never match by text for dialog buttons
 - RenewDialog options: radio labels `"Add interest to capital"` / `"Withdraw interest"` + payout wording on card meta line embeds payout frequency — prefer `onAllNodes` when list composed
 
@@ -117,7 +130,7 @@ Screenshots reference:
 ```
 app/src/main/java/com/example/fdmanager/
  ├─ data/model/FixedDeposit.kt
- ├─ data/FdRepository.kt, SampleData.kt
+ ├─ data/FdRepository.kt, SampleData.kt, SettingsStore.kt (hasSeenOnboarding, isDemoMode)
  ├─ domain/FdMath.kt (Lkr, Dates, FdMath), FdQueries.kt
  └─ ui/
      ├─ components/
@@ -125,14 +138,20 @@ app/src/main/java/com/example/fdmanager/
      │   ├─ BankMonogram.kt (BankMonogram)
      │   └─ InstitutionRegistry.kt (InstitutionRegistry, Institution, InstitutionType)
      ├─ screens/
-     │   ├─ HomeScreen.kt (HomeScreen, BankSummaryCard private)
+     │   ├─ OnboardingScreen.kt (OnboardingScreen) — #27 vssbox 96dp cube + trust card + CTA gate onboarding-0100r9
+     │   ├─ HomeScreen.kt (HomeScreen, BankSummaryCard private) — #21 scroll fix + #27 footer builtByVssboxHome
      │   ├─ FdListScreen.kt (FdListScreen)
      │   ├─ FdDetailScreen.kt (FdDetailScreen)
      │   ├─ AddEditFdScreen.kt (AddEditFdScreen)
      │   ├─ CalendarScreen.kt (CalendarScreen)
      │   ├─ RecycleBinScreen.kt (RecycleBinScreen)
-     │   └─ SettingsScreen.kt (SettingsScreen)
+     │   └─ SettingsScreen.kt (SettingsScreen) — #27 About 72dp cube + aboutBranding + demo toggle
      └─ theme/Theme.kt (statusPalette)
+app/src/main/res/
+ ├─ drawable/vssbox_cube.png — 1024x1024 RGBA transparent manual (408K) from vssbox_logo.jpg
+ ├─ drawable/ic_launcher.xml — fallback layer-list dark bg #0B1220 + cube 72dp
+ ├─ drawable-anydpi-v26/ic_launcher.xml — adaptive bg #0B1220 + fg vssbox_cube + monochrome
+ └─ mipmap-anydpi-v26/ic_launcher.xml — same adaptive for mipmap
 ```
 
 ## 8. Visual wire (ASCII)

@@ -249,6 +249,51 @@ stored `renewOption` (no user interaction; works while the app opens).
 - **Backward compat:** old data has `duration` (months) and no `tenorUnit` → treated as `MONTHS` with `durationMonths = duration`. New data writes `durationMonths`/`durationDays` + `tenorUnit`.
 - **Validation:** tenor value >0, required.
 
+### 4.7 Branding — vssbox (Issue #27)
+
+**Company:** vssbox — blue neon isometric cube logo (dark bg #0B1220), transparent PNG `vssbox_cube.png` derived from `vssbox_logo.jpg` (manual alpha clean — corner 0,0,0,0).
+
+**Product vs company:** Keep **FD Manager** as product name (users search FD Manager), add **by vssbox** as company — low risk, clear. Full rename to vssbox later if building suite.
+
+**Asset strategy:**
+- `app/src/main/res/drawable/vssbox_cube.png` — 1024x1024 RGBA transparent, manual cleaned (gate `vssbox_cube_transparent_manual.png` 408K)
+- `ic_launcher_background` = #0B1220 matches logo dark bg
+- Adaptive icon: `drawable-anydpi-v26/ic_launcher.xml` + `mipmap-anydpi-v26/ic_launcher.xml` — background #0B1220, foreground `vssbox_cube`, monochrome same for Android 13+ themed icons
+- Fallback `drawable/ic_launcher.xml` — layer-list dark bg + cube 72dp centered for < API 26
+
+**Placements (official screens):**
+- **Launcher icon:** blue cube on dark bg — strongest branding, replaces teal FD icon
+- **Splash screen (Android 12+):** cube centered dark bg + vssbox below (future — theme splash uses same bg)
+- **OnboardingScreen (new-user, #1 + #27):** primary branding home — gate `onboarding-0100r9`
+  - 96dp cube + `vssbox` headlineMedium bold primary + `FD Manager` titleLarge + `by vssbox • Secure box for your deposits` labelMedium
+  - Trust card: `We never ask for your bank login. Your data is encrypted and only you can see it. Runs entirely on local sample data in this mock — no account, no backend, no real money.` + lock icon
+  - Features: Track all FDs CBSL-only, Rate•Tenor•Payout•Matures, Renewal chain & Recycle bin
+  - CTA: `Get Started — Add your first FD` Button testTag `getStartedButton`, `Explore demo data first` TextButton testTag `exploreDemoButton`
+  - Footer: 16dp cube + `Built by vssbox • © 2026 vssbox` labelSmall testTag `builtByVssboxFooter`
+  - TestTag `onboardingScreen`, `vssboxLogoOnboarding`, `vssboxNameOnboarding`, `trustCard`
+  - Logic: `SettingsStore.hasSeenOnboarding` false → show onboarding full-screen, true → Home. `setHasSeenOnboarding(true)` on CTA.
+- **HomeScreen:**
+  - TopAppBar title: `FD Manager` bold + `by vssbox` labelSmall onPrimary 80% alpha — keeps product name, adds company
+  - Footer: `Built by vssbox • © 2026 vssbox • FD Manager by vssbox` with 16dp cube, centered, testTag `builtByVssboxHome` — low emphasis onSurfaceVariant
+- **SettingsScreen → About:**
+  - Primary branding home — 72dp cube + `vssbox` titleLarge bold primary + `FD Manager` titleMedium + `by vssbox` labelSmall
+  - Version: `Version 1.0 · front-end mock · © 2026 vssbox` bodySmall
+  - Description: `Secure box for your deposits — Track CBSL-regulated FDs (24 LCB + 6 LSB + 32 LFC). Runs entirely on local sample data. No account, no backend, no real money — FDs shown are fictional.`
+  - Row: `Built by vssbox • vssbox.com (coming soon)` — testTag `aboutBranding`, `vssboxLogoAbout`
+  - Demo mode toggle: `SettingsStore.isDemoMode` + `setDemoMode()` — opt-in demo per #1
+- **Avoid:** FdCard, BankSummaryCard — those show institution monograms (BOC/NSB/COM). Mixing company logo there would confuse institution identity.
+
+**Color:** Keep teal primary #006A5F for now, blue #5B9CF6 as brand accent (About + onboarding + footer). Shift primary to blue later if desired — bigger theme change.
+
+**Acceptance #27:**
+- Owner confirms: app name stays FD Manager, by vssbox added
+- Launcher shows blue cube on dark bg
+- Onboarding shows vssbox cube + name + trust line + CTA, gate `onboarding-0100r9`
+- Home footer shows Built by vssbox + cube
+- Settings About shows 72dp cube + vssbox + version + ©
+- Spec both copies identical, wire diagram updated
+- Tests still GREEN (46/16) — onboarding flag defaults false, but SettingsStore in-memory, tests set hasSeenOnboarding true via init or vm
+
 ---
 
 ## 5. Notifications
