@@ -1,164 +1,204 @@
-<!doctype html>
-<html lang="en">
-<head>
-<meta charset="utf-8">
-<title>FD Manager — Wire Diagram</title>
-<meta name="viewport" content="width=device-width,initial-scale=1">
-<style>
-  :root{--primary:#0f766e;--bg:#f6f7f8;--card:#fff;--muted:#667085;--chip:#e6f4f1;--chip-fg:#0f766e;--border:#e5e7eb}
-  *{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Segoe UI,Roboto,sans-serif;background:var(--bg);color:#111}
-  header{padding:20px 24px;background:var(--primary);color:#fff;position:sticky;top:0;z-index:10}
-  header h1{margin:0;font-size:22px} header p{margin:6px 0 0;opacity:.9;font-size:13px}
-  .wrap{max-width:1200px;margin:0 auto;padding:20px;display:grid;grid-template-columns:1fr 1fr;gap:20px}
-  @media(max-width:900px){.wrap{grid-template-columns:1fr}}
-  .phone{border:1px solid var(--border);border-radius:20px;background:var(--card);overflow:hidden;box-shadow:0 4px 20px rgba(0,0,0,.06)}
-  .topbar{background:var(--primary);color:#fff;padding:14px 16px;display:flex;align-items:center;justify-content:space-between;font-weight:700}
-  .topbar small{font-weight:400;opacity:.9}
-  .content{padding:14px}
-  .hero{border:1px solid var(--border);border-radius:14px;padding:16px;margin-bottom:14px;background:linear-gradient(180deg,#fff,#fbfdfc)}
-  .hero .label{font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
-  .hero .words{font-size:26px;font-weight:800;color:var(--primary);margin:4px 0 2px}
-  .hero .exact{font-size:12px;color:var(--muted)}
-  .stats{display:flex;gap:8px;margin-top:12px;text-align:center}
-  .stat{flex:1;background:#f9fafb;border:1px solid var(--border);border-radius:10px;padding:8px}
-  .stat b{display:block;font-size:14px} .stat span{font-size:11px;color:var(--muted)}
-  .section{font-weight:700;font-size:14px;margin:14px 2px 8px}
-  .section small{font-weight:400;color:var(--muted);font-size:12px;margin-left:6px}
-  .rowCards{display:flex;gap:10px;overflow:auto;padding-bottom:6px}
-  .miniCard{min-width:200px;border:1px solid var(--border);border-radius:12px;padding:10px;background:#fff}
-  .card{border:1px solid var(--border);border-radius:14px;padding:12px;background:#fff;margin-bottom:10px}
-  .card .row1{display:flex;align-items:center;justify-content:space-between}
-  .chip{font-size:11px;font-weight:600;padding:3px 8px;border-radius:999px;background:var(--chip);color:var(--chip-fg);display:inline-block}
-  .chip.matured{background:#fef3c7;color:#92400e} .chip.countdown{background:#e0f2fe;color:#075985}
-  .monogram{width:46px;height:46px;border-radius:10px;background:#0f766e;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:16px;flex-shrink:0}
-  .amountWords{font-size:18px;font-weight:800;color:var(--primary)}
-  .amountExact{font-size:11px;color:var(--muted);margin-top:2px}
-  .meta{font-size:12px;color:var(--muted);margin-top:6px}
-  .tag{font-size:10px;background:#f3f4f6;border:1px solid var(--border);padding:2px 6px;border-radius:6px;color:#374151}
-  .legend{padding:16px;border:1px dashed var(--border);border-radius:12px;background:#fff}
-  .legend h3{margin:0 0 8px;font-size:14px}
-  .legend ul{margin:0;padding-left:18px;font-size:13px;line-height:1.6}
-  .k{font-family:ui-monospace,monospace;background:#f3f4f6;padding:1px 5px;border-radius:4px;font-size:12px}
-  .arrow{color:var(--muted)}
-</style>
-</head>
-<body>
-<header>
-  <h1>FD Manager — Wire Diagram (Official Compose Names)</h1>
-  <p>HomeScreen • BankSummaryCard • BankMonogram • FdListScreen • FdCard • FdDetailScreen • AddEditFdScreen • CalendarScreen • SettingsScreen • InstitutionRegistry • Lkr.words / Lkr.exact — Option B extended 2026-10-07</p>
-</header>
-<div class="wrap">
-  <!-- Home -->
-  <div class="phone">
-    <div class="topbar"><span>HomeScreen</span><small>TopAppBar + Notifications + RecycleBin</small></div>
-    <div class="content">
-      <div class="hero">
-        <div class="label">Total invested <span class="tag">StatMini ×3</span></div>
-        <div class="words">Rs 3.2 Million <span class="tag">Lkr.words(total)</span></div>
-        <div class="exact">Rs 3,200,000.00 <span class="tag">Lkr.exact(total)</span></div>
-        <div class="stats">
-          <div class="stat"><b>4</b><span>Active FDs</span></div>
-          <div class="stat"><b>3</b><span>Institutions</span></div>
-          <div class="stat"><b>in 4d</b><span>Next maturity</span></div>
-        </div>
-      </div>
-      <div class="section">Maturing soon <small>LazyRow • compact cards • Lkr.compact + CountdownChip</small></div>
-      <div class="rowCards">
-        <div class="miniCard"><div style="font-size:11px;color:#667085">BOC</div><div style="font-weight:700">BOC-33018</div><div class="meta">Rs 750 K • 12 Dec • <span class="chip countdown">in 4d</span></div></div>
-        <div class="miniCard"><div style="font-size:11px;color:#667085">NSB</div><div style="font-weight:700">NSB-78412</div><div class="meta">Rs 1 M • 07 Oct • <span class="chip countdown">today</span></div></div>
-      </div>
-      <div class="section">By institution <small>SectionHeader • N institutions • CBSL-only</small></div>
-      <div class="card">
-        <div style="display:flex;gap:12px;align-items:center">
-          <div class="monogram">NSB</div>
-          <div style="flex:1"><div style="font-weight:600">NSB</div><div class="meta">2 active • 2 total • Bank</div></div>
-          <div style="text-align:right"><div class="amountWords" style="font-size:15px">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div><div class="amountExact">invested</div></div>
-          <div class="arrow">›</div>
-        </div>
-        <div class="meta"><span class="tag">testTag summary:NSB</span> <span class="tag">BankSummaryCard</span> <span class="tag">BankMonogram 46.dp</span></div>
-      </div>
-      <div class="card">
-        <div style="display:flex;gap:12px;align-items:center">
-          <div class="monogram" style="background:#1d4ed8">SAMP</div>
-          <div style="flex:1"><div style="font-weight:600">Sampath Bank</div><div class="meta">1 active • 1 total • Bank</div></div>
-          <div style="text-align:right"><div class="amountWords" style="font-size:15px">Rs 750 K</div><div class="amountExact">Rs 750,000.00</div><div class="amountExact">invested</div></div>
-          <div class="arrow">›</div>
-        </div>
-        <div class="meta"><span class="tag">Option B: words + exact + invested</span></div>
-      </div>
-    </div>
-  </div>
+# FD Manager — App Wire Diagram & Component Map (Official Names)
 
-  <!-- FdList -->
-  <div class="phone">
-    <div class="topbar"><span>FdListScreen</span><small>TopAppBar BankMonogram + Sort + Back</small></div>
-    <div class="content">
-      <div style="display:flex;gap:6px;margin-bottom:10px"><span class="chip">All</span><span class="chip" style="background:#f3f4f6;color:#374151">Active</span><span class="chip" style="background:#f3f4f6;color:#374151">Matured</span></div>
-      <div class="meta" style="margin-bottom:8px"><span class="tag">StatusFilter chips</span></div>
+> Purpose: single source of truth for screen ↔ composable ↔ testTag ↔ data so conversations don't drift.
+> Updated: 2026-10-17 — Issue #27 vssbox branding + onboarding (cube 96dp hero, by vssbox, built-by footer, About 72dp) + #21/#28.
 
-      <div class="card">
-        <div class="row1"><div style="font-weight:700">NSB-78412</div><div class="chip">ACTIVE</div></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
-          <div><div class="amountWords">Rs 1 Million</div><div class="amountExact">Rs 1,000,000.00</div></div>
-          <div class="chip countdown">in 4d</div>
-        </div>
-        <div class="meta">10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026 <span style="float:right">⋮ More actions</span></div>
-        <div class="meta" style="margin-top:6px"><span class="tag">FdCard</span> <span class="tag">StatusChip</span> <span class="tag">CountdownChip</span> <span class="tag">Lkr.words + Lkr.exact</span> <span class="tag">payoutFrequency.label</span> <span class="tag">fdcard-0200r9</span></div>
-      </div>
+## 1. Navigation graph (official screen composables)
 
-      <div class="card">
-        <div class="row1"><div style="font-weight:700">NSB-78413</div><div class="chip matured">MATURED</div></div>
-        <div style="display:flex;align-items:center;justify-content:space-between;margin-top:6px">
-          <div><div class="amountWords">Rs 750 K</div><div class="amountExact">Rs 750,000.00</div></div>
-          <div class="chip countdown">today</div>
-        </div>
-        <div class="meta">8% p.a. • 100 days • At maturity • matures 07 Oct 2026 <span style="float:right">⋮</span></div>
-        <div class="meta"><span class="tag">Extended #22 — words+exact (was Lkr.full only)</span></div>
-      </div>
+```
+MainActivity
+ ├─ OnboardingScreen (ui/screens/OnboardingScreen.kt) — #27 vssbox branding gate onboarding-0100r9, shown if SettingsStore.hasSeenOnboarding=false
+ │   ├─ Image vssbox_cube 96dp testTag vssboxLogoOnboarding
+ │   ├─ Text vssbox headlineMedium bold primary testTag vssboxNameOnboarding + FD Manager titleLarge + "by vssbox • Secure box for your deposits" labelMedium
+ │   ├─ Trust Card ElevatedCard testTag trustCard: lock icon + "Your data stays yours" + trust line "We never ask for your bank login..."
+ │   ├─ FeatureRow ×3: Track all FDs CBSL-only, Rate•Tenor•Payout•Matures, Renewal chain & Recycle bin
+ │   ├─ Button Get Started testTag getStartedButton → setHasSeenOnboarding(true), TextButton Explore demo testTag exploreDemoButton
+ │   └─ Footer Row testTag builtByVssboxFooter: cube 16dp + "Built by vssbox • © 2026 vssbox"
+ │
+ ├─ BottomNav: Home | Calendar | Settings  +  FAB Add FD  +  AppBar actions (Notifications, RecycleBin)
+ │
+ ├─ HomeScreen (ui/screens/HomeScreen.kt) — #21 fix: rememberLazyListState() + LaunchedEffect scrollToItem(0) gate home-scroll-0100r9 + #27 footer
+ │   ├─ TopAppBar: title Column "FD Manager" bold + "by vssbox" labelSmall onPrimary 80%, actions Notifications (badge), RecycleBin
+ │   ├─ Hero card: Total invested → Lkr.words(total) headlineLarge + Lkr.exact(total) bodySmall + StatMini ×3
+ │   │   └─ StatMini (ui/components/Components.kt): label/value mini stat
+ │   ├─ SectionHeader ("Maturing soon") → LazyRow of compact cards
+ │   │   └─ Each: bank labelSmall, fdNumber titleMedium, Lkr.compact(amount) + Dates.format(maturity), CountdownChip
+ │   ├─ SectionHeader ("By institution") → LazyColumn(state = listState) of BankSummaryCard — back from bank resets to top (hero visible) per #21
+ │   │   └─ BankSummaryCard (private in HomeScreen.kt, official name BankSummaryCard)
+ │   │       ├─ BankMonogram (ui/components/BankMonogram.kt) size 46.dp testTag "bankMonogram"
+ │   │       ├─ Center Column: bank name titleMedium, "active • total" bodySmall + InstitutionType label
+ │   │       ├─ Right Column (Option B): Lkr.words(total) titleMedium bold primary
+ │   │       │                          Lkr.exact(total) labelSmall gray
+ │   │       │                          "invested" labelSmall gray
+ │   │       └─ KeyboardArrowRight icon + testTag "summary:<bankName>"  e.g. "summary:NSB"
+ │   └─ Footer Row testTag builtByVssboxHome: cube 16dp + "Built by vssbox • © 2026 vssbox • FD Manager by vssbox" labelSmall gray
+ │
+ ├─ FdListScreen (ui/screens/FdListScreen.kt) — bank-filtered list
+ │   ├─ TopAppBar: BankMonogram (institution header) + bank name title, Back, Sort menu
+ │   ├─ StatusFilter chips: All / Active / Matured / Renewed (FilterChip)
+ │   └─ LazyColumn of FdCard
+ │
+ ├─ FdDetailScreen (ui/screens/FdDetailScreen.kt)
+ │   ├─ TopAppBar: fdNumber title, Back, Edit, Delete
+ │   ├─ Header: Lkr.words(amount) headline + Lkr.exact(amount) bodySmall + StatusChip + CountdownChip
+ │   ├─ Info rows: Institution (BankMonogram + InstitutionRegistry type), Tenor, Payout frequency, Dates
+ │   ├─ Returns estimate: FdMath.interestEarned + maturity value
+ │   ├─ Renewal chain: parentFdId → child list oldest→newest, tap navigates
+ │   └─ Actions: Renew (→ RenewDialog), Delete (→ AlertDialog dialogConfirm/dialogDismiss)
+ │
+ ├─ AddEditFdScreen (ui/screens/AddEditFdScreen.kt)
+ │   ├─ Form fields: fdNumber, Institution picker (InstitutionRegistry), amount, rate, tenorUnit toggle Months|Days
+ │   │   ├─ Tenor presets: Months 1,3,6,12,24,36,60 + custom 1-120; Days 30,60,90,100,180,300,364 + custom 1-999
+ │   │   ├─ Institution picker dialog: grouped Banks / Finance Companies, search, info icon → CBSL link, "Request addition"
+ │   │   ├─ Payout frequency chips: Monthly payout / At maturity (required)
+ │   │   └─ RenewOption radio: CAPITALIZE / PAYOUT (pre-select CAPITALIZE), autoRenew switch
+ │   ├─ Live maturity preview: maturity date, est. interest, est. value (FdMath)
+ │   └─ Bottom Save button: "Save FD" (scrollTo + click required — keyboard may cover)
+ │
+ ├─ CalendarScreen (ui/screens/CalendarScreen.kt)
+ │   ├─ Month grid Monday-first, dots on maturity days color-coded via statusPalette()
+ │   └─ Selected day list: FdCard reused (Option B)
+ │
+ ├─ RecycleBinScreen (ui/screens/RecycleBinScreen.kt)
+ │   └─ List of isDeleted=true FDs, FdCard + Restore / Delete forever actions
+ │
+ └─ SettingsScreen (ui/screens/SettingsScreen.kt) — #27 vssbox About branding 72dp cube + Built by vssbox
+     ├─ Theme: System/Light/Dark
+     ├─ Notifications: toggle + leadDays slider (feeds Home maturing strip + bell badge)
+     ├─ Security: Biometric lock placeholder
+     ├─ Data: Currency LKR, Export CSV placeholder, Reset demo data
+     ├─ About: Image vssbox_cube 72dp testTag vssboxLogoAbout + vssbox titleLarge bold primary + FD Manager titleMedium + by vssbox labelSmall + Version 1.0 © 2026 vssbox + description + Row Built by vssbox • vssbox.com testTag aboutBranding
+     └─ Demo: Demo mode toggle isDemoMode → SettingsStore.setDemoMode (opt-in per #1)
+```
 
-      <div class="card" style="border-style:dashed">
-        <div style="font-weight:600">RenewDialog</div>
-        <div class="meta">Trigger via FdCard overflow → Renew. Tags <span class="k">dialogConfirm</span> / <span class="k">dialogDismiss</span>. Options: "Add interest to capital" / "Withdraw interest", preview next principal Lkr.full()</div>
-      </div>
-    </div>
-  </div>
+## 2. Shared components (ui/components/)
 
-  <div class="phone">
-    <div class="topbar"><span>FdDetailScreen</span><small>TopAppBar fdNumber + Edit + Delete</small></div>
-    <div class="content">
-      <div class="hero"><div class="words">Rs 1 Million</div><div class="exact">Rs 1,000,000.00</div><div style="margin-top:8px"><span class="chip">ACTIVE</span> <span class="chip countdown">in 4d</span></div></div>
-      <div class="card"><div style="font-weight:600">Details</div><div class="meta">Institution: NSB <span class="tag">BankMonogram</span> + type Bank + CBSL link<br>Tenor: 12 months (tenorUnit MONTHS)<br>Payout: At maturity<br>Branch, Dates, Status</div></div>
-      <div class="card"><div style="font-weight:600">Returns estimate</div><div class="meta">FdMath.interestEarned + maturityValue</div></div>
-      <div class="card"><div style="font-weight:600">Renewal chain</div><div class="meta">parentFdId oldest→newest, tap navigates</div></div>
-    </div>
-  </div>
+| Composable | File | Purpose | Key props / tags |
+|---|---|---|---|
+| `FdCard` | Components.kt | **Core FD row** — used by FdListScreen, CalendarScreen, RecycleBin, maturing strip (compact variant uses same data but compact wording) | `fd: FixedDeposit`, `today: LocalDate`, callbacks `onClick/onEdit/onRenew/onDelete`. Layout: fdNumber + StatusChip top row, **Option B amount** (Lkr.words primary titleLarge bold primary + Lkr.exact secondary labelSmall gray) + CountdownChip middle row, **meta line `rate • tenorLabel • payoutFrequency.label • matures date` bodySmall (fix 2026-10-07: was missing payout, now `10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026`)**, autoRenew icon, overflow menu MoreVert → DropdownMenu Edit/Renew/Delete |
+| `StatusChip` | Components.kt | Status pill | `status: FdStatus` → colors from `statusPalette()` |
+| `CountdownChip` | Components.kt | Days-to-maturity pill | `days: Long` → FdMath.countdownShort, red ≤5d, amber ≤30d |
+| `SectionHeader` | Components.kt | Section title + optional subtitle | `title, subtitle` |
+| `StatMini` | Components.kt | Hero mini stat | `label, value` |
+| `BankMonogram` | BankMonogram.kt | Institution tile, no images — initials from InstitutionRegistry | `bank: String`, size Dp, `testTag("bankMonogram")` |
+| `RenewDialog` | Components.kt | Renew confirmation with payout options | `fd`, `onConfirm(RenewOption)`, `onDismiss` — tags `dialogConfirm` / `dialogDismiss`, radio options "Add interest to capital" / "Withdraw interest", preview next principal Lkr.full() |
+| `BankSummaryCard` | HomeScreen.kt (private) | By-institution card | `summary: BankSummary` → BankMonogram + counts + Option B right column + testTag `summary:<bank>` |
 
-  <div class="phone">
-    <div class="topbar"><span>AddEditFdScreen</span><small>Validated form + live preview</small></div>
-    <div class="content">
-      <div class="card"><div style="font-weight:600">Institution picker <span class="tag">InstitutionRegistry</span></div><div class="meta">Grouped Banks / Finance Companies, search, info icon → CBSL, "Request addition". No free-text. Block if not CBSL.</div></div>
-      <div class="card"><div style="font-weight:600">Tenor</div><div class="meta">Toggle Months|Days. Months presets 1,3,6,12,24,36,60 + custom 1-120. Days 30,60,90,100,180,300,364 + custom 1-999. Live maturity preview.</div></div>
-      <div class="card"><div style="font-weight:600">Payout + Renew</div><div class="meta">Chips Monthly payout / At maturity (required). Radio CAPITALIZE / PAYOUT + autoRenew switch.</div></div>
-      <div style="text-align:center;padding:12px"><span style="background:var(--primary);color:#fff;padding:10px 18px;border-radius:10px;display:inline-block;font-weight:700">Save FD</span><div class="meta">Bottom button — performScrollTo().performClick() needed (keyboard)</div></div>
-    </div>
-  </div>
-</div>
+## 3. Domain / data (official names)
 
-<div class="wrap" style="grid-template-columns:1fr">
-  <div class="legend">
-    <h3>Component ↔ File map (official)</h3>
-    <ul>
-      <li><span class="k">HomeScreen</span> — <span class="k">ui/screens/HomeScreen.kt</span> — hero <span class="k">Lkr.words</span>+<span class="k">Lkr.exact</span>, <span class="k">StatMini</span>, <span class="k">SectionHeader</span>, <span class="k">BankSummaryCard</span> private + <span class="k">BankMonogram</span> 46.dp testTag <span class="k">summary:&lt;bank&gt;</span></li>
-      <li><span class="k">FdListScreen</span> — <span class="k">ui/screens/FdListScreen.kt</span> — TopAppBar <span class="k">BankMonogram</span>, <span class="k">StatusFilter</span> chips, sort menu, LazyColumn <span class="k">FdCard</span></li>
-      <li><span class="k">FdCard</span> — <span class="k">ui/components/Components.kt</span> — Row1 fdNumber+<span class="k">StatusChip</span>, Row2 <span class="k">Lkr.words</span> titleLarge bold primary + <span class="k">Lkr.exact</span> labelSmall gray + <span class="k">CountdownChip</span>, Row3 meta rate•tenor•<span class="k">payoutFrequency.label</span>•matures + autoRenew icon + overflow <span class="k">More actions</span> — gate <span class="k">fdcard-0200r9</span></li>
-      <li><span class="k">FdDetailScreen</span> — <span class="k">ui/screens/FdDetailScreen.kt</span> — amount words+exact, <span class="k">BankMonogram</span>, renewal chain via <span class="k">parentFdId</span>, <span class="k">RenewDialog</span></li>
-      <li><span class="k">AddEditFdScreen</span> — <span class="k">ui/screens/AddEditFdScreen.kt</span> — Institution picker <span class="k">InstitutionRegistry</span>, tenorUnit, payout chips, renewOption</li>
-      <li><span class="k">CalendarScreen</span> — <span class="k">ui/screens/CalendarScreen.kt</span> — month grid dots, day list <span class="k">FdCard</span></li>
-      <li><span class="k">SettingsScreen</span> — <span class="k">ui/screens/SettingsScreen.kt</span> — theme, notifications leadDays</li>
-      <li><span class="k">Lkr</span> — <span class="k">domain/FdMath.kt</span> — <span class="k">full</span>=Rs 1,000,000 legacy, <span class="k">words</span>=Rs 1 Million / Rs 750 K, <span class="k">exact</span>=Rs 1,000,000.00, <span class="k">compact</span>=Rs 1 M</li>
-      <li><span class="k">InstitutionRegistry</span> — <span class="k">ui/components/InstitutionRegistry.kt</span> — ~70 CBSL entries, <span class="k">find/resolve</span>, grouped banks/financeCompanies, <span class="k">lastUpdated</span></li>
-    </ul>
-  </div>
-</div>
-</body>
-</html>
+| Object | File | Key members |
+|---|---|---|
+| `Lkr` | domain/FdMath.kt | `full(amount): "Rs 1,000,000"` (grouped 0 decimals, legacy), `words(amount): "Rs 1 Million" / "Rs 750 K"` (≥1M Million with 1 decimal trimmed, <1M K per #20), `exact(amount): "Rs 1,000,000.00"` (2 decimals), `compact(amount): "Rs 1 M" / "Rs 750 K"` |
+| `FdMath` | domain/FdMath.kt | `interestEarned()`, `maturityValue()`, `maturityDate()`, `tenorLabel()`, `daysUntil()`, `countdownLabel()`, `countdownShort()`, `formatRate()` |
+| `InstitutionRegistry` | ui/components/InstitutionRegistry.kt | `find(name): Institution?`, `resolve(name): Institution` (fallback monogram), `all: List<Institution>`, grouped `banks` / `financeCompanies`, `lastUpdated` |
+| `FixedDeposit` | data/model/FixedDeposit.kt | schema §3.2: fdNumber, bank (CBSL-only), amount, openedDate, durationMonths/days, tenorUnit, interestRate, maturityDate, branch, payoutFrequency, renewOption, autoRenew, status, parentFdId, isDeleted, isActive |
+| `FdRepository` | data/FdRepository.kt | in-memory StateFlow, `reset(seed)`, `add/update/delete/renew`, `totalInvested()`, queries via `FdQueries` |
+| `FdQueries` | domain/FdQueries.kt | `summaries()`, `maturingSoon()`, `sortedByMaturity()` etc. |
+
+## 4. Amount formatting — Option B (official rule)
+
+> **Hero (HomeScreen total):** Primary `Lkr.words(total)` headlineLarge bold primary, Secondary `Lkr.exact(total)` bodySmall gray — issue #20
+>
+> **By-institution cards (BankSummaryCard):** Right column 3 lines — Primary `Lkr.words(totalInvested)` titleMedium bold primary, Secondary `Lkr.exact(totalInvested)` labelSmall gray, Tertiary `"invested"` labelSmall gray — issue #22 Option B
+>
+> **FD cards (FdCard) — extended 2026-10-07 + payout fix 2026-10-07:** Left column 2 lines — Primary `Lkr.words(amount)` titleLarge bold primary (e.g. `Rs 1 Million`), Secondary `Lkr.exact(amount)` labelSmall gray (e.g. `Rs 1,000,000.00`) — Option B extended from BankSummaryCard to FdCard. **Meta line now `rate • tenor • payoutFrequency.label • matures` e.g. `10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026` (was missing payout in V21, fixed per spec §4.2 + §4.6)**. CountdownChip stays right. Legacy `Lkr.full()` no longer used in FdCard.
+>
+> **Maturing soon strip (HomeScreen LazyRow):** Compact `Lkr.compact()` remains (space-constrained) — not changed by #22.
+
+Screenshots reference:
+- `image-1.png` (Home By-institution) shows correct Option B: `Rs 1 Million / Rs 1,000,000.00 / invested`
+- `image-2.png` (FdListScreen before extension) showed `Rs 1,000,000` numbers only — now updated to words+exact per extension.
+
+## 5. Test selectors (contract — do not invent)
+
+- `testTag("bankMonogram")` — any monogram tile
+- `testTag("summary:<full bank name>")` — e.g. `summary:NSB`, `summary:Bank of Ceylon (BOC)` — Home → openBank helper uses swipeUntilTag + waitUntil + onAllNodes[0].click (no performScrollTo, maxSwipes 50, gate navgate-0500r9)
+- `testTag("onboardingScreen")`, `vssboxLogoOnboarding`, `vssboxNameOnboarding`, `trustCard`, `getStartedButton`, `exploreDemoButton`, `builtByVssboxFooter`, `builtByVssboxHome`, `aboutBranding`, `vssboxLogoAbout` — #27 branding gates
+- Visible text: fdNumber like `"NSB-78412"`, amount words like `"Rs 1 Million"`, exact like `"Rs 1,000,000.00"`, chips `"Matured"`, `"Active"`, buttons `"Save FD"`, `"Renew"`, `"Delete"`, `"Restore"`, `"Cancel"`, onboarding `"Get Started — Add your first FD"`, `"Built by vssbox"`, `"vssbox"`
+- contentDescription: `"Add FD"`, `"Back"`, `"Edit"`, `"Sort"`, `"Recycle bin"`, `"Maturing soon"`, `"More actions"`, `"Auto-renew on"`, `"vssbox logo"`
+- Dialog tags: `dialogConfirm` / `dialogDismiss` — use `confirmDialog()` helper, never match by text for dialog buttons
+- RenewDialog options: radio labels `"Add interest to capital"` / `"Withdraw interest"` + payout wording on card meta line embeds payout frequency — prefer `onAllNodes` when list composed
+
+## 6. CBSL guardrail
+
+- `InstitutionRegistry` = single source of truth, ~70 entries: 24 LCB + 6 LSB + 32 LFC (as at CBSL Notice 31.12.2025). Display name + short code + type BANK/FINANCE_COMPANY + brand color + aliases.
+- Add/Edit picker: searchable, grouped Banks / Finance Companies, no free-text. Not found → inline error + "Request addition" intent. Save blocked if not in registry.
+- Defensive rendering: legacy unknown names → neutral monogram fallback but warning badge, editing blocked until CBSL institution selected.
+
+## 7. File map (official paths)
+
+```
+app/src/main/java/com/example/fdmanager/
+ ├─ data/model/FixedDeposit.kt
+ ├─ data/FdRepository.kt, SampleData.kt, SettingsStore.kt (hasSeenOnboarding, isDemoMode)
+ ├─ domain/FdMath.kt (Lkr, Dates, FdMath), FdQueries.kt
+ └─ ui/
+     ├─ components/
+     │   ├─ Components.kt (FdCard, StatusChip, CountdownChip, SectionHeader, StatMini, RenewDialog)
+     │   ├─ BankMonogram.kt (BankMonogram)
+     │   └─ InstitutionRegistry.kt (InstitutionRegistry, Institution, InstitutionType)
+     ├─ screens/
+     │   ├─ OnboardingScreen.kt (OnboardingScreen) — #27 vssbox 96dp cube + trust card + CTA gate onboarding-0100r9
+     │   ├─ HomeScreen.kt (HomeScreen, BankSummaryCard private) — #21 scroll fix + #27 footer builtByVssboxHome
+     │   ├─ FdListScreen.kt (FdListScreen)
+     │   ├─ FdDetailScreen.kt (FdDetailScreen)
+     │   ├─ AddEditFdScreen.kt (AddEditFdScreen)
+     │   ├─ CalendarScreen.kt (CalendarScreen)
+     │   ├─ RecycleBinScreen.kt (RecycleBinScreen)
+     │   └─ SettingsScreen.kt (SettingsScreen) — #27 About 72dp cube + aboutBranding + demo toggle
+     └─ theme/Theme.kt (statusPalette)
+app/src/main/res/
+ ├─ drawable/vssbox_cube.png — 1024x1024 RGBA transparent manual (408K) from vssbox_logo.jpg
+ ├─ drawable/ic_launcher.xml — fallback layer-list dark bg #0B1220 + cube 72dp
+ ├─ drawable-anydpi-v26/ic_launcher.xml — adaptive bg #0B1220 + fg vssbox_cube + monochrome
+ └─ mipmap-anydpi-v26/ic_launcher.xml — same adaptive for mipmap
+```
+
+## 8. Visual wire (ASCII)
+
+```
+┌─ HomeScreen ──────────────────────────────────────────┐
+│ TopAppBar: FD Manager [🔔badge] [🗑️]                  │
+│ ┌─ Hero ────────────────────────────────────────────┐ │
+│ │ Total invested                                    │ │
+│ │ Rs 3.2 Million (Lkr.words) headlineLarge primary  │ │
+│ │ Rs 3,200,000.00 (Lkr.exact) bodySmall             │ │
+│ │ [Active FDs] [Institutions] [Next maturity] StatMini│
+│ └───────────────────────────────────────────────────┘ │
+│ SectionHeader: Maturing soon                        │
+│ [LazyRow] [BOC-123 • Rs 750 K • 12 Dec • CountdownChip] │
+│ SectionHeader: By institution (N institutions)      │
+│ ┌─ BankSummaryCard summary:NSB ────────────────────┐│
+│ │ [NSB Monogram 46dp]  NSB        Rs 1 Million      ││
+│ │  2 active • 2 total   Bank     Rs 1,000,000.00    ││
+│ │                                   invested   >   ││
+│ └───────────────────────────────────────────────────┘│
+└───────────────────────────────────────────────────────┘
+
+┌─ FdListScreen (bank filtered) ────────────────────────┐
+│ TopAppBar: [←Back] [Monogram] NSB  [Sort]             │
+│ FilterChips: [All] [Active] [Matured] [Renewed]       │
+│ ┌─ FdCard ──────────────────────────────────────────┐│
+│ │ NSB-78412                          [ACTIVE Chip]  ││
+│ │ Rs 1 Million                       [in 4d Chip]   ││
+│ │ Rs 1,000,000.00                                    ││
+│ │ 10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026 [⋮] ││
+│ └───────────────────────────────────────────────────┘│
+│ ┌─ FdCard ──────────────────────────────────────────┐│
+│ │ NSB-78413                          [MATURED]      ││
+│ │ Rs 750 K                           [today]        ││
+│ │ Rs 750,000.00                                      ││
+│ │ 8% p.a. • 100 days • At maturity • matures 07 Oct 2026 [⋮] ││
+│ └───────────────────────────────────────────────────┘│
+└───────────────────────────────────────────────────────┘
+
+FdCard (official) — Components.kt — FDCARD_PAYOUT_GATE = fdcard-0200r9
+  Row1: fdNumber titleMedium bold weight1 + StatusChip
+  Row2: Column weight1 { Lkr.words titleLarge bold primary + Lkr.exact labelSmall gray } + CountdownChip
+  Row3: meta bodySmall onSurfaceVariant weight1 = rate • tenorLabel • payoutFrequency.label • matures date (e.g. "10% p.a. • 12 months • Monthly payout • matures 10 Oct 2026") + autoRenew icon + overflow menu Box DropdownMenu
+  Options: A inline 4 bullets (implemented), B two-line meta, C payout chip, D icon — see docs/fdcard-payout-options.html
+```
+
+---
+
+**For testers:** When a failure says "amount not found", check whether you are asserting `Lkr.full` (legacy numbers-only) vs new Option B `Lkr.words` + `Lkr.exact`. After 2026-10-07, FdCard expects words (e.g. "Rs 1 Million") AND exact (e.g. "Rs 1,000,000.00"), not just "Rs 1,000,000".

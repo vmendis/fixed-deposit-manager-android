@@ -38,4 +38,6 @@ class FdViewModel : ViewModel() {
     fun setNotificationsEnabled(enabled: Boolean) = SettingsStore.setNotificationsEnabled(enabled)
     fun setNotifyLeadDays(days: Int) = SettingsStore.setNotifyLeadDays(days)
     fun setBiometricEnabled(enabled: Boolean) = SettingsStore.setBiometricEnabled(enabled)
+    fun setHasSeenOnboarding(seen: Boolean) = SettingsStore.setHasSeenOnboarding(seen)
+    fun setDemoMode(enabled: Boolean) = SettingsStore.setDemoMode(enabled)
 }
