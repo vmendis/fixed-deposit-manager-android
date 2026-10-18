@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.fdmanager"
+    namespace = "com.vssbox.fdmanager"
     compileSdk = 34
 
     defaultConfig {
-        applicationId = "com.example.fdmanager"
+        applicationId = "com.vssbox.fdmanager"
         minSdk = 24
         targetSdk = 34
         versionCode = 1

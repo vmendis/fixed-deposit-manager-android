@@ -342,6 +342,22 @@ stored `renewOption` (no user interaction; works while the app opens).
 - Tests still GREEN 46/16 with @Before setting flags true
 - Spec both copies identical, wire diagram updated with onboarding funnel + empty states
 
+### 4.9 Application ID Rename & Rebrand (Issue #13)
+**Scope — from roadmap #13:** Rename `com.example.fdmanager` → `com.vssbox.fdmanager` (Play Store blocks `example.*`). App name stays FD Manager, by vssbox. Launcher icon finance teal/green identity, splash.
+
+**Implementation #13:**
+- `app/build.gradle.kts`: `namespace = "com.vssbox.fdmanager"`, `applicationId = "com.vssbox.fdmanager"` — Play Store requires non-example ID, `com.vssbox.*` groups future vssbox apps (budget, todo etc.)
+- Source package `com.example.fdmanager` kept for now (allowed — namespace independent), future move to `com.vssbox.fdmanager` optional. R class now `com.vssbox.fdmanager.R`
+- Clean build under new ID installs side-by-side with old `com.example.fdmanager` debug build (different applicationId)
+- Owner email for Firebase/Play: `vssbox.com@gmail.com` (or `hello@vssbox.com` via Workspace, you own vssbox.com domain), secondary owner TBD — vmendis@gmail.com NOT secondary per owner rule
+- Firebase projects per app for free-tier max: `vssbox-fd-manager-dev` (Spark/emulator) + `vssbox-fd-manager-prod` (Blaze + $5 budget alert) — each project gets own 50K reads/day free, total free multiplies. One company owner, many projects, not many gmails
+- Play Console: single developer account under `vssbox.com@gmail.com` can publish many apps `com.vssbox.*` — $25 once, not per app
+
+**Acceptance #13:**
+- `com.vssbox.fdmanager` builds, installs, runs 46/46 + 16/16 GREEN (package rename doesn't break tests)
+- Old `com.example.fdmanager` debug build remains installable side-by-side (different applicationId)
+- Spec both copies identical
+
 ---
 
 ## 5. Notifications
