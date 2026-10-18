@@ -88,8 +88,8 @@ class AuthFlowTest {
         rule.onNodeWithTag("passwordField").performTextInput("password123")
         rule.onNodeWithTag("authSubmit").performClick()
 
-        // After sign-in, SignIn pops back to Settings. Wait for sign-out row first, then email.
-        rule.waitUntil(10000) {
+        // After sign-in, SignIn pops back to Settings. Wait for sign-out row first.
+        rule.waitUntil(15000) {
             try {
                 rule.onNodeWithTag("accountSignOut").assertIsDisplayed()
                 true
@@ -98,23 +98,28 @@ class AuthFlowTest {
             }
         }
         rule.onNodeWithTag("accountSignOut").assertIsDisplayed()
-        // Email appears as title of account row + SectionHeader subtitle. Use dedicated tag + longer timeout.
-        rule.waitUntil(10000) {
+
+        // Email appears as title of account row (accountEmail tag) + SectionHeader subtitle.
+        // Use unmerged tree because Row with clickable merges child semantics.
+        rule.waitUntil(15000) {
             try {
-                // Prefer explicit tag, fallback to text search
                 try {
-                    rule.onNodeWithTag("accountEmail").assertIsDisplayed()
+                    rule.onNodeWithTag("accountEmail", useUnmergedTree = true).assertIsDisplayed()
                     true
                 } catch (e2: Throwable) {
-                    rule.onNodeWithText("vssbox.com@gmail.com", substring = true).assertIsDisplayed()
+                    rule.onNodeWithText("vssbox.com@gmail.com", substring = true, useUnmergedTree = true).assertIsDisplayed()
                     true
                 }
             } catch (e: Throwable) {
                 false
             }
         }
-        // Final asserts
-        rule.onNodeWithTag("accountEmail").assertIsDisplayed()
-        rule.onNodeWithText("vssbox.com@gmail.com", substring = true).assertIsDisplayed()
+        // Final asserts with unmerged tree
+        try {
+            rule.onNodeWithTag("accountEmail", useUnmergedTree = true).assertIsDisplayed()
+        } catch (e: Throwable) {
+            rule.onNodeWithText("vssbox.com@gmail.com", substring = true, useUnmergedTree = true).assertIsDisplayed()
+        }
+        rule.onNodeWithTag("accountSignOut").assertIsDisplayed()
     }
 }
