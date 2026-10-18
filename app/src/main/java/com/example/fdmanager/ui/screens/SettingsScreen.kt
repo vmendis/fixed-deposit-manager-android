@@ -41,7 +41,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.fdmanager.R
+import com.vssbox.fdmanager.R
 import com.example.fdmanager.data.ThemeMode
 import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.SectionHeader

@@ -31,7 +31,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
-import com.example.fdmanager.R
+import com.vssbox.fdmanager.R
 
 // ONBOARDING_GATE = onboarding-0100r9 — freshness marker for V24 #27
 @Composable
