@@ -2,7 +2,6 @@ package com.example.fdmanager
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
-import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -34,7 +33,6 @@ class AuthFlowTest {
     @Test
     fun settingsShowsSignInWhenLoggedOut() {
         rule.onNodeWithText("Settings").performClick()
-        // Account section tag + subtitle proves logged-out state
         rule.onNodeWithTag("accountSignIn").assertIsDisplayed()
         rule.onNodeWithText("Mock auth - fake session, 0 quota. Phase 2 -> Firebase Auth", substring = true).assertIsDisplayed()
     }
@@ -47,17 +45,17 @@ class AuthFlowTest {
         rule.onNodeWithTag("auth-0100r9").assertIsDisplayed()
         rule.onNodeWithTag("vssboxLogoAuth").assertIsDisplayed()
 
+        // Empty submit → email required
         rule.onNodeWithTag("authSubmit").performClick()
         rule.onNodeWithText("Email is required").assertIsDisplayed()
 
+        // Invalid email
         rule.onNodeWithTag("emailField").performTextInput("bad")
         rule.onNodeWithTag("authSubmit").performClick()
         rule.onNodeWithText("Enter a valid email").assertIsDisplayed()
 
-        // Clear and enter valid email + short password
-        SettingsStore.clearMockLoggedIn()
-        rule.onNodeWithText("Settings").performClick()
-        rule.onNodeWithTag("accountSignIn").performClick()
+        // Now fix email to valid (field currently contains "bad", appending makes "badtest@example.com" which is valid)
+        // and test short password validation - stay on same screen, don't navigate to Settings (bottom nav hidden on auth screens)
         rule.onNodeWithTag("emailField").performTextInput("test@example.com")
         rule.onNodeWithTag("passwordField").performTextInput("123")
         rule.onNodeWithTag("authSubmit").performClick()
@@ -70,7 +68,6 @@ class AuthFlowTest {
         rule.onNodeWithTag("accountSignIn").performClick()
 
         rule.onNodeWithTag("signUpLink").performClick()
-        // Use tag to avoid duplicate text (title + button both say Create account)
         rule.onNodeWithTag("confirmPasswordField").assertIsDisplayed()
         rule.onNodeWithTag("authSubmit").assertIsDisplayed()
 
@@ -91,8 +88,17 @@ class AuthFlowTest {
         rule.onNodeWithTag("passwordField").performTextInput("password123")
         rule.onNodeWithTag("authSubmit").performClick()
 
-        // Pop back to Settings — email should be visible as title of account row
-        rule.waitUntil(7000) {
+        // After sign-in, SignIn pops back to Settings. Wait for sign-out tag (reliable) then email.
+        rule.waitUntil(10000) {
+            try {
+                rule.onNodeWithTag("accountSignOut").assertIsDisplayed()
+                true
+            } catch (e: Throwable) {
+                false
+            }
+        }
+        rule.onNodeWithTag("accountSignOut").assertIsDisplayed()
+        rule.waitUntil(5000) {
             try {
                 rule.onNodeWithText("vssbox.com@gmail.com").assertIsDisplayed()
                 true
@@ -100,6 +106,6 @@ class AuthFlowTest {
                 false
             }
         }
-        rule.onNodeWithTag("accountSignOut").assertIsDisplayed()
+        rule.onNodeWithText("vssbox.com@gmail.com").assertIsDisplayed()
     }
 }

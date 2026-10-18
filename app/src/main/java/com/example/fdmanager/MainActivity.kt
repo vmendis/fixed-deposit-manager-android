@@ -184,7 +184,13 @@ fun FdManagerApp() {
                     onSignUp = { nav.navigate(Routes.SIGN_UP) },
                     onForgot = { nav.navigate(Routes.FORGOT) },
                     onSignedIn = {
-                        nav.popBackStack(Routes.SETTINGS, inclusive = false)
+                        // Pop SIGN_IN -> reveal SETTINGS. Use simple popBackStack for reliability with bottom-nav saveState.
+                        if (!nav.popBackStack()) {
+                            nav.navigate(Routes.SETTINGS) {
+                                popUpTo(Routes.SETTINGS) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
                     }
                 )
             }
@@ -193,9 +199,20 @@ fun FdManagerApp() {
                     vm = vm,
                     onBack = { nav.popBackStack() },
                     onSignIn = {
-                        nav.popBackStack(Routes.SIGN_IN, inclusive = false)
+                        if (!nav.popBackStack()) {
+                            nav.navigate(Routes.SIGN_IN) {
+                                popUpTo(Routes.SIGN_IN) { inclusive = true }
+                            }
+                        }
                     },
                     onSignedUp = {
+                        if (!nav.popBackStack(Routes.SETTINGS, inclusive = false)) {
+                            nav.navigate(Routes.SETTINGS) {
+                                popUpTo(Routes.SETTINGS) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                        // Extra pop if we came via SIGN_IN -> SIGN_UP, ensure we land on SETTINGS
                         nav.popBackStack(Routes.SETTINGS, inclusive = false)
                     }
                 )
@@ -205,7 +222,11 @@ fun FdManagerApp() {
                     vm = vm,
                     onBack = { nav.popBackStack() },
                     onSent = {
-                        nav.popBackStack(Routes.SIGN_IN, inclusive = false)
+                        if (!nav.popBackStack(Routes.SIGN_IN, inclusive = false)) {
+                            nav.navigate(Routes.SIGN_IN) {
+                                popUpTo(Routes.SIGN_IN) { inclusive = true }
+                            }
+                        }
                     }
                 )
             }
