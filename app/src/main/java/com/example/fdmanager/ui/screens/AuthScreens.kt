@@ -156,7 +156,6 @@ fun SignInScreen(
                         scope.launch {
                             val res = vm.mockSignIn(email, password)
                             if (res.isSuccess) {
-                                snackbar.showSnackbar("Signed in as $email (mock)")
                                 onSignedIn()
                             } else {
                                 generalError = res.exceptionOrNull()?.message ?: "Sign in failed"
@@ -305,7 +304,6 @@ fun SignUpScreen(
                         scope.launch {
                             val res = vm.mockSignUp(email, password, confirm)
                             if (res.isSuccess) {
-                                snackbar.showSnackbar("Account created $email (mock)")
                                 onSignedUp()
                             } else {
                                 generalError = res.exceptionOrNull()?.message ?: "Sign up failed"
@@ -425,7 +423,6 @@ fun ForgotPasswordScreen(
                             val res = vm.mockSendReset(email)
                             if (res.isSuccess) {
                                 sent = true
-                                snackbar.showSnackbar("Reset link sent to $email (mock)")
                             } else {
                                 generalError = res.exceptionOrNull()?.message ?: "Failed to send"
                             }
