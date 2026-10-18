@@ -1,6 +1,6 @@
 # TEST INSTRUCTIONS — Round V29 — Issue #2 Mock Auth Flow UI Only
 Branch: dev
-Expected commit: <dev SHA will be filled after push, expect auth-0100r9 gate present>
+Expected commit: f60a60c (fix syntax — remove escaped quotes, auth-0100r9 gate present)
 Test cycle: V29
 
 ## 0. Preflight — Owner does Steps 1-2 ONLY, then tells Roo: "Open TEST-INSTRUCTIONS.md at repo root and follow it"
