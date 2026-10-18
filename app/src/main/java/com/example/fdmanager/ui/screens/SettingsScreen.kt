@@ -103,6 +103,7 @@ fun SettingsScreen(
                             onSignOut()
                         },
                         testTag = "accountSignOut",
+                        titleTestTag = "accountEmail",
                         trailing = {
                             Icon(
                                 Icons.Filled.Logout,
@@ -344,7 +345,8 @@ private fun SettingRow(
     subtitle: String,
     onClick: (() -> Unit)? = null,
     trailing: (@Composable () -> Unit)? = null,
-    testTag: String? = null
+    testTag: String? = null,
+    titleTestTag: String? = null
 ) {
     Row(
         Modifier
@@ -355,7 +357,11 @@ private fun SettingRow(
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyLarge)
+            Text(
+                title,
+                style = MaterialTheme.typography.bodyLarge,
+                modifier = if (titleTestTag != null) Modifier.testTag(titleTestTag) else Modifier
+            )
             Text(
                 subtitle,
                 style = MaterialTheme.typography.bodySmall,

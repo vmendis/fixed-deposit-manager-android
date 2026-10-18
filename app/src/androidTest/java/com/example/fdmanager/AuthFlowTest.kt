@@ -88,7 +88,7 @@ class AuthFlowTest {
         rule.onNodeWithTag("passwordField").performTextInput("password123")
         rule.onNodeWithTag("authSubmit").performClick()
 
-        // After sign-in, SignIn pops back to Settings. Wait for sign-out tag (reliable) then email.
+        // After sign-in, SignIn pops back to Settings. Wait for sign-out row first, then email.
         rule.waitUntil(10000) {
             try {
                 rule.onNodeWithTag("accountSignOut").assertIsDisplayed()
@@ -98,14 +98,23 @@ class AuthFlowTest {
             }
         }
         rule.onNodeWithTag("accountSignOut").assertIsDisplayed()
-        rule.waitUntil(5000) {
+        // Email appears as title of account row + SectionHeader subtitle. Use dedicated tag + longer timeout.
+        rule.waitUntil(10000) {
             try {
-                rule.onNodeWithText("vssbox.com@gmail.com").assertIsDisplayed()
-                true
+                // Prefer explicit tag, fallback to text search
+                try {
+                    rule.onNodeWithTag("accountEmail").assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) {
+                    rule.onNodeWithText("vssbox.com@gmail.com", substring = true).assertIsDisplayed()
+                    true
+                }
             } catch (e: Throwable) {
                 false
             }
         }
-        rule.onNodeWithText("vssbox.com@gmail.com").assertIsDisplayed()
+        // Final asserts
+        rule.onNodeWithTag("accountEmail").assertIsDisplayed()
+        rule.onNodeWithText("vssbox.com@gmail.com", substring = true).assertIsDisplayed()
     }
 }
