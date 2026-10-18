@@ -84,12 +84,12 @@ fun SettingsScreen(
                         title = "Sign in",
                         subtitle = "Mock auth - fake session, 0 quota. Phase 2 -> Firebase Auth",
                         onClick = onSignIn,
+                        testTag = "accountSignIn",
                         trailing = {
                             Icon(
                                 Icons.Filled.Person,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.testTag("accountSignIn")
+                                tint = MaterialTheme.colorScheme.primary
                             )
                         }
                     )
@@ -102,12 +102,12 @@ fun SettingsScreen(
                             scope.launch { snackbarHost.showSnackbar("Signed out (mock)") }
                             onSignOut()
                         },
+                        testTag = "accountSignOut",
                         trailing = {
                             Icon(
                                 Icons.Filled.Logout,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.testTag("accountSignOut")
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     )
@@ -343,11 +343,13 @@ private fun SettingRow(
     title: String,
     subtitle: String,
     onClick: (() -> Unit)? = null,
-    trailing: (@Composable () -> Unit)? = null
+    trailing: (@Composable () -> Unit)? = null,
+    testTag: String? = null
 ) {
     Row(
         Modifier
             .fillMaxWidth()
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
             .padding(horizontal = 16.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
