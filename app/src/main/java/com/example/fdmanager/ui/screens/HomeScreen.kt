@@ -50,7 +50,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.example.fdmanager.R
+import com.vssbox.fdmanager.R
 import com.example.fdmanager.data.model.BankSummary
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.domain.Dates

@@ -9,7 +9,7 @@
         android:theme="@style/Theme.FDManager">
 
         <activity
-            android:name=".MainActivity"
+            android:name="com.example.fdmanager.MainActivity"
             android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
