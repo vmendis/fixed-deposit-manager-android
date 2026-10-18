@@ -35,10 +35,13 @@ import com.example.fdmanager.ui.screens.AddEditFdScreen
 import com.example.fdmanager.ui.screens.CalendarScreen
 import com.example.fdmanager.ui.screens.FdDetailScreen
 import com.example.fdmanager.ui.screens.FdListScreen
+import com.example.fdmanager.ui.screens.ForgotPasswordScreen
 import com.example.fdmanager.ui.screens.HomeScreen
 import com.example.fdmanager.ui.screens.OnboardingScreen
 import com.example.fdmanager.ui.screens.RecycleBinScreen
 import com.example.fdmanager.ui.screens.SettingsScreen
+import com.example.fdmanager.ui.screens.SignInScreen
+import com.example.fdmanager.ui.screens.SignUpScreen
 import com.example.fdmanager.ui.theme.FdManagerTheme
 
 object Routes {
@@ -51,6 +54,9 @@ object Routes {
     const val FD_DETAIL = "fd/{fdId}"
     const val EDIT = "edit/{fdId}"
     const val ONBOARDING = "onboarding" // #27 vssbox branding on new-user screen
+    const val SIGN_IN = "signin" // #2 mock auth
+    const val SIGN_UP = "signup"
+    const val FORGOT = "forgot"
 
     fun bank(bank: String) = "bank/${Uri.encode(bank)}"
     fun fdDetail(id: String) = "fd/$id"
@@ -89,7 +95,7 @@ fun FdManagerApp() {
     val settings by vm.settings.collectAsStateWithLifecycle()
 
     // #1 onboarding funnel + #27 vssbox branding — fresh install → welcome → add first FD → Home
-    // ONBOARDING_GATE = onboarding-0100r9, HOME_SCROLL_GATE = home-scroll-0100r9, DEMO_GATE = demo-0100r9
+    // ONBOARDING_GATE = onboarding-0100r9, HOME_SCROLL_GATE = home-scroll-0100r9, DEMO_GATE = demo-0100r9, AUTH_GATE = auth-0100r9
     val startDest = if (!settings.hasSeenOnboarding) Routes.ONBOARDING else Routes.HOME
 
     val backStackEntry by nav.currentBackStackEntryAsState()
@@ -164,7 +170,44 @@ fun FdManagerApp() {
                 )
             }
             composable(Routes.SETTINGS) {
-                SettingsScreen(vm = vm)
+                SettingsScreen(
+                    vm = vm,
+                    onSignIn = { nav.navigate(Routes.SIGN_IN) },
+                    onSignOut = { /* stay in settings */ }
+                )
+            }
+            // #2 mock auth flow — UI only, fake session, 0 quota, swappable to FirebaseAuthRepository in Phase 2
+            composable(Routes.SIGN_IN) {
+                SignInScreen(
+                    vm = vm,
+                    onBack = { nav.popBackStack() },
+                    onSignUp = { nav.navigate(Routes.SIGN_UP) },
+                    onForgot = { nav.navigate(Routes.FORGOT) },
+                    onSignedIn = {
+                        nav.popBackStack(Routes.SETTINGS, inclusive = false)
+                    }
+                )
+            }
+            composable(Routes.SIGN_UP) {
+                SignUpScreen(
+                    vm = vm,
+                    onBack = { nav.popBackStack() },
+                    onSignIn = {
+                        nav.popBackStack(Routes.SIGN_IN, inclusive = false)
+                    },
+                    onSignedUp = {
+                        nav.popBackStack(Routes.SETTINGS, inclusive = false)
+                    }
+                )
+            }
+            composable(Routes.FORGOT) {
+                ForgotPasswordScreen(
+                    vm = vm,
+                    onBack = { nav.popBackStack() },
+                    onSent = {
+                        nav.popBackStack(Routes.SIGN_IN, inclusive = false)
+                    }
+                )
             }
             composable(Routes.BIN) {
                 RecycleBinScreen(vm = vm, onBack = { nav.popBackStack() })

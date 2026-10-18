@@ -3,6 +3,7 @@ package com.example.fdmanager.ui.screens
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -16,6 +17,8 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.FileDownload
+import androidx.compose.material.icons.filled.Logout
+import androidx.compose.material.icons.filled.Person
 import androidx.compose.material.icons.filled.Refresh
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.HorizontalDivider
@@ -29,7 +32,6 @@ import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
-import androidx.compose.foundation.layout.Box
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
@@ -49,7 +51,11 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(vm: FdViewModel) {
+fun SettingsScreen(
+    vm: FdViewModel,
+    onSignIn: () -> Unit = {},
+    onSignOut: () -> Unit = {}
+) {
     val settings by vm.settings.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -71,6 +77,44 @@ fun SettingsScreen(vm: FdViewModel) {
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
+                // ---- Account #2 mock auth ----
+                SectionHeader("Account", subtitle = if (settings.isMockLoggedIn) settings.mockEmail ?: "Signed in (mock)" else "Mock session - no backend")
+                if (!settings.isMockLoggedIn) {
+                    SettingRow(
+                        title = "Sign in",
+                        subtitle = "Mock auth - fake session, 0 quota. Phase 2 -> Firebase Auth",
+                        onClick = onSignIn,
+                        trailing = {
+                            Icon(
+                                Icons.Filled.Person,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.testTag("accountSignIn")
+                            )
+                        }
+                    )
+                } else {
+                    SettingRow(
+                        title = settings.mockEmail ?: "Signed in",
+                        subtitle = "Mock session active - tap to sign out",
+                        onClick = {
+                            vm.mockSignOut()
+                            scope.launch { snackbarHost.showSnackbar("Signed out (mock)") }
+                            onSignOut()
+                        },
+                        trailing = {
+                            Icon(
+                                Icons.Filled.Logout,
+                                contentDescription = null,
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.testTag("accountSignOut")
+                            )
+                        }
+                    )
+                }
+
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
                 // ---- Appearance ----
                 SectionHeader("Appearance")
                 ThemeMode.entries.forEach { mode ->
@@ -128,10 +172,10 @@ fun SettingsScreen(vm: FdViewModel) {
                 SectionHeader("Security")
                 SettingSwitchRow(
                     title = "Biometric lock",
-                    subtitle = "Requires Firebase Authentication — wired up later",
+                    subtitle = "Requires Firebase Authentication - wired up later",
                     checked = false,
                     onCheckedChange = {
-                        placeholder("Biometrics need the auth backend — disabled in this mock.")
+                        placeholder("Biometrics need the auth backend - disabled in this mock.")
                     }
                 )
 
@@ -168,13 +212,13 @@ fun SettingsScreen(vm: FdViewModel) {
                     subtitle = "Replay vssbox welcome screen (hasSeenOnboarding=false)",
                     onClick = {
                         vm.setHasSeenOnboarding(false)
-                        placeholder("Onboarding will show on next launch — restart app or set true to skip.")
+                        placeholder("Onboarding will show on next launch - restart app or set true to skip.")
                     }
                 )
 
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
-                // ---- About ---- vssbox branding #27 — large cube 72dp + vssbox name + links
+                // ---- About ---- vssbox branding #27
                 SectionHeader("About")
                 Column(
                     Modifier
@@ -212,13 +256,13 @@ fun SettingsScreen(vm: FdViewModel) {
                     }
                     Spacer(Modifier.height(12.dp))
                     Text(
-                        "Version 1.0 · front-end mock · © 2026 vssbox",
+                        "Version 1.0 - front-end mock - © 2026 vssbox",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Secure box for your deposits — Track CBSL-regulated FDs (24 LCB + 6 LSB + 32 LFC). Runs entirely on local sample data. No account, no backend, no real money — FDs shown are fictional.",
+                        "Secure box for your deposits - Track CBSL-regulated FDs (24 LCB + 6 LSB + 32 LFC). Runs entirely on local sample data. No account, no backend, no real money - FDs shown are fictional.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

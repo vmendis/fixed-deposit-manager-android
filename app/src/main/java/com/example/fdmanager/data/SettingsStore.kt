@@ -13,13 +13,14 @@ enum class ThemeMode(val label: String) {
 data class SettingsState(
     val themeMode: ThemeMode = ThemeMode.SYSTEM,
     val notificationsEnabled: Boolean = true,
-    val notifyLeadDays: Int = 5,      // spec default: alert 5 days before maturity
+    val notifyLeadDays: Int = 5,
     val biometricEnabled: Boolean = false,
-    val hasSeenOnboarding: Boolean = false,  // #1 fresh install → welcome screen, #27 vssbox branding; default false for onboarding funnel, tests set true in @Before
-    val isDemoMode: Boolean = false           // #1 opt-in demo mode — sample data not always-seeded, toggle in Settings
+    val hasSeenOnboarding: Boolean = false,
+    val isDemoMode: Boolean = false,
+    val isMockLoggedIn: Boolean = false,
+    val mockEmail: String? = null
 )
 
-/** In-memory stand-in for per-user preferences (would live in Firestore/user doc later). */
 object SettingsStore {
     private val _state = MutableStateFlow(SettingsState())
     val state: StateFlow<SettingsState> = _state.asStateFlow()
@@ -46,5 +47,13 @@ object SettingsStore {
 
     fun setDemoMode(enabled: Boolean) {
         _state.value = _state.value.copy(isDemoMode = enabled)
+    }
+
+    fun setMockLoggedIn(email: String) {
+        _state.value = _state.value.copy(isMockLoggedIn = true, mockEmail = email.trim())
+    }
+
+    fun clearMockLoggedIn() {
+        _state.value = _state.value.copy(isMockLoggedIn = false, mockEmail = null)
     }
 }
