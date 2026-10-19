@@ -32,6 +32,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
@@ -41,6 +44,7 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -64,7 +68,9 @@ import com.example.fdmanager.ui.components.EmptyState
 import com.example.fdmanager.ui.components.InstitutionRegistry
 import com.example.fdmanager.ui.components.SectionHeader
 import com.example.fdmanager.ui.components.StatMini
+import com.example.fdmanager.ui.components.SyncStateChip
 import java.time.LocalDate
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -89,6 +95,12 @@ fun HomeScreen(
         FdQueries.maturingSoon(fds, today, settings.notifyLeadDays)
     }
     var showMaturing by remember { mutableStateOf(false) }
+    // #3 sync-state chip — mock states for design review, 0 quota, swappable to FirebaseSyncRepository Phase 2
+    val syncState by vm.syncState.collectAsStateWithLifecycle()
+    val lastSyncError by vm.lastSyncError.collectAsStateWithLifecycle()
+    val snackbarHost = remember { SnackbarHostState() }
+    val scope = rememberCoroutineScope()
+    // SYNCSTATE_GATE = syncstate-0300r9 — freshness marker for V30
     // Issue #21 fix: Back from bank list returned mid-scroll with hero cut off (LazyColumn state preserved via NavHost saveState/restoreState)
     // Fix: use explicit non-saveable LazyListState so returning from FdListScreen resets to top (hero visible)
     // Alternative considered: smooth scroll to top on back, but reset is simpler and matches expected UX
@@ -98,8 +110,24 @@ fun HomeScreen(
     LaunchedEffect(Unit) {
         listState.scrollToItem(0)
     }
+    // Show Snackbar for sync errors with Retry action — per #3 acceptance
+    LaunchedEffect(lastSyncError) {
+        lastSyncError?.let { error ->
+            val result = snackbarHost.showSnackbar(
+                message = error,
+                actionLabel = "Retry",
+                withDismissAction = true
+            )
+            if (result == SnackbarResult.ActionPerformed) {
+                scope.launch {
+                    vm.retrySync()
+                }
+            }
+        }
+    }
 
-    Column(Modifier.fillMaxSize()) {
+    androidx.compose.foundation.layout.Box(Modifier.fillMaxSize()) {
+        Column(Modifier.fillMaxSize()) {
         TopAppBar(
             title = {
                 Column {
@@ -131,6 +159,28 @@ fun HomeScreen(
                 actionIconContentColor = MaterialTheme.colorScheme.onPrimary
             )
         )
+
+        // ---- Sync-state chip #3 — persistent small indicator below TopAppBar ----
+        Row(
+            Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 6.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            SyncStateChip(state = syncState, modifier = Modifier.testTag("syncChip"))
+            Text(
+                text = when (syncState) {
+                    com.example.fdmanager.domain.SyncState.SAVED -> "Local changes saved"
+                    com.example.fdmanager.domain.SyncState.SYNCING -> "Syncing to cloud (mock)…"
+                    com.example.fdmanager.domain.SyncState.OFFLINE -> "Offline — local only"
+                    com.example.fdmanager.domain.SyncState.ERROR -> "Sync failed — check Snackbar for Retry"
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.testTag("syncStateText")
+            )
+        }
 
         LazyColumn(
             state = listState,
@@ -284,6 +334,13 @@ fun HomeScreen(
                 }
             }
         }
+        }
+
+        // Snackbar for sync errors #3
+        SnackbarHost(
+            hostState = snackbarHost,
+            modifier = Modifier.align(Alignment.BottomCenter)
+        )
     }
 
     // ---- Maturing soon dialog ----

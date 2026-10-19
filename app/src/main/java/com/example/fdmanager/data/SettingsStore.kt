@@ -18,7 +18,9 @@ data class SettingsState(
     val hasSeenOnboarding: Boolean = false,
     val isDemoMode: Boolean = false,
     val isMockLoggedIn: Boolean = false,
-    val mockEmail: String? = null
+    val mockEmail: String? = null,
+    val syncStateName: String = "SAVED",
+    val lastSyncError: String? = null
 )
 
 object SettingsStore {
@@ -55,5 +57,13 @@ object SettingsStore {
 
     fun clearMockLoggedIn() {
         _state.value = _state.value.copy(isMockLoggedIn = false, mockEmail = null)
+    }
+
+    fun setSyncStateName(name: String) {
+        _state.value = _state.value.copy(syncStateName = name)
+    }
+
+    fun setLastSyncError(error: String?) {
+        _state.value = _state.value.copy(lastSyncError = error)
     }
 }

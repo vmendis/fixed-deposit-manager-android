@@ -15,10 +15,13 @@ class FdViewModel : ViewModel() {
 
     private val repo = FdRepository.get()
     private val authRepo = com.example.fdmanager.data.FakeAuthRepository
+    private val syncRepo = com.example.fdmanager.data.FakeSyncRepository
 
     val fds: StateFlow<List<FixedDeposit>> = repo.fds
     val settings: StateFlow<SettingsState> = SettingsStore.state
     val authState = authRepo.authState
+    val syncState = syncRepo.syncState
+    val lastSyncError = syncRepo.lastError
 
     init {
         repo.autoRenewDue()
@@ -53,5 +56,46 @@ class FdViewModel : ViewModel() {
     suspend fun mockSendReset(email: String): Result<Unit> = authRepo.sendPasswordReset(email)
     fun mockSignOut() {
         SettingsStore.clearMockLoggedIn()
+    }
+
+    // #3 sync-state — mock, 0 quota, swappable to FirebaseSyncRepository Phase 2
+    fun setSyncState(state: com.example.fdmanager.domain.SyncState) {
+        syncRepo.setState(state)
+        SettingsStore.setSyncStateName(state.name)
+    }
+
+    suspend fun triggerSync(): Result<Unit> {
+        val res = syncRepo.sync()
+        if (res.isFailure) {
+            SettingsStore.setLastSyncError(syncRepo.lastError.value)
+        } else {
+            SettingsStore.setLastSyncError(null)
+        }
+        return res
+    }
+
+    suspend fun retrySync(): Result<Unit> {
+        val res = syncRepo.retry()
+        SettingsStore.setLastSyncError(null)
+        return res
+    }
+
+    fun simulateSyncError() {
+        syncRepo.simulateError()
+        SettingsStore.setLastSyncError(syncRepo.lastError.value)
+        SettingsStore.setSyncStateName(com.example.fdmanager.domain.SyncState.ERROR.name)
+    }
+
+    fun simulateOffline() {
+        syncRepo.simulateOffline()
+        SettingsStore.setSyncStateName(com.example.fdmanager.domain.SyncState.OFFLINE.name)
+        SettingsStore.setLastSyncError(null)
+    }
+
+    fun clearSyncError() {
+        syncRepo.setError(null)
+        syncRepo.setState(com.example.fdmanager.domain.SyncState.SAVED)
+        SettingsStore.setLastSyncError(null)
+        SettingsStore.setSyncStateName(com.example.fdmanager.domain.SyncState.SAVED.name)
     }
 }

@@ -303,6 +303,57 @@ fun SettingsScreen(
                     onCheckedChange = { vm.setDemoMode(it) }
                 )
 
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+                // ---- Sync state demo #3 — mock states for design review, 0 quota ----
+                SectionHeader("Sync (mock) #3", subtitle = "Demo triggers for Saved/Syncing/Offline/Error chip")
+                SettingRow(
+                    title = "Sync state: ${settings.syncStateName}",
+                    subtitle = "Tap to cycle Saved → Syncing → Offline → Error (mock, 0 quota)",
+                    onClick = {
+                        val next = when (settings.syncStateName) {
+                            "SAVED" -> com.example.fdmanager.domain.SyncState.SYNCING
+                            "SYNCING" -> com.example.fdmanager.domain.SyncState.OFFLINE
+                            "OFFLINE" -> com.example.fdmanager.domain.SyncState.ERROR
+                            else -> com.example.fdmanager.domain.SyncState.SAVED
+                        }
+                        vm.setSyncState(next)
+                        scope.launch { snackbarHost.showSnackbar("Sync state → ${next.name} (mock)") }
+                    },
+                    testTag = "syncStateRow"
+                )
+                SettingRow(
+                    title = "Simulate sync error",
+                    subtitle = "Shows Snackbar with Retry — retry re-runs last mock operation",
+                    onClick = {
+                        vm.simulateSyncError()
+                        scope.launch { snackbarHost.showSnackbar("Simulated error — check Home for Snackbar Retry (mock)") }
+                    },
+                    testTag = "simulateSyncError"
+                )
+                SettingRow(
+                    title = "Simulate offline",
+                    subtitle = "Chip shows Offline — local only",
+                    onClick = {
+                        vm.simulateOffline()
+                        scope.launch { snackbarHost.showSnackbar("Offline mode (mock)") }
+                    },
+                    testTag = "simulateOffline"
+                )
+                SettingRow(
+                    title = "Clear sync error",
+                    subtitle = "Reset to Saved",
+                    onClick = {
+                        vm.clearSyncError()
+                        scope.launch { snackbarHost.showSnackbar("Sync cleared → Saved (mock)") }
+                    },
+                    testTag = "clearSyncError"
+                )
+                com.example.fdmanager.ui.components.SyncStateChipWithDescription(
+                    state = com.example.fdmanager.domain.SyncState.fromName(settings.syncStateName),
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                )
+
                 Spacer(Modifier.height(48.dp))
             }
         }

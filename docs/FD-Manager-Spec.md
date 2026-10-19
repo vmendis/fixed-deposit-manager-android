@@ -382,6 +382,37 @@ stored `renewOption` (no user interaction; works while the app opens).
 - Tier1 now 50 tests (46+4 new AuthValidation) GREEN, Tier2 now 20 tests (16+4 new AuthFlow) GREEN, freshness gate `auth-0100r9` yes + existing gates, vssbox_cube present, `com.vssbox.fdmanager` package.
 - Spec both copies identical.
 
+### 4.11 Sync-State Chip & Error/Retry (Issue #3)
+**Scope — from roadmap #3:** Small persistent state chip: Saved / Syncing / Offline (mocked via simulated states for design review). Snackbar pattern for transient sync errors with a Retry action. Document the state machine.
+
+**Implementation #3:**
+- `domain/SyncState.kt`: enum `SyncState { SAVED("Saved"), SYNCING("Syncing…"), OFFLINE("Offline"), ERROR("Sync failed") }` with label + description, `fromName(name)` helper. Pure, JVM unit-testable.
+- `data/SyncRepository.kt`: interface `SyncRepository { syncState: StateFlow<SyncState>, lastError: StateFlow<String?>, sync(), retry(), setState(), setError() }` — designed for Phase 2 swap to `FirebaseSyncRepository` without layout changes. `FakeSyncRepository` uses in-memory `MutableStateFlow` — no network, 0 quota, simulates delay 600-800ms, `simulateError()` sets lastError + ERROR state, `simulateOffline()` sets OFFLINE.
+- `data/SettingsStore.kt`: extended `SettingsState` with `syncStateName: String = "SAVED"`, `lastSyncError: String? = null`, methods `setSyncStateName()`, `setLastSyncError()` — for demo persistence across restarts.
+- `ui/FdViewModel.kt`: exposes `syncState`, `lastSyncError`, methods `setSyncState()`, `triggerSync()`, `retrySync()`, `simulateSyncError()`, `simulateOffline()`, `clearSyncError()` — delegates to `FakeSyncRepository` + updates `SettingsStore` for UI.
+- `ui/components/SyncStateChip.kt`: Composable chip with `SYNCSTATE_GATE = syncstate-0300r9` testTag, shows icon + label: SAVED (CheckCircle, secondaryContainer), SYNCING (CircularProgressIndicator, tertiaryContainer), OFFLINE (CloudOff, surfaceVariant), ERROR (Error, errorContainer). `testTag("syncStateLabel")`, `syncStateDescription`, `syncChip`, `syncstate-0300r9`.
+- `ui/screens/HomeScreen.kt`: Added persistent chip row below TopAppBar with `SyncStateChip` + descriptive text, `testTag("syncChip")`, `syncStateText`, `syncstate-0300r9` gate. Added `SnackbarHost` at bottom with `lastSyncError` observer — shows Snackbar with message + "Retry" action, retry re-runs last mock operation per acceptance. `LaunchedEffect(lastSyncError)` triggers snackbar.
+- `ui/screens/SettingsScreen.kt`: Added Demo section "Sync (mock) #3" with 4 rows: `syncStateRow` cycles SAVED→SYNCING→OFFLINE→ERROR, `simulateSyncError` triggers error + Snackbar, `simulateOffline` sets offline, `clearSyncError` resets to SAVED. Shows `SyncStateChipWithDescription` preview. All mock, 0 quota.
+- Tests: `SyncStateTest` (4 tests) — values, fromName, labels, descriptions — Tier1. `SyncStateChipTest` (4 tests) — `syncChipDisplayedOnHome`, `syncStateCyclesViaSettings`, `syncErrorShowsSnackbarWithRetryOnHome`, `offlineChipShowsLocalOnly` — Tier2 with `syncstate-0300r9` gate. No Firebase calls → 0 quota.
+- Future swap: `FirebaseSyncRepository` will implement `SyncRepository` with real Firestore snapshot listener + offline detection. UI unchanged, only DI provider switches.
+
+**State machine #3 (documented for Phase 2 wiring):**
+- Default: SAVED — local data saved, no pending sync
+- On write (add/edit/delete): SYNCING (800ms mock delay) → SAVED on success
+- On offline: OFFLINE — local only, sync deferred
+- On error: ERROR — chip shows error, Snackbar shows message + Retry, retry re-runs lastOperation (mock: addFd) → SYNCING (600ms) → SAVED
+- Settings demo triggers allow cycling for design review without backend.
+
+**Why mock before Firebase:**
+- Allows UX review of sync indicator + error/retry pattern without Firebase project, 0 quota.
+- Validates chip placement + Snackbar pattern before backend wiring.
+- When #8 Firebase setup happens (after #23/#24 discussions), UI ready — just replace repository.
+
+**Acceptance #3:**
+- All three states (Saved/Syncing/Offline) + Error render correctly via demo trigger in Settings; Snackbar shows transient error with Retry; retry re-runs last mock operation.
+- Tier1 now 54 tests (50+4 new SyncState) GREEN, Tier2 now 24 tests (20+4 new SyncStateChip) GREEN, freshness gate `syncstate-0300r9` yes + existing gates.
+- Spec both copies identical.
+
 ---
 
 ## 5. Notifications
