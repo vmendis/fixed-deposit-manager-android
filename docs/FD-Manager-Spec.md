@@ -358,6 +358,30 @@ stored `renewOption` (no user interaction; works while the app opens).
 - Old `com.example.fdmanager` debug build remains installable side-by-side (different applicationId)
 - Spec both copies identical
 
+### 4.10 Mock Auth Flow — UI Only (Issue #2)
+**Scope — from roadmap #2:** Sign-in, sign-up, forgot-password screens with validation, matching final visual design. Entry point wired where Settings currently has placeholders. Purely mock: fake session flag only; no backend calls. 0 quota.
+
+**Implementation #2:**
+- `data/AuthRepository.kt`: interface `AuthRepository { authState: StateFlow<AuthState>, signIn, signUp, sendPasswordReset, signOut }` — designed for Phase 2 swap to `FirebaseAuthRepository` without layout changes. `FakeAuthRepository` uses `SettingsStore` (in-memory) — `isMockLoggedIn` + `mockEmail`, validation only, no network, 0 quota.
+- `domain/AuthValidation.kt`: pure validation, JVM unit-testable — `validateEmail` (required, regex `^[^@\s]+@[^@\s]+\.[^@\s]+$`, 254 max), `validatePassword` (required, 6-128 chars), `validateConfirm` (match). Used by both mock and future real impl.
+- `ui/screens/AuthScreens.kt`: 3 Composables with vssbox branding (64dp cube `vssbox_cube`, `vssbox` title, "Secure box" subtitle), `AUTH_GATE = auth-0100r9` testTag on SignIn, `testTag("vssboxLogoAuth")`, `vssboxNameAuth`, `emailField`, `passwordField`, `confirmPasswordField`, `authSubmit`, `authError`, `signUpLink`, `signInLink`, `forgotLink`, `authBack`, `resetSentMessage`, `backToSignIn`. Validation inline: `Email is required`, `Enter a valid email`, `Password is required`, `Password must be at least 6 characters`, `Confirm your password`, `Passwords do not match`. Mock success: sets `SettingsStore.setMockLoggedIn(email)` and pops to Settings. Forgot: mock "If an account exists..." + snackbar.
+- `data/SettingsStore.kt`: extended `SettingsState` with `isMockLoggedIn: Boolean = false`, `mockEmail: String? = null`, methods `setMockLoggedIn(email)`, `clearMockLoggedIn()`. Default false for existing tests GREEN.
+- `ui/FdViewModel.kt`: exposes `authState`, `mockSignIn`, `mockSignUp`, `mockSendReset`, `mockSignOut()` — delegates to `FakeAuthRepository`. Phase 2 will inject `FirebaseAuthRepository` implementing same interface.
+- `MainActivity.kt`: Routes `SIGN_IN = signin`, `SIGN_UP = signup`, `FORGOT = forgot`, `AUTH_GATE = auth-0100r9` in comment. `SettingsScreen` now takes `onSignIn` callback → navigates to `SIGN_IN`. Account section at top: when logged out → Row "Sign in" subtitle "Mock auth — fake session, 0 quota. Phase 2 → Firebase Auth" testTag `accountSignIn`; when logged in → shows email + "Sign out" testTag `accountSignOut`. Auth screens: `SignInScreen(onBack, onSignUp, onForgot, onSignedIn)`, `SignUpScreen(onBack, onSignIn, onSignedUp)`, `ForgotPasswordScreen(onBack, onSent)` — all pop to Settings on success.
+- `ui/screens/SettingsScreen.kt`: Account section added before Appearance, uses `vm.mockSignOut()` + snackbar.
+- Tests: `AuthValidationTest` (4 tests) — email, password, confirm, trimming — runs in Tier1. `AuthFlowTest` (4 tests) — `settingsShowsSignInWhenLoggedOut`, `signInFlowValidatesAndCreatesMockSession`, `signUpAndForgotLinksNavigable`, `successfulSignInShowsEmailInSettings` — runs in Tier2 with `auth-0100r9` gate, vssbox logo, `emailField` etc. No Firebase calls → 0 quota. When Firebase configured, tests will use emulator (0 quota) or remain fake via BuildConfig.
+- Future swap: `FirebaseAuthRepository` will implement `AuthRepository` with real `Firebase.auth.signInWithEmailAndPassword`, etc. UI unchanged, only DI provider switches. Build flavor `mock` vs `prod` or `BuildConfig.USE_FAKE_AUTH` for CI.
+
+**Why mock before Firebase:**
+- Allows UX review of auth flow without creating Firebase project, without consuming free tier (Auth MAU 50K free, Firestore 50K reads/day, but emulator dev = 0 quota per BUILD-TEST-FLOW).
+- Validates navigation + validation + branding before backend wiring.
+- When #8 Firebase project setup happens (after #23/#24 discussions: owner visibility + cost forecast Blaze + $5 budget), we already have UI ready — just replace repository.
+
+**Acceptance #2:**
+- Sign-in, sign-up, forgot screens navigable end-to-end on mock; inline validation errors shown; successful mock sign-in shows email in Settings with sign-out; no backend calls; Phase 2 can replace fake session with real Firebase Auth without layout changes.
+- Tier1 now 50 tests (46+4 new AuthValidation) GREEN, Tier2 now 20 tests (16+4 new AuthFlow) GREEN, freshness gate `auth-0100r9` yes + existing gates, vssbox_cube present, `com.vssbox.fdmanager` package.
+- Spec both copies identical.
+
 ---
 
 ## 5. Notifications
