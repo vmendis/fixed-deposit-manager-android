@@ -160,33 +160,36 @@ fun HomeScreen(
             )
         )
 
-        // ---- Sync-state chip #3 — persistent small indicator below TopAppBar ----
-        Row(
-            Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 6.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            SyncStateChip(state = syncState, modifier = Modifier.testTag("syncChip"))
-            Text(
-                text = when (syncState) {
-                    com.example.fdmanager.domain.SyncState.SAVED -> "Local changes saved"
-                    com.example.fdmanager.domain.SyncState.SYNCING -> "Syncing to cloud (mock)…"
-                    com.example.fdmanager.domain.SyncState.OFFLINE -> "Offline — local only"
-                    com.example.fdmanager.domain.SyncState.ERROR -> "Sync failed — check Snackbar for Retry"
-                },
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.testTag("syncStateText")
-            )
-        }
-
         LazyColumn(
             state = listState,
             modifier = Modifier.fillMaxSize(),
             contentPadding = PaddingValues(bottom = 100.dp)
         ) {
+            // ---- Sync-state chip #3 — persistent small indicator as first item ----
+            item {
+                Row(
+                    Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp)
+                        .testTag("syncChipRow"),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    SyncStateChip(state = syncState, modifier = Modifier.testTag("syncChip"))
+                    Text(
+                        text = when (syncState) {
+                            com.example.fdmanager.domain.SyncState.SAVED -> "Local changes saved"
+                            com.example.fdmanager.domain.SyncState.SYNCING -> "Syncing to cloud (mock)…"
+                            com.example.fdmanager.domain.SyncState.OFFLINE -> "Offline — local only"
+                            com.example.fdmanager.domain.SyncState.ERROR -> "Sync failed — check Snackbar for Retry"
+                        },
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("syncStateText")
+                    )
+                }
+            }
+
             // ---- Hero: total invested ----
             item {
                 ElevatedCard(

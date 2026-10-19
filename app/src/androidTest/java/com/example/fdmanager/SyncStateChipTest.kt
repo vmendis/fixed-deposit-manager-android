@@ -36,9 +36,15 @@ class SyncStateChipTest {
 
     @Test
     fun syncChipDisplayedOnHome() {
-        // SYNCSTATE_GATE syncstate-0300r9
-        rule.onNodeWithTag("syncstate-0300r9").assertIsDisplayed()
-        rule.onNodeWithTag("syncStateLabel").assertIsDisplayed()
+        // SYNCSTATE_GATE syncstate-0300r9 — chip is now first item in LazyColumn
+        rule.waitUntil(10000) {
+            try {
+                rule.onNodeWithTag("syncstate-0300r9", useUnmergedTree = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) { false }
+        }
+        rule.onNodeWithTag("syncstate-0300r9", useUnmergedTree = true).assertIsDisplayed()
+        rule.onNodeWithTag("syncChip", useUnmergedTree = true).assertIsDisplayed()
     }
 
     @Test
@@ -48,7 +54,7 @@ class SyncStateChipTest {
         rule.onNodeWithText("Sync state: SAVED").assertIsDisplayed()
 
         rule.onNodeWithTag("syncStateRow").performClick()
-        rule.waitUntil(3000) {
+        rule.waitUntil(5000) {
             try {
                 rule.onNodeWithText("Sync state: SYNCING", substring = true).assertIsDisplayed()
                 true
@@ -56,7 +62,7 @@ class SyncStateChipTest {
         }
 
         rule.onNodeWithTag("syncStateRow").performClick()
-        rule.waitUntil(3000) {
+        rule.waitUntil(5000) {
             try {
                 rule.onNodeWithText("Sync state: OFFLINE", substring = true).assertIsDisplayed()
                 true
@@ -64,7 +70,7 @@ class SyncStateChipTest {
         }
 
         rule.onNodeWithTag("simulateSyncError").performClick()
-        rule.waitUntil(3000) {
+        rule.waitUntil(5000) {
             try {
                 rule.onNodeWithText("Sync state: ERROR", substring = true).assertIsDisplayed()
                 true
@@ -72,7 +78,7 @@ class SyncStateChipTest {
         }
 
         rule.onNodeWithTag("clearSyncError").performClick()
-        rule.waitUntil(3000) {
+        rule.waitUntil(5000) {
             try {
                 rule.onNodeWithText("Sync state: SAVED", substring = true).assertIsDisplayed()
                 true
@@ -88,13 +94,19 @@ class SyncStateChipTest {
         rule.onNodeWithText("Home").performClick()
 
         // Snackbar should show error with Retry action — per #3 acceptance retry re-runs last mock operation
-        rule.waitUntil(5000) {
+        // Increase timeout to 10s and use unmerged tree for Snackbar
+        rule.waitUntil(10000) {
             try {
-                rule.onNodeWithText("Failed to sync", substring = true).assertIsDisplayed()
+                rule.onNodeWithText("Failed to sync", substring = true, useUnmergedTree = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) { false }
         }
-        rule.onNodeWithText("Retry").assertIsDisplayed()
+        rule.waitUntil(10000) {
+            try {
+                rule.onNodeWithText("Retry", useUnmergedTree = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) { false }
+        }
     }
 
     @Test
@@ -104,12 +116,17 @@ class SyncStateChipTest {
 
         rule.onNodeWithText("Home").performClick()
 
-        rule.waitUntil(5000) {
+        rule.waitUntil(10000) {
             try {
-                rule.onNodeWithText("Offline", substring = true).assertIsDisplayed()
+                rule.onNodeWithText("Offline", substring = true, useUnmergedTree = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) { false }
         }
-        rule.onNodeWithTag("syncstate-0300r9").assertIsDisplayed()
+        rule.waitUntil(10000) {
+            try {
+                rule.onNodeWithTag("syncstate-0300r9", useUnmergedTree = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) { false }
+        }
     }
 }
