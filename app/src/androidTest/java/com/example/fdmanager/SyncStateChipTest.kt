@@ -50,6 +50,7 @@ class SyncStateChipTest {
     @Test
     fun syncStateCyclesViaSettings() {
         rule.onNodeWithText("Settings").performClick()
+        rule.swipeUntilTag("syncStateRow")
         rule.onNodeWithTag("syncStateRow").assertIsDisplayed()
         rule.onNodeWithText("Sync state: SAVED").assertIsDisplayed()
 
@@ -69,6 +70,7 @@ class SyncStateChipTest {
             } catch (e: Throwable) { false }
         }
 
+        rule.swipeUntilTag("simulateSyncError")
         rule.onNodeWithTag("simulateSyncError").performClick()
         rule.waitUntil(5000) {
             try {
@@ -77,6 +79,7 @@ class SyncStateChipTest {
             } catch (e: Throwable) { false }
         }
 
+        rule.swipeUntilTag("clearSyncError")
         rule.onNodeWithTag("clearSyncError").performClick()
         rule.waitUntil(5000) {
             try {
@@ -89,6 +92,7 @@ class SyncStateChipTest {
     @Test
     fun syncErrorShowsSnackbarWithRetryOnHome() {
         rule.onNodeWithText("Settings").performClick()
+        rule.swipeUntilTag("simulateSyncError")
         rule.onNodeWithTag("simulateSyncError").performClick()
 
         rule.onNodeWithText("Home").performClick()
@@ -112,6 +116,7 @@ class SyncStateChipTest {
     @Test
     fun offlineChipShowsLocalOnly() {
         rule.onNodeWithText("Settings").performClick()
+        rule.swipeUntilTag("simulateOffline")
         rule.onNodeWithTag("simulateOffline").performClick()
 
         rule.onNodeWithText("Home").performClick()

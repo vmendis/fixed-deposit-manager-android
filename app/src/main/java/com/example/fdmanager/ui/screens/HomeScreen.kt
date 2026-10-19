@@ -162,7 +162,7 @@ fun HomeScreen(
 
         LazyColumn(
             state = listState,
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.fillMaxSize().testTag("home-scroll-0100r9"),
             contentPadding = PaddingValues(bottom = 100.dp)
         ) {
             // ---- Sync-state chip #3 — persistent small indicator as first item ----
@@ -171,7 +171,11 @@ fun HomeScreen(
                     Modifier
                         .fillMaxWidth()
                         .padding(horizontal = 16.dp, vertical = 8.dp)
+<<<<<<< Updated upstream
                         .testTag("syncChipRow"),
+=======
+                        .testTag("syncstate-0300r9"),
+>>>>>>> Stashed changes
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {

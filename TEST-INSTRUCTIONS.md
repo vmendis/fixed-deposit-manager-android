@@ -83,8 +83,9 @@ if not exist test-artifacts-v30 mkdir test-artifacts-v30
 adb shell dumpsys window | findstr mCurrentFocus
 :: must show com.vssbox.fdmanager/com.example.fdmanager.MainActivity
 
-:: Home with sync chip Saved
+:: Home with sync chip Saved — use >nul to avoid "Input redirection not supported" when stdin redirected
 timeout /t 5 >nul && adb shell screencap -p /sdcard/shot-home-sync-saved.png && adb pull /sdcard/shot-home-sync-saved.png .\test-artifacts-v30\shot-nsb-v30-home-sync-saved.png
+:: If timeout fails with "Input redirection not supported", use ping alternative: ping -n 6 127.0.0.1 >nul && adb shell screencap...
 
 :: Settings Sync demo section
 timeout /t 3 >nul && adb shell screencap -p /sdcard/shot-settings-sync.png && adb pull /sdcard/shot-settings-sync.png .\test-artifacts-v30\shot-nsb-v30-settings-sync.png
@@ -99,6 +100,12 @@ timeout /t 3 >nul && adb shell screencap -p /sdcard/shot-home-error.png && adb p
 dir test-artifacts-v30
 dir *.png
 :: second dir should show no png at root
+
+:: Manual launch for screenshots if needed (app must be installed via gradlew):
+:: Correct component is com.vssbox.fdmanager/com.example.fdmanager.MainActivity (applicationId + FQCN activity)
+adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+:: If Error type 3 "does not exist", app not installed — run gradlew.bat installDebug first
+:: Wrong: com.vssbox.fdmanager/.MainActivity → resolves to com.vssbox.fdmanager.MainActivity which does not exist
 ```
 
 ## 5. Report — TEST-REPORT-V30.md
