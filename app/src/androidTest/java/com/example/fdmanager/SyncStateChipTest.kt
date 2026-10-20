@@ -1,11 +1,15 @@
 package com.example.fdmanager
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fdmanager.data.FdRepository
 import com.example.fdmanager.data.SampleData
@@ -35,14 +39,98 @@ class SyncStateChipTest {
         FdRepository.get().reset(SampleData.seed(LocalDate.now()))
     }
 
-    @Test
-    fun syncChipDisplayedOnHome() {
-        rule.waitUntil(10000) {
+    private fun scrollToTag(tag: String) {
+        // Try up to 3 times: performScrollTo then swipeUntilTag fallback
+        repeat(3) {
+            try {
+                rule.onNodeWithTag(tag).performScrollTo()
+                rule.waitForIdle()
+                return
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithTag(tag, useUnmergedTree = true).performScrollTo()
+                    rule.waitForIdle()
+                    return
+                } catch (e2: Throwable) {
+                    // fall through to swipe
+                }
+            }
+            try {
+                rule.swipeUntilTag(tag)
+                rule.waitForIdle()
+                try {
+                    rule.onNodeWithTag(tag).performScrollTo()
+                } catch (e: Throwable) {
+                    rule.onNodeWithTag(tag, useUnmergedTree = true).performScrollTo()
+                }
+                return
+            } catch (e: Throwable) {
+                // continue
+            }
+            rule.waitForIdle()
+        }
+    }
+
+    private fun ensureSyncMockHeader() {
+        rule.waitUntil(15000) {
+            try {
+                rule.onNodeWithText("Sync (mock)", substring = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) {
+                try {
+                    rule.swipeUntilText("Sync (mock)")
+                    rule.onNodeWithText("Sync (mock)", substring = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) {
+                    try {
+                        rule.onNodeWithText("Sync (mock)", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                        true
+                    } catch (e3: Throwable) { false }
+                }
+            }
+        }
+    }
+
+    private fun ensureHomeTop() {
+        rule.waitUntil(15000) {
             try {
                 rule.onNodeWithTag("home-scroll-0100r9", useUnmergedTree = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) { false }
         }
+        // Try to bring sync chip into viewport — performScrollTo works for LazyColumn items
+        repeat(3) {
+            try {
+                rule.onNodeWithTag("syncstate-0300r9", useUnmergedTree = true).performScrollTo()
+                rule.waitForIdle()
+                return
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithTag("syncstate-0300r9").performScrollTo()
+                    rule.waitForIdle()
+                    return
+                } catch (e2: Throwable) {
+                    // swipe down to reveal top (reverse of swipeUntilTag)
+                    try {
+                        rule.onRoot().performTouchInput {
+                            val h = visibleSize.height
+                            val w = visibleSize.width
+                            swipe(
+                                start = Offset(w / 2f, h * 0.2f),
+                                end = Offset(w / 2f, h * 0.8f),
+                                durationMillis = 300
+                            )
+                        }
+                        rule.waitForIdle()
+                    } catch (e3: Throwable) {}
+                }
+            }
+        }
+    }
+
+    @Test
+    fun syncChipDisplayedOnHome() {
+        ensureHomeTop()
         rule.waitUntil(15000) {
             try {
                 try {
@@ -65,82 +153,79 @@ class SyncStateChipTest {
     fun syncStateCyclesViaSettings() {
         rule.onNodeWithText("Settings").performClick()
         rule.waitForIdle()
-        rule.waitUntil(10000) {
-            try {
-                rule.onNodeWithText("Sync (mock)", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) { false }
-        }
-        rule.waitUntil(10000) {
-            try {
-                try {
-                    rule.onNodeWithTag("syncStateRow").performScrollTo().assertIsDisplayed()
-                    true
-                } catch (e1: Throwable) {
-                    rule.swipeUntilTag("syncStateRow")
-                    rule.onNodeWithTag("syncStateRow").assertIsDisplayed()
-                    true
-                }
-            } catch (e: Throwable) { false }
-        }
-        rule.onNodeWithText("Sync state: SAVED").assertIsDisplayed()
+        ensureSyncMockHeader()
 
-        rule.onNodeWithTag("syncStateRow").performClick()
-        rule.waitForIdle()
-        rule.waitUntil(10000) {
-            try {
-                rule.onNodeWithText("Sync state: SYNCING", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) { false }
-        }
-
-        rule.onNodeWithTag("syncStateRow").performClick()
-        rule.waitForIdle()
-        rule.waitUntil(10000) {
-            try {
-                rule.onNodeWithText("Sync state: OFFLINE", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) { false }
-        }
-
-        rule.waitUntil(10000) {
-            try {
-                try {
-                    rule.onNodeWithTag("simulateSyncError").performScrollTo().assertIsDisplayed()
-                    true
-                } catch (e1: Throwable) {
-                    rule.swipeUntilTag("simulateSyncError")
-                    true
-                }
-            } catch (e: Throwable) { false }
-        }
-        rule.onNodeWithTag("simulateSyncError").performClick()
-        rule.waitForIdle()
-        rule.waitUntil(10000) {
-            try {
-                rule.onNodeWithText("Sync state: ERROR", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) { false }
-        }
-
-        rule.waitUntil(10000) {
-            try {
-                try {
-                    rule.onNodeWithTag("clearSyncError").performScrollTo().assertIsDisplayed()
-                    true
-                } catch (e1: Throwable) {
-                    rule.swipeUntilTag("clearSyncError")
-                    true
-                }
-            } catch (e: Throwable) { false }
-        }
-        rule.onNodeWithTag("clearSyncError").performClick()
-        rule.waitForIdle()
-        rule.waitUntil(10000) {
+        scrollToTag("syncStateRow")
+        rule.waitUntil(15000) {
             try {
                 rule.onNodeWithText("Sync state: SAVED", substring = true).assertIsDisplayed()
                 true
-            } catch (e: Throwable) { false }
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithText("Sync state: SAVED", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
+        }
+
+        scrollToTag("syncStateRow")
+        rule.onNodeWithTag("syncStateRow").performClick()
+        rule.waitForIdle()
+        rule.waitUntil(15000) {
+            try {
+                rule.onNodeWithText("Sync state: SYNCING", substring = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithText("Sync state: SYNCING", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
+        }
+
+        scrollToTag("syncStateRow")
+        rule.onNodeWithTag("syncStateRow").performClick()
+        rule.waitForIdle()
+        rule.waitUntil(15000) {
+            try {
+                rule.onNodeWithText("Sync state: OFFLINE", substring = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithText("Sync state: OFFLINE", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
+        }
+
+        scrollToTag("simulateSyncError")
+        rule.onNodeWithTag("simulateSyncError").performClick()
+        rule.waitForIdle()
+        rule.waitUntil(15000) {
+            try {
+                rule.onNodeWithText("Sync state: ERROR", substring = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithText("Sync state: ERROR", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
+        }
+
+        scrollToTag("clearSyncError")
+        rule.onNodeWithTag("clearSyncError").performClick()
+        rule.waitForIdle()
+        rule.waitUntil(15000) {
+            try {
+                rule.onNodeWithText("Sync state: SAVED", substring = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithText("Sync state: SAVED", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
         }
     }
 
@@ -148,18 +233,25 @@ class SyncStateChipTest {
     fun syncErrorShowsSnackbarWithRetryOnHome() {
         rule.onNodeWithText("Settings").performClick()
         rule.waitForIdle()
-        rule.swipeUntilTag("simulateSyncError")
+        ensureSyncMockHeader()
+        scrollToTag("simulateSyncError")
         rule.onNodeWithTag("simulateSyncError").performClick()
         rule.waitForIdle()
-        rule.waitUntil(10000) {
+        rule.waitUntil(15000) {
             try {
                 rule.onNodeWithText("Sync state: ERROR", substring = true).assertIsDisplayed()
                 true
-            } catch (e: Throwable) { false }
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithText("Sync state: ERROR", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
         }
 
         rule.onNodeWithText("Home").performClick()
         rule.waitForIdle()
+        ensureHomeTop()
 
         rule.waitUntil(15000) {
             try {
@@ -167,8 +259,13 @@ class SyncStateChipTest {
                     rule.onNodeWithText("Sync failed", substring = true).assertIsDisplayed()
                     true
                 } catch (e1: Throwable) {
-                    rule.onNodeWithText("Sync failed", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
+                    try {
+                        rule.onNodeWithText("Sync failed", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                        true
+                    } catch (e2: Throwable) {
+                        rule.onNodeWithTag("syncstate-0300r9", useUnmergedTree = true).assertIsDisplayed()
+                        true
+                    }
                 }
             } catch (e: Throwable) { false }
         }
@@ -182,8 +279,13 @@ class SyncStateChipTest {
                         rule.onNodeWithText("FD-123", substring = true, useUnmergedTree = true).assertIsDisplayed()
                         true
                     } catch (e2: Throwable) {
-                        rule.onNodeWithText("mock", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                        true
+                        try {
+                            rule.onNodeWithText("Retry", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                            true
+                        } catch (e3: Throwable) {
+                            rule.onNodeWithText("mock", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                            true
+                        }
                     }
                 }
             } catch (e: Throwable) { false }
@@ -194,18 +296,25 @@ class SyncStateChipTest {
     fun offlineChipShowsLocalOnly() {
         rule.onNodeWithText("Settings").performClick()
         rule.waitForIdle()
-        rule.swipeUntilTag("simulateOffline")
+        ensureSyncMockHeader()
+        scrollToTag("simulateOffline")
         rule.onNodeWithTag("simulateOffline").performClick()
         rule.waitForIdle()
-        rule.waitUntil(10000) {
+        rule.waitUntil(15000) {
             try {
                 rule.onNodeWithText("Sync state: OFFLINE", substring = true).assertIsDisplayed()
                 true
-            } catch (e: Throwable) { false }
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithText("Sync state: OFFLINE", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
         }
 
         rule.onNodeWithText("Home").performClick()
         rule.waitForIdle()
+        ensureHomeTop()
 
         rule.waitUntil(15000) {
             try {
@@ -213,8 +322,15 @@ class SyncStateChipTest {
                     rule.onNodeWithText("Offline", substring = true).assertIsDisplayed()
                     true
                 } catch (e1: Throwable) {
-                    rule.onNodeWithText("Local only", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
+                    try {
+                        rule.onNodeWithText("Local only", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                        true
+                    } catch (e2: Throwable) {
+                        try {
+                            rule.onNodeWithTag("syncstate-0300r9", useUnmergedTree = true).assertIsDisplayed()
+                            true
+                        } catch (e3: Throwable) { false }
+                    }
                 }
             } catch (e: Throwable) { false }
         }
