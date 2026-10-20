@@ -75,12 +75,18 @@ class SyncStateChipTest {
                 true
             } catch (e: Throwable) { false }
         }
-        rule.swipeUntilTag("syncStateRow")
+        // Scroll to syncStateRow — it's near bottom after Demo toggle
         rule.waitUntil(10000) {
             try {
                 rule.onNodeWithTag("syncStateRow").assertIsDisplayed()
                 true
-            } catch (e: Throwable) { false }
+            } catch (e: Throwable) {
+                try {
+                    rule.swipeUntilTag("syncStateRow")
+                    rule.onNodeWithTag("syncStateRow").assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
         }
         rule.onNodeWithText("Sync state: SAVED").assertIsDisplayed()
 
@@ -176,16 +182,22 @@ class SyncStateChipTest {
     @Test
     fun offlineChipShowsLocalOnly() {
         rule.onNodeWithText("Settings").performClick()
+        rule.waitForIdle()
         rule.swipeUntilTag("simulateOffline")
         rule.onNodeWithTag("simulateOffline").performClick()
         rule.waitForIdle()
+        rule.waitUntil(10000) {
+            try {
+                rule.onNodeWithText("Sync state: OFFLINE", substring = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) { false }
+        }
 
         rule.onNodeWithText("Home").performClick()
         rule.waitForIdle()
 
         rule.waitUntil(15000) {
             try {
-                // Check for Offline label or description
                 try {
                     rule.onNodeWithText("Offline", substring = true).assertIsDisplayed()
                     true
