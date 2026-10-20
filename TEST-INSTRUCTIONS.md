@@ -70,42 +70,67 @@ Expected:
 - SyncStateChipTest 4
 Total 24/24 GREEN
 
-Logcat:
+Logcat — MUST be real TestRunner lines, NOT placeholder:
 adb logcat -d | findstr /i "TestRunner" > test-artifacts-v30\logcat-v30.txt
 type test-artifacts-v30\logcat-v30.txt
-:: must show run started: 24 tests ... run finished: 24 tests, 0 failed
+:: must show REAL lines like:
+:: 10-20 13:55:45.546 22782 22803 I TestRunner: run started: 24 tests
+:: ...
+:: 10-20 14:02:33.736 22782 22803 I TestRunner: run finished: 24 tests, 0 failed, 0 ignored
+:: If file is 330 bytes with "Logcat output for v30" placeholder → FAKE → REJECTED, re-run real command above
+:: Previous VALID logcat at 13:55:45 proves 24/24 GREEN @79dc36c — keep that 156K file, don't overwrite with fake
 ```
 
-## 4. Screenshots — MUST be app, not launcher — use 5s settle per owner tip 2026-10-18
+## 4. Screenshots — MUST be app, not launcher — use 5s settle per owner tip 2026-10-18 — APP MUST BE FOREGROUND
 ```
+:: 0. Ensure app installed and launch it — MANDATORY before ANY screenshot
+gradlew.bat installDebug
+adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+:: Correct component is com.vssbox.fdmanager/com.example.fdmanager.MainActivity (applicationId + FQCN activity)
+:: Wrong: com.vssbox.fdmanager/.MainActivity → resolves to com.vssbox.fdmanager.MainActivity which does not exist → Error type 3
+
+timeout /t 5 >nul
+adb shell dumpsys window | findstr mCurrentFocus
+:: MUST show com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+:: If shows com.google.android.apps.nexuslauncher/NexusLauncherActivity → you are on launcher, NOT app → RE-LAUNCH via am start above, DO NOT capture
+
 if not exist test-artifacts-v30 mkdir test-artifacts-v30
 
+:: 1. Home with sync chip Saved — MUST be app foreground
+adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+timeout /t 5 >nul
 adb shell dumpsys window | findstr mCurrentFocus
-:: must show com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+:: verify app again
+adb shell screencap -p /sdcard/shot-home-sync-saved.png && adb pull /sdcard/shot-home-sync-saved.png .\test-artifacts-v30\shot-nsb-v30-home-sync-saved.png
 
-:: Home with sync chip Saved — use >nul to avoid "Input redirection not supported" when stdin redirected
-timeout /t 5 >nul && adb shell screencap -p /sdcard/shot-home-sync-saved.png && adb pull /sdcard/shot-home-sync-saved.png .\test-artifacts-v30\shot-nsb-v30-home-sync-saved.png
-:: If timeout fails with "Input redirection not supported", use ping alternative: ping -n 6 127.0.0.1 >nul && adb shell screencap...
+:: 2. Settings Sync demo section — navigate to Settings tab inside app, scroll to "Sync (mock) #3"
+adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+timeout /t 3 >nul
+:: Tap Settings bottom nav — coordinates may vary, or manually tap Settings in app
+:: adb shell input tap 850 2100  :: example for Settings tab — adjust or tap manually
+:: After Settings visible:
+adb shell dumpsys window | findstr mCurrentFocus
+adb shell screencap -p /sdcard/shot-settings-sync.png && adb pull /sdcard/shot-settings-sync.png .\test-artifacts-v30\shot-nsb-v30-settings-sync.png
 
-:: Settings Sync demo section
-timeout /t 3 >nul && adb shell screencap -p /sdcard/shot-settings-sync.png && adb pull /sdcard/shot-settings-sync.png .\test-artifacts-v30\shot-nsb-v30-settings-sync.png
+:: 3. Home with Offline chip — in Settings, tap "Simulate offline", then tap Home tab
+adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+timeout /t 3 >nul
+adb shell screencap -p /sdcard/shot-home-offline.png && adb pull /sdcard/shot-home-offline.png .\test-artifacts-v30\shot-nsb-v30-home-offline.png
 
-:: Home with Offline chip
-timeout /t 3 >nul && adb shell screencap -p /sdcard/shot-home-offline.png && adb pull /sdcard/shot-home-offline.png .\test-artifacts-v30\shot-nsb-v30-home-offline.png
-
-:: Home with Error + Snackbar Retry
-timeout /t 3 >nul && adb shell screencap -p /sdcard/shot-home-error.png && adb pull /sdcard/shot-home-error.png .\test-artifacts-v30\shot-nsb-v30-home-error.png
+:: 4. Home with Error + Snackbar Retry — in Settings, tap "Simulate sync error", then Home tab, wait for Snackbar
+adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+timeout /t 3 >nul
+adb shell screencap -p /sdcard/shot-home-error.png && adb pull /sdcard/shot-home-error.png .\test-artifacts-v30\shot-nsb-v30-home-error.png
 
 :: Verify all in folder, nothing at root
 dir test-artifacts-v30
+:: must show 4 png + logcat-v30.txt + TEST-REPORT-V30.md
 dir *.png
-:: second dir should show no png at root
+:: second dir MUST show no png at root — if shows png at root, you littered root → move to test-artifacts-v30\
 
-:: Manual launch for screenshots if needed (app must be installed via gradlew):
-:: Correct component is com.vssbox.fdmanager/com.example.fdmanager.MainActivity (applicationId + FQCN activity)
-adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
-:: If Error type 3 "does not exist", app not installed — run gradlew.bat installDebug first
-:: Wrong: com.vssbox.fdmanager/.MainActivity → resolves to com.vssbox.fdmanager.MainActivity which does not exist
+:: Use >nul to avoid "Input redirection not supported" when stdin redirected:
+:: timeout /t 5 >nul  — NOT timeout /t 5 alone
+:: If timeout still fails, use ping alternative: ping -n 6 127.0.0.1 >nul && adb shell screencap...
 ```
 
 ## 5. Report — TEST-REPORT-V30.md
