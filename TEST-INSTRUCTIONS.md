@@ -1,7 +1,7 @@
 # TEST INSTRUCTIONS — Round V30 — Issue #3 Sync-State Chip & Error/Retry
 Branch: dev
-Expected commit: dev with #3 sync-state chip
-Test cycle: V30
+Expected commit: dev @79dc36c — robust scroll helpers (ensure Sync mock header, scrollToTag, ensureHomeTop, 15s)
+Test cycle: V30 — seventh run
 
 ## 0. Preflight — Owner does Steps 1-2 ONLY, then tells Roo: "Open TEST-INSTRUCTIONS.md at repo root and follow it"
 ```
@@ -134,10 +134,12 @@ Write at project root per BUILD-TEST-FLOW.html spec but final location must be t
 - Executor edited app code — must NOT edit *.kt, report CODE-BUG instead
 - mkdir with -Force in CMD — creates extra folder -Force, use plain mkdir or if not exist mkdir
 
-## 7. Notes for #3
+## 7. Notes for #3 — V30 seventh run @79dc36c
 - Sync-state = mock only, 0 quota, fake session. Phase 2 will swap to FirebaseSyncRepository implementing same SyncRepository interface without layout changes.
 - Home shows persistent chip: Saved (green CheckCircle), Syncing (spinner tertiary), Offline (CloudOff surfaceVariant), Error (Error errorContainer) + description text.
 - Snackbar for transient errors with Retry action — retry re-runs last mock operation per acceptance.
 - Settings Demo section #3: cycle Saved→Syncing→Offline→Error, simulate error, simulate offline, clear error — for design review.
 - State machine documented in spec §4.11 and PR description.
 - When Firebase configured later, tests should use emulator (local, 0 quota) or remain fake via BuildConfig. Real prod reads/writes count toward free tier, but CI should never hit prod.
+- V30 fixes: 0db52e2 initial 4 fails, 1dec19d chip inside LazyColumn first item + home-scroll, 0f6fedc CODE-BUG conflict markers, 2bd9be2 clean 21/24 3 fails, e4d48e3 robust home-scroll fallback, c1bbd1c wait Sync (mock) header + waitForIdle, b93056b performScrollTo fallback + OFFLINE check in Settings, 6c27ad8 same, 79dc36c final robust helpers ensureSyncMockHeader + scrollToTag + ensureHomeTop + 15s.
+- If still 3 fails (offlineChip, syncError, syncStateCycles), check logcat line numbers: L54 syncStateRow not displayed → need performScrollTo before assert; L119/124 offline chip timeout → ensure Home top scroll; L91/98/102 syncError timeout → ensure Settings ERROR before Home + chip Sync failed + Snackbar FD-123/mock/Retry fallback.
