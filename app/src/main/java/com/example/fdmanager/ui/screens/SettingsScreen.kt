@@ -354,6 +354,49 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
 
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+                // ---- Loading & Error debug #4 — shared pattern, toggled by debug switch for review ----
+                SectionHeader("Loading & Error (debug #4)", subtitle = "Shared skeleton/error — Home, list, detail, calendar (mock, 0 quota)")
+                SettingSwitchRow(
+                    title = "Show loading state",
+                    subtitle = "Skeleton + spinner — Home, list, calendar show loading (mock #4)",
+                    checked = settings.isLoadingDebug,
+                    onCheckedChange = { vm.setLoadingDebug(it) }
+                )
+                SettingSwitchRow(
+                    title = "Show error state",
+                    subtitle = "Full-screen error with Retry — ${settings.debugErrorMessage}",
+                    checked = settings.isErrorDebug,
+                    onCheckedChange = { vm.setErrorDebug(it) }
+                )
+                SettingRow(
+                    title = "Clear loading/error debug",
+                    subtitle = "Reset to idle — show normal data",
+                    onClick = {
+                        vm.clearLoadingErrorDebug()
+                        scope.launch { snackbarHost.showSnackbar("Loading/error debug cleared → Idle (mock #4)") }
+                    },
+                    testTag = "clearLoadingErrorDebug"
+                )
+                // Preview of shared components
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).testTag("loadingErrorPreview").testTag("loadstate-0400r9")) {
+                    Text(
+                        "Preview — shared implementation:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    com.example.fdmanager.ui.components.LoadingSkeletonCard()
+                    Spacer(Modifier.height(8.dp))
+                    com.example.fdmanager.ui.components.FullScreenError(
+                        title = "Preview error",
+                        message = settings.debugErrorMessage,
+                        onRetry = { vm.clearLoadingErrorDebug() },
+                        modifier = Modifier.fillMaxWidth().height(200.dp)
+                    )
+                }
+
                 Spacer(Modifier.height(48.dp))
             }
         }

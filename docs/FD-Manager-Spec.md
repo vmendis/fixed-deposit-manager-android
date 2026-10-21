@@ -413,6 +413,27 @@ stored `renewOption` (no user interaction; works while the app opens).
 - Tier1 now 54 tests (50+4 new SyncState) GREEN, Tier2 now 24 tests (20+4 new SyncStateChip) GREEN, freshness gate `syncstate-0300r9` yes + existing gates.
 - Spec both copies identical.
 
+### 4.12 Loading & Error State Patterns (Issue #4)
+**Scope — from roadmap #4:** Skeleton/spinner pattern for lists and detail screens; full-screen error pattern with retry. Applied consistently (shared composable), even though the mock resolves instantly.
+
+**Implementation #4:**
+- `domain/LoadingState.kt`: enum `LoadingState { IDLE, LOADING, ERROR }` with label/description, `fromName()`, `UiState<T>` data class with `isLoading/isError/isIdle` helpers — pure, JVM unit-testable, 0 quota, designed for Phase 2 swap to real Firebase loading states.
+- `ui/components/LoadingState.kt`: shared implementation `LOADSTATE_GATE = loadstate-0400r9` — `ShimmerBox` with infinite transition brush, `LoadingSkeletonCard` (monogram + title + meta shimmer), `LoadingList` (3 skeletons), `FullScreenLoading` (CircularProgressIndicator + message + testTag `fullScreenLoading`/`loadingSpinner`/`loadingMessage`), `FullScreenError` (ErrorOutline icon + title + message + Retry Button + testTags `fullScreenError`/`errorIcon`/`errorTitle`/`errorMessage`/`errorRetryButton`), `InlineError` (errorContainer card + Retry), `LoadingErrorContainer` (when isLoading -> loadingContent, isError -> errorContent, else content) — one implementation used everywhere.
+- `data/SettingsStore.kt`: extended `SettingsState` with `isLoadingDebug: Boolean = false`, `isErrorDebug: Boolean = false`, `debugErrorMessage: String = "Failed to load FDs (mock) — tap Retry"` — mock, 0 quota, toggled by debug switch for review. Methods `setLoadingDebug()`, `setErrorDebug()`, `setDebugErrorMessage()`, `clearLoadingErrorDebug()` — loading and error are mutually exclusive for review.
+- `ui/FdViewModel.kt`: exposes `setLoadingDebug()`, `setErrorDebug()`, `setDebugErrorMessage()`, `clearLoadingErrorDebug()` — delegates to SettingsStore.
+- `ui/screens/HomeScreen.kt`: Added #4 handling — if `isLoadingDebug` shows `FullScreenLoading("Loading FDs (mock #4)...")` + `LoadingList(3)`, if `isErrorDebug` shows `FullScreenError` with `debugErrorMessage` + Retry clears debug, else normal hero + maturing + by institution. Gate `loadstate-0400r9` on loading/error containers.
+- `ui/screens/FdListScreen.kt`: Same pattern — `isLoadingDebug` → `FullScreenLoading("Loading ${bank} FDs (mock #4)...")` + `LoadingList(2)`, `isErrorDebug` → `FullScreenError("Failed to load ${bank}")` + Retry, else list/empty. Collects `settings` StateFlow, gate `loadstate-0400r9`.
+- `ui/screens/FdDetailScreen.kt`: `isLoadingDebug` → `FullScreenLoading("Loading ${fdNumber} (mock #4)...")` + early return, `isErrorDebug` → `FullScreenError` + Retry, else details. Gate `loadstate-0400r9`.
+- `ui/screens/CalendarScreen.kt`: Same — loading calendar skeleton, error calendar failed, else month card + selected day list. Gate `loadstate-0400r9`.
+- `ui/screens/SettingsScreen.kt`: Added section "Loading & Error (debug #4)" — subtitle "Shared skeleton/error — Home, list, detail, calendar (mock, 0 quota)" — Switch "Show loading state" → `setLoadingDebug()`, Switch "Show error state" → `setErrorDebug()`, Row "Clear loading/error debug" → `clearLoadingErrorDebug()` + Snackbar, preview Column `loadingErrorPreview` + `loadstate-0400r9` with `LoadingSkeletonCard()` + `FullScreenError` preview 200dp. All mock, 0 quota.
+- Tests: `LoadingStateTest` (4 tests) — values, fromName, labels/descriptions, UiState helpers — Tier1. `LoadingErrorUiTest` (4 tests) — `loadingSkeletonDisplayedOnHome`, `errorStateDisplayedOnHome`, `loadingErrorCyclesViaSettings`, `errorRetryClearsError` — Tier2 with `loadstate-0400r9` gate, robust helpers (ensureHomeTop, ensureLoadingErrorHeader, scrollToTag with performScrollTo+swipe fallback, 15s waits). No Firebase calls → 0 quota.
+- Future: When Firebase repo has real async loading, `LoadingState.LOADING` will show skeleton, `ERROR` will show FullScreenError with real message + retry re-runs query. UI unchanged.
+
+**Acceptance #4:**
+- One shared implementation (LoadingState.kt) used by Home, list, detail, calendar; skeleton + spinner + full-screen error with Retry render correctly via debug switch in Settings; debug switch toggles for review even though mock resolves instantly.
+- Tier1 now 58 tests (54+4 new LoadingState) GREEN, Tier2 now 28 tests (24+4 new LoadingErrorUiTest) GREEN, freshness gate `loadstate-0400r9` yes + existing gates.
+- Spec both copies identical.
+
 ---
 
 ## 5. Notifications

@@ -65,7 +65,11 @@ import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.CountdownChip
 import com.example.fdmanager.ui.components.EmptyState
+import com.example.fdmanager.ui.components.FullScreenError
+import com.example.fdmanager.ui.components.FullScreenLoading
 import com.example.fdmanager.ui.components.InstitutionRegistry
+import com.example.fdmanager.ui.components.LOADSTATE_GATE
+import com.example.fdmanager.ui.components.LoadingList
 import com.example.fdmanager.ui.components.SectionHeader
 import com.example.fdmanager.ui.components.StatMini
 import com.example.fdmanager.ui.components.SyncStateChip
@@ -190,13 +194,37 @@ fun HomeScreen(
                 }
             }
 
-            // ---- Hero: total invested ----
-            item {
-                ElevatedCard(
-                    Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp)
-                ) {
+            // ---- #4 Loading & error patterns — debug toggles for review ----
+            if (settings.isLoadingDebug) {
+                item {
+                    FullScreenLoading(
+                        message = "Loading FDs (mock #4)...",
+                        modifier = Modifier.fillMaxWidth().height(200.dp).testTag(LOADSTATE_GATE)
+                    )
+                }
+                item {
+                    LoadingList(count = 3, modifier = Modifier.fillMaxWidth())
+                }
+            }
+            if (settings.isErrorDebug) {
+                item {
+                    FullScreenError(
+                        title = "Failed to load",
+                        message = settings.debugErrorMessage,
+                        onRetry = { vm.clearLoadingErrorDebug() },
+                        modifier = Modifier.fillMaxWidth().height(300.dp).testTag(LOADSTATE_GATE)
+                    )
+                }
+            }
+
+            // ---- Hero: total invested ---- (hidden when loading/error debug for review)
+            if (!settings.isLoadingDebug && !settings.isErrorDebug) {
+                item {
+                    ElevatedCard(
+                        Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp)
+                    ) {
                     Column(
                         Modifier
                             .fillMaxWidth()
@@ -336,6 +364,7 @@ fun HomeScreen(
                     )
                 }
             }
+            } // end if !loading && !error — #4
         }
         }
 

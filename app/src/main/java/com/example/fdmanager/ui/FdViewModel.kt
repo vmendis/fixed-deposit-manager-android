@@ -98,4 +98,10 @@ class FdViewModel : ViewModel() {
         SettingsStore.setLastSyncError(null)
         SettingsStore.setSyncStateName(com.example.fdmanager.domain.SyncState.SAVED.name)
     }
+
+    // #4 loading & error debug — mock, 0 quota, toggled by debug switch for review
+    fun setLoadingDebug(enabled: Boolean) = SettingsStore.setLoadingDebug(enabled)
+    fun setErrorDebug(enabled: Boolean) = SettingsStore.setErrorDebug(enabled)
+    fun setDebugErrorMessage(message: String) = SettingsStore.setDebugErrorMessage(message)
+    fun clearLoadingErrorDebug() = SettingsStore.clearLoadingErrorDebug()
 }

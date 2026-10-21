@@ -52,7 +52,11 @@ import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.EmptyState
 import com.example.fdmanager.ui.components.FdCard
+import com.example.fdmanager.ui.components.FullScreenError
+import com.example.fdmanager.ui.components.FullScreenLoading
 import com.example.fdmanager.ui.components.InstitutionRegistry
+import com.example.fdmanager.ui.components.LOADSTATE_GATE
+import com.example.fdmanager.ui.components.LoadingList
 import com.example.fdmanager.ui.components.RenewDialog
 import java.time.LocalDate
 
@@ -67,6 +71,7 @@ fun FdListScreen(
     onAdd: () -> Unit
 ) {
     val fds by vm.fds.collectAsStateWithLifecycle()
+    val settings by vm.settings.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
     var filter by remember { mutableStateOf(StatusFilter.ALL) }
     var sort by remember { mutableStateOf(SortOption.MATURITY_ASC) }
@@ -155,11 +160,26 @@ fun FdListScreen(
             }
         }
 
+        // #4 loading & error — shared pattern
+        val isLoadingDebug = settings.isLoadingDebug
+        val isErrorDebug = settings.isErrorDebug
+
         LazyColumn(
-            Modifier.fillMaxSize(),
+            Modifier.fillMaxSize().testTag(LOADSTATE_GATE),
             contentPadding = PaddingValues(bottom = 24.dp)
         ) {
-            if (list.isEmpty()) {
+            if (isLoadingDebug) {
+                item { FullScreenLoading(message = "Loading ${bank} FDs (mock #4)...") }
+                item { LoadingList(count = 2) }
+            } else if (isErrorDebug) {
+                item {
+                    FullScreenError(
+                        title = "Failed to load ${bank}",
+                        message = settings.debugErrorMessage,
+                        onRetry = { vm.clearLoadingErrorDebug() }
+                    )
+                }
+            } else if (list.isEmpty()) {
                 item {
                     // #1 empty state with CTA
                     EmptyState(
