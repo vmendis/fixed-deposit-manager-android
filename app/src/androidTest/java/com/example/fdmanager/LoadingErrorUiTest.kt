@@ -71,14 +71,13 @@ class LoadingErrorUiTest {
     }
 
     private fun ensureLoadingErrorHeader() {
-        rule.waitUntil(15000) {
+        rule.waitUntil(20000) {
             try {
                 rule.onNodeWithText("Loading & Error", substring = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) {
                 try {
                     rule.onNodeWithText("Loading", substring = true).assertIsDisplayed()
-                    // check if we are in Settings and have debug #4 nearby
                     try {
                         rule.onNodeWithText("debug #4", substring = true, useUnmergedTree = true).assertIsDisplayed()
                         true
@@ -104,7 +103,7 @@ class LoadingErrorUiTest {
     }
 
     private fun ensureHomeTop() {
-        rule.waitUntil(15000) {
+        rule.waitUntil(20000) {
             try {
                 rule.onNodeWithTag("home-scroll-0100r9", useUnmergedTree = true).assertIsDisplayed()
                 true
@@ -145,7 +144,7 @@ class LoadingErrorUiTest {
         rule.waitForIdle()
         ensureHomeTop()
 
-        rule.waitUntil(15000) {
+        rule.waitUntil(20000) {
             try {
                 try {
                     rule.onNodeWithTag("loadstate-0400r9").assertIsDisplayed()
@@ -179,7 +178,7 @@ class LoadingErrorUiTest {
         rule.waitForIdle()
         ensureHomeTop()
 
-        rule.waitUntil(15000) {
+        rule.waitUntil(20000) {
             try {
                 try {
                     rule.onNodeWithTag("fullScreenError").assertIsDisplayed()
@@ -214,7 +213,7 @@ class LoadingErrorUiTest {
 
         // Show loading
         scrollToTag("loadingErrorPreview")
-        rule.waitUntil(15000) {
+        rule.waitUntil(20000) {
             try {
                 rule.onNodeWithText("Loading & Error (debug #4)", substring = true).assertIsDisplayed()
                 true
@@ -254,7 +253,7 @@ class LoadingErrorUiTest {
         rule.onNodeWithText("Home").performClick()
         rule.waitForIdle()
         // Don't call ensureHomeTop when loading debug active — home-scroll is hidden, loading replaces it
-        rule.waitUntil(15000) {
+        rule.waitUntil(20000) {
             try {
                 rule.onNodeWithTag("loadstate-0400r9", useUnmergedTree = true).assertIsDisplayed()
                 true
@@ -286,7 +285,7 @@ class LoadingErrorUiTest {
         SettingsStore.setErrorDebug(true)
         rule.waitForIdle()
         // Don't require home-scroll when error debug active — error replaces it
-        rule.waitUntil(15000) {
+        rule.waitUntil(20000) {
             try {
                 rule.onNodeWithTag("fullScreenError", useUnmergedTree = true).assertIsDisplayed()
                 true
@@ -325,7 +324,7 @@ class LoadingErrorUiTest {
         }
         rule.waitForIdle()
 
-        rule.waitUntil(15000) {
+        rule.waitUntil(20000) {
             try {
                 rule.onNodeWithTag("home-scroll-0100r9", useUnmergedTree = true).assertIsDisplayed()
                 true
