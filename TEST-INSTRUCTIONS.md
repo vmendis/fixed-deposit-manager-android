@@ -88,10 +88,21 @@ type test-artifacts-v32\logcat-v32.txt
 - You (Roo) NEVER use `adb shell input tap` coords for navigation — they suck (Pixel 7 1080x2400, coords shift)
 - Owner does navigation manually when prompted via question/response, then Roo takes screenshot and verifies via `uiautomator dump` grep
 
-**Prereq — Owner in bash (confirmed 2026-10-21):**
+**Prereq — Owner in bash (confirmed 2026-10-21, Git Bash):**
 ```bash
 echo $BASH_VERSION
-# should show 5.x
+# should show 5.x — bash, empty → PowerShell, literal → CMD
+echo $0
+# should show bash or -bash
+echo $SHELL
+# /bin/bash
+uname -a
+# MINGW64 / MSYS
+ls -la gradlew.bat
+# works in bash
+pwd
+# /c/... path
+# DO NOT use: ps -p $$ -o comm=  → Git Bash ps doesn't support -o (error: unknown option -- o)
 ```
 
 **Folder:**
