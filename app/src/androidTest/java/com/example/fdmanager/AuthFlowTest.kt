@@ -25,6 +25,7 @@ class AuthFlowTest {
     @Before
     fun resetState() {
         SettingsStore.setHasSeenOnboarding(true)
+        SettingsStore.clearLoadingErrorDebug()
         SettingsStore.setDemoMode(false)
         SettingsStore.clearMockLoggedIn()
         FdRepository.get().reset(SampleData.seed(LocalDate.now()))

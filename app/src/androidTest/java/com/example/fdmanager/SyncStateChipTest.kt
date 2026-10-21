@@ -34,6 +34,7 @@ class SyncStateChipTest {
         SettingsStore.clearMockLoggedIn()
         SettingsStore.setSyncStateName("SAVED")
         SettingsStore.setLastSyncError(null)
+        SettingsStore.clearLoadingErrorDebug()
         com.example.fdmanager.data.FakeSyncRepository.setState(SyncState.SAVED)
         com.example.fdmanager.data.FakeSyncRepository.setError(null)
         FdRepository.get().reset(SampleData.seed(LocalDate.now()))

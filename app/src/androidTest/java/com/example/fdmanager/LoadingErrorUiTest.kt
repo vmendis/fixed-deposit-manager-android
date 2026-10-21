@@ -226,10 +226,24 @@ class LoadingErrorUiTest {
             }
         }
 
-        // Find and toggle loading switch — use text "Show loading state"
+        // Find and toggle loading switch — use testTag showLoadingStateSwitch
         try {
-            rule.swipeUntilText("Show loading state")
-            rule.onNodeWithText("Show loading state").performClick()
+            scrollToTag("showLoadingState")
+            rule.waitUntil(5000) {
+                try {
+                    rule.onNodeWithTag("showLoadingState", useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e: Throwable) { false }
+            }
+            try {
+                rule.onNodeWithTag("showLoadingStateSwitch").performClick()
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithTag("showLoadingStateSwitch", useUnmergedTree = true).performClick()
+                } catch (e2: Throwable) {
+                    rule.onNodeWithText("Show loading state").performClick()
+                }
+            }
             rule.waitForIdle()
         } catch (e: Throwable) {
             // fallback via SettingsStore direct

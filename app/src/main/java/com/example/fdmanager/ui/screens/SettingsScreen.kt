@@ -362,13 +362,15 @@ fun SettingsScreen(
                     title = "Show loading state",
                     subtitle = "Skeleton + spinner — Home, list, calendar show loading (mock #4)",
                     checked = settings.isLoadingDebug,
-                    onCheckedChange = { vm.setLoadingDebug(it) }
+                    onCheckedChange = { vm.setLoadingDebug(it) },
+                    testTag = "showLoadingState"
                 )
                 SettingSwitchRow(
                     title = "Show error state",
                     subtitle = "Full-screen error with Retry — ${settings.debugErrorMessage}",
                     checked = settings.isErrorDebug,
-                    onCheckedChange = { vm.setErrorDebug(it) }
+                    onCheckedChange = { vm.setErrorDebug(it) },
+                    testTag = "showErrorState"
                 )
                 SettingRow(
                     title = "Clear loading/error debug",
@@ -413,11 +415,13 @@ private fun SettingSwitchRow(
     title: String,
     subtitle: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    testTag: String? = null
 ) {
     Row(
         Modifier
             .fillMaxWidth()
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -429,7 +433,11 @@ private fun SettingSwitchRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = if (testTag != null) Modifier.testTag("${testTag}Switch") else Modifier
+        )
     }
 }
 
