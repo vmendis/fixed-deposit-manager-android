@@ -105,35 +105,40 @@ pwd
 # DO NOT use: ps -p $$ -o comm=  → Git Bash ps doesn't support -o (error: unknown option -- o)
 ```
 
-**Folder:**
-```bash
+**Folder — Windows CMD native (no -p, no -Force):**
+```cmd
 if not exist test-artifacts-v32 mkdir test-artifacts-v32
+:: DO NOT use mkdir -p — in CMD creates folder "-p"
+:: DO NOT use mkdir -Force — creates folder "-Force"
 ```
 
-**Launch — MANDATORY before ANY screenshot:**
-```bash
+**Launch — MANDATORY before ANY screenshot — CMD native:**
+```cmd
 gradlew.bat installDebug
 adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
-sleep 5
-adb shell dumpsys window | grep mCurrentFocus
-# MUST show com.vssbox.fdmanager/com.example.fdmanager.MainActivity
-# If shows NexusLauncherActivity → RE-LAUNCH via am start above, DO NOT capture
-# If onboarding → Owner manually taps "Explore demo data first" (link, NOT Get Started button)
+timeout /t 5 >nul
+adb shell dumpsys window | findstr mCurrentFocus
+:: MUST show com.vssbox.fdmanager/com.example.fdmanager.MainActivity
+:: If shows com.google.android.apps.nexuslauncher/NexusLauncherActivity → RE-LAUNCH via am start above, DO NOT capture
+:: If onboarding → Owner manually taps "Explore demo data first" (link, NOT Get Started button)
+:: In bash (owner): sleep 5 + adb shell dumpsys window | grep mCurrentFocus — but Roo uses findstr for Windows
 ```
 
-**Fail-safe capture loop — Roo prompts via ask_user:**
+**Fail-safe capture loop — Roo prompts via ask_user (question/response, minimal typing):**
 
 For each of 4 required shots, Roo does:
 1. `ask_user`: "Please navigate to [SCREEN]. When you see [EXPECTED TEXT], select Ready"
-   - Owner navigates manually (no coords)
+   - Owner navigates manually (no coords — coords suck)
    - Owner selects Ready
-2. Roo runs:
-```
+2. Roo runs (CMD native, no && chain in PowerShell — use separate lines):
+```cmd
 adb shell uiautomator dump /sdcard/window_dump.xml
-adb pull /sdcard/window_dump.xml /tmp/
-grep -i "EXPECTED" /tmp/window_dump.xml || echo "TEXT NOT FOUND — ask again"
+adb pull /sdcard/window_dump.xml window_dump.xml
+findstr /i "EXPECTED" window_dump.xml
+:: if not found → ask again
 adb shell screencap -p /sdcard/shot-xxx.png
-adb pull /sdcard/shot-xxx.png test-artifacts-v32/shot-nsb-v32-xxx.png
+adb pull /sdcard/shot-xxx.png test-artifacts-v32\shot-nsb-v32-xxx.png
+dir test-artifacts-v32
 ```
 3. Roo presents file + `ask_user`: "Is this correct? Shows [DESCRIPTION]?"
    - Options: Yes correct / No retake
@@ -146,29 +151,29 @@ adb pull /sdcard/shot-xxx.png test-artifacts-v32/shot-nsb-v32-xxx.png
 3. `shot-nsb-v32-settings-loading-error.png` — Settings scrolled to "Loading & Error (debug #4)" section showing switches + preview `loadingErrorPreview` with skeleton + error preview
 4. `shot-nsb-v32-list-loading.png` — FdList (or Calendar) with loading (enable loading debug, open any institution list, should show loading) OR Calendar loading
 
-**Commands — bash (owner configured bash in AS):**
-```bash
-# No >nul, no && — bash uses ; and sleep
+**Commands — Windows CMD native (folder part is Windows per owner 2026-10-21, no -p):**
+```cmd
+:: DO NOT use mkdir -p — in CMD creates folder "-p" (owner rule 2026-10-21)
+if not exist test-artifacts-v32 mkdir test-artifacts-v32
+
 adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
-sleep 5
-adb shell dumpsys window | grep mCurrentFocus
-# Must be app
+timeout /t 5 >nul
+adb shell dumpsys window | findstr mCurrentFocus
+:: Must be app
 
-mkdir -p test-artifacts-v32
-
-# Capture after owner says Ready:
+:: Capture after owner says Ready — separate lines, no && for PowerShell compat:
 adb shell screencap -p /sdcard/shot-home-loading.png
-adb pull /sdcard/shot-home-loading.png test-artifacts-v32/shot-nsb-v32-home-loading.png
-ls -lh test-artifacts-v32/
+adb pull /sdcard/shot-home-loading.png test-artifacts-v32\shot-nsb-v32-home-loading.png
+dir test-artifacts-v32
 ```
 
 **Hard rules — report REJECTED if:**
 - Screenshot is launcher (Play Store/Gmail) or onboarding Get Started (must be Home/Settings with chip/loading)
-- No `dumpsys` check showing `com.vssbox.fdmanager/com.example.fdmanager.MainActivity`
-- No `uiautomator dump` grep verification for expected text
-- No question/response loop for fail-safe
+- No `dumpsys` check showing `com.vssbox.fdmanager/com.example.fdmanager.MainActivity` (use findstr not grep — grep fails in PowerShell)
+- No `uiautomator dump` + `findstr` verification for expected text
+- No question/response loop for fail-safe (Roo prompts you to navigate, you navigate manually, Roo captures)
 - Litter at root: `shot-*.png`, `logcat-*.txt`, `TEST-REPORT-*.md` at root — must be in `test-artifacts-v32\` only
-- `mkdir -Force` creates folder `-Force` in CMD — use `mkdir -p` in bash or `if not exist mkdir` in CMD, no -Force
+- `mkdir -p` or `mkdir -Force` creates folder "-p"/"-Force" in CMD — use plain `mkdir` or `if not exist mkdir`, no -p, no -Force (owner rule 2026-10-21)
 
 ## 5. Report — TEST-REPORT-V32.md in test-artifacts-v32/
 Must contain:

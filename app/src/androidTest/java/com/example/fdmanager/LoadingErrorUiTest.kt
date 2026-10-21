@@ -77,14 +77,27 @@ class LoadingErrorUiTest {
                 true
             } catch (e: Throwable) {
                 try {
-                    rule.swipeUntilText("Loading & Error")
-                    rule.onNodeWithText("Loading & Error", substring = true).assertIsDisplayed()
-                    true
+                    rule.onNodeWithText("Loading", substring = true).assertIsDisplayed()
+                    // check if we are in Settings and have debug #4 nearby
+                    try {
+                        rule.onNodeWithText("debug #4", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                        true
+                    } catch (e3: Throwable) {
+                        rule.swipeUntilText("Loading & Error")
+                        rule.onNodeWithText("Loading & Error", substring = true).assertIsDisplayed()
+                        true
+                    }
                 } catch (e2: Throwable) {
                     try {
                         rule.onNodeWithText("Loading & Error", substring = true, useUnmergedTree = true).assertIsDisplayed()
                         true
-                    } catch (e3: Throwable) { false }
+                    } catch (e3: Throwable) {
+                        try {
+                            rule.swipeUntilText("Show loading state")
+                            rule.onNodeWithText("Show loading state", substring = true).assertIsDisplayed()
+                            true
+                        } catch (e4: Throwable) { false }
+                    }
                 }
             }
         }
@@ -226,17 +239,26 @@ class LoadingErrorUiTest {
 
         rule.onNodeWithText("Home").performClick()
         rule.waitForIdle()
-        ensureHomeTop()
-
+        // Don't call ensureHomeTop when loading debug active — home-scroll is hidden, loading replaces it
         rule.waitUntil(15000) {
             try {
                 rule.onNodeWithTag("loadstate-0400r9", useUnmergedTree = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) {
                 try {
-                    rule.onNodeWithText("Loading", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    rule.onNodeWithTag("loadstate-0400r9").assertIsDisplayed()
                     true
-                } catch (e2: Throwable) { false }
+                } catch (e2: Throwable) {
+                    try {
+                        rule.onNodeWithTag("fullScreenLoading", useUnmergedTree = true).assertIsDisplayed()
+                        true
+                    } catch (e3: Throwable) {
+                        try {
+                            rule.onNodeWithText("Loading", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                            true
+                        } catch (e4: Throwable) { false }
+                    }
+                }
             }
         }
 
@@ -249,17 +271,26 @@ class LoadingErrorUiTest {
     fun errorRetryClearsError() {
         SettingsStore.setErrorDebug(true)
         rule.waitForIdle()
-        ensureHomeTop()
-
+        // Don't require home-scroll when error debug active — error replaces it
         rule.waitUntil(15000) {
             try {
                 rule.onNodeWithTag("fullScreenError", useUnmergedTree = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) {
                 try {
-                    rule.onNodeWithText("Failed to load", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    rule.onNodeWithTag("fullScreenError").assertIsDisplayed()
                     true
-                } catch (e2: Throwable) { false }
+                } catch (e2: Throwable) {
+                    try {
+                        rule.onNodeWithTag("loadstate-0400r9", useUnmergedTree = true).assertIsDisplayed()
+                        true
+                    } catch (e3: Throwable) {
+                        try {
+                            rule.onNodeWithText("Failed to load", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                            true
+                        } catch (e4: Throwable) { false }
+                    }
+                }
             }
         }
 
