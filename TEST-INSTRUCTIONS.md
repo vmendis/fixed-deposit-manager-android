@@ -80,6 +80,11 @@ type test-artifacts-v32\logcat-v32.txt
 :: 10-20 13:55:45.546 22782 22803 I TestRunner: run started: 28 tests
 :: ...
 :: 10-20 14:02:33.736 22782 22803 I TestRunner: run finished: 28 tests, 0 failed, 0 ignored
+
+:: ANTI-LOOP RULE (owner rule 2026-10-21): If tests fail, DO NOT blindly do git fetch + checkout + rerun in a loop
+:: Instead: report failures with real logcat + XML excerpt + screenshot check, then STOP and wait for architect fix
+:: Only rerun ONCE per flake protocol: gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.fdmanager.LoadingErrorUiTest
+:: Then report BOTH runs in report, label ENV-FLAKE if passes on rerun
 ```
 
 ## 4. Screenshots — MUST be app, not launcher — FAIL-SAFE METHOD (user navigates, Roo captures, question/response)
