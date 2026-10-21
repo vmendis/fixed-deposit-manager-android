@@ -58,10 +58,16 @@ fun ShimmerBox(
         end = Offset(translateAnim, translateAnim)
     )
 
+    val bgModifier = if (isLoading) {
+        Modifier.background(brush, RoundedCornerShape(8.dp))
+    } else {
+        Modifier.background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
+    }
+
     Box(
         modifier = modifier
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isLoading) brush else MaterialTheme.colorScheme.surfaceVariant)
+            .then(bgModifier)
     )
 }
 
