@@ -41,7 +41,7 @@ class SyncStateChipTest {
     }
 
     private fun scrollToTag(tag: String) {
-        // Try up to 3 times: performScrollTo then swipeUntilTag fallback
+        try { rule.swipeUntilTag(tag) } catch (e: Throwable) {}
         repeat(3) {
             try {
                 rule.onNodeWithTag(tag).performScrollTo()
@@ -53,7 +53,6 @@ class SyncStateChipTest {
                     rule.waitForIdle()
                     return
                 } catch (e2: Throwable) {
-                    // fall through to swipe
                 }
             }
             try {
@@ -66,27 +65,38 @@ class SyncStateChipTest {
                 }
                 return
             } catch (e: Throwable) {
-                // continue
             }
             rule.waitForIdle()
         }
     }
 
     private fun ensureSyncMockHeader() {
+        try { rule.swipeUntilTag("syncMockSection") } catch (e: Throwable) {}
+        try { rule.swipeUntilTag("syncStateRow") } catch (e: Throwable) {}
         rule.waitUntil(20000) {
             try {
-                rule.onNodeWithText("Sync (mock)", substring = true).assertIsDisplayed()
+                rule.onNodeWithTag("syncMockSection", useUnmergedTree = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) {
                 try {
-                    rule.swipeUntilText("Sync (mock)")
-                    rule.onNodeWithText("Sync (mock)", substring = true).assertIsDisplayed()
+                    rule.onNodeWithTag("syncMockSection").assertIsDisplayed()
                     true
                 } catch (e2: Throwable) {
                     try {
-                        rule.onNodeWithText("Sync (mock)", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                        rule.onNodeWithText("Sync (mock)", substring = true).assertIsDisplayed()
                         true
-                    } catch (e3: Throwable) { false }
+                    } catch (e3: Throwable) {
+                        try {
+                            rule.swipeUntilText("Sync (mock)")
+                            rule.onNodeWithText("Sync (mock)", substring = true).assertIsDisplayed()
+                            true
+                        } catch (e4: Throwable) {
+                            try {
+                                rule.onNodeWithText("Sync (mock)", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                                true
+                            } catch (e5: Throwable) { false }
+                        }
+                    }
                 }
             }
         }

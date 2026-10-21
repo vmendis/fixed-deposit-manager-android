@@ -306,7 +306,11 @@ fun SettingsScreen(
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
                 // ---- Sync state demo #3 — mock states for design review, 0 quota ----
-                SectionHeader("Sync (mock) #3", subtitle = "Demo triggers for Saved/Syncing/Offline/Error chip")
+                SectionHeader(
+                    "Sync (mock) #3",
+                    subtitle = "Demo triggers for Saved/Syncing/Offline/Error chip",
+                    modifier = Modifier.testTag("syncMockSection")
+                )
                 SettingRow(
                     title = "Sync state: ${settings.syncStateName}",
                     subtitle = "Tap to cycle Saved → Syncing → Offline → Error (mock, 0 quota)",
@@ -357,7 +361,11 @@ fun SettingsScreen(
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
                 // ---- Loading & Error debug #4 — shared pattern, toggled by debug switch for review ----
-                SectionHeader("Loading & Error (debug #4)", subtitle = "Shared skeleton/error — Home, list, detail, calendar (mock, 0 quota)")
+                SectionHeader(
+                    "Loading & Error (debug #4)",
+                    subtitle = "Shared skeleton/error — Home, list, detail, calendar (mock, 0 quota)",
+                    modifier = Modifier.testTag("loadingErrorSection")
+                )
                 SettingSwitchRow(
                     title = "Show loading state",
                     subtitle = "Skeleton + spinner — Home, list, calendar show loading (mock #4)",

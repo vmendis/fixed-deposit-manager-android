@@ -42,6 +42,8 @@ class LoadingErrorUiTest {
     }
 
     private fun scrollToTag(tag: String) {
+        // verticalScroll Column: swipeUntilTag is more reliable than performScrollTo alone
+        try { rule.swipeUntilTag(tag) } catch (e: Throwable) {}
         repeat(3) {
             try {
                 rule.onNodeWithTag(tag).performScrollTo()
@@ -71,31 +73,44 @@ class LoadingErrorUiTest {
     }
 
     private fun ensureLoadingErrorHeader() {
+        // Try tag first with swipe — verticalScroll Column needs swipeUntilTag
+        try { rule.swipeUntilTag("loadingErrorSection") } catch (e: Throwable) {}
+        try { rule.swipeUntilTag("showLoadingState") } catch (e: Throwable) {}
         rule.waitUntil(20000) {
             try {
-                rule.onNodeWithText("Loading & Error", substring = true).assertIsDisplayed()
+                rule.onNodeWithTag("loadingErrorSection", useUnmergedTree = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) {
                 try {
-                    rule.onNodeWithText("Loading", substring = true).assertIsDisplayed()
-                    try {
-                        rule.onNodeWithText("debug #4", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                        true
-                    } catch (e3: Throwable) {
-                        rule.swipeUntilText("Loading & Error")
-                        rule.onNodeWithText("Loading & Error", substring = true).assertIsDisplayed()
-                        true
-                    }
+                    rule.onNodeWithTag("loadingErrorSection").assertIsDisplayed()
+                    true
                 } catch (e2: Throwable) {
                     try {
-                        rule.onNodeWithText("Loading & Error", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                        rule.onNodeWithText("Loading & Error", substring = true).assertIsDisplayed()
                         true
                     } catch (e3: Throwable) {
                         try {
-                            rule.swipeUntilText("Show loading state")
-                            rule.onNodeWithText("Show loading state", substring = true).assertIsDisplayed()
-                            true
-                        } catch (e4: Throwable) { false }
+                            rule.onNodeWithText("Loading", substring = true).assertIsDisplayed()
+                            try {
+                                rule.onNodeWithText("debug #4", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                                true
+                            } catch (e4: Throwable) {
+                                rule.swipeUntilText("Loading & Error")
+                                rule.onNodeWithText("Loading & Error", substring = true).assertIsDisplayed()
+                                true
+                            }
+                        } catch (e5: Throwable) {
+                            try {
+                                rule.onNodeWithText("Loading & Error", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                                true
+                            } catch (e6: Throwable) {
+                                try {
+                                    rule.swipeUntilText("Show loading state")
+                                    rule.onNodeWithText("Show loading state", substring = true).assertIsDisplayed()
+                                    true
+                                } catch (e7: Throwable) { false }
+                            }
+                        }
                     }
                 }
             }
