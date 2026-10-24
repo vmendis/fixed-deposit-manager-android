@@ -92,73 +92,64 @@ This run also re-tests a code change: `OnboardingScreen` copy `32 LFC` → `31 L
 
 ---
 
-## 0.0 ENVIRONMENT PREFLIGHT — do this before anything else
+## 0.0 ENVIRONMENT — VERIFY, DO NOT ASSUME
 
-V35 run 2 executed nothing. Both blockers were **environment, not code**:
+The owner's Git Bash terminal has `adb` and `java` on `PATH` already:
 
 ```
-adb devices    -> 'adb' is not recognized as an internal or external command
-./gradlew ...  -> ERROR: JAVA_HOME is set to an invalid directory:
-                  /mnt/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot
+which adb  -> /c/Users/thiss/AppData/Local/Android/Sdk/platform-tools/adb
+PATH       -> /mingw64/bin:/usr/bin:...:/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot/bin:...:/c/Users/thiss/AppData/Local/Android/Sdk/platform-tools
 ```
 
-**Why.** A tool-launched `bash.exe` is not a login shell, so `/etc/profile` never runs and
-`/usr/bin` is never added to `PATH`. `grep`, `ls`, `cat` then vanish — and `adb`/`java` were never
-on `PATH` to begin with. The `cmd.exe` wording in that error is the tell: the command did not run
-in bash at all. Separately, `JAVA_HOME` carried a **WSL** path (`/mnt/c/...`); Git Bash needs `/c/...`.
+So **assume nothing is broken.** Prove it, and only intervene if a check fails.
 
-### 0.0.1 Run this one line
+### 0.0.1 Prove the shell you are actually in
+
+```bash
+echo "$BASH_VERSION"
+echo "pwd=$(pwd)"
+which adb
+which java
+which grep
+```
+
+| Result | Meaning |
+|---|---|
+| all four print paths | environment is fine — **go to §0 and skip 0.0.2** |
+| `which adb` prints nothing | adb genuinely not on this shell's `PATH` |
+| `'X' is not recognized as an internal or external command` | you are in **cmd.exe** — wrong shell, stop |
+| `bash: X: command not found` | bash, but `PATH` is short — go to 0.0.2 |
+
+### 0.0.2 ONLY IF a check above failed
 
 ```bash
 . ./scripts/env.sh
 ```
 
-**The leading dot matters.** `./scripts/env.sh` runs it in a child shell and every export is
-discarded on exit. `.` is a bash builtin, so it still works when `PATH` is broken.
+**The leading dot matters.** `./scripts/env.sh` runs it in a child shell and every export is thrown
+away on exit. `.` is a bash builtin, so it works even when `PATH` is broken.
 
-The script is committed to this branch — no copy-paste, nothing to configure in Android Studio.
-It sets `JAVA_HOME`, `ANDROID_HOME`, `ANDROID_SDK_ROOT` and rebuilds `PATH` from scratch, then
-prints a self-check.
+It rebuilds the login `PATH`, resolves `JAVA_HOME`, derives `ANDROID_HOME` from `adb`, and prints a
+per-tool PASS/FAIL. If it still ends `CHECKS FAILED`, **STOP** and report the `[FAIL]` lines (C3/C4).
 
-### 0.0.2 Read the self-check output
-
-```
-  [OK]   java       openjdk version "17.0.16" ...
-  [OK]   adb        Android Debug Bridge version ...
-  [OK]   grep       grep (GNU grep) ...
-  [OK]   git        git version ...
-  [OK]   repo       /c/LocalApps/.../fixed-deposit-manager-android
-  ALL CHECKS PASSED — you may run the tests.
-```
-
-**If it ends with `CHECKS FAILED`, STOP.** Report the `[FAIL]` lines verbatim. Do not install
-anything, do not edit `local.properties`, do not try a different shell (rules C3 and C4).
-
-It also fails loudly if `JAVA_HOME` starts with `/mnt/` — that means WSL, not Git Bash.
-
-### 0.0.3 The emulator, and the file the build needs
+### 0.0.3 `JAVA_HOME`, if and only if gradle complains about it
 
 ```bash
-adb devices
+echo "$JAVA_HOME"
 ```
-Must list the emulator with `device`, e.g. `emulator-5554	device`. A bare
-`List of devices attached` means the emulator is not running.
+
+`/mnt/c/...` is a **WSL** path and will not work in Git Bash. Correct form:
 
 ```bash
-cat local.properties
+export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot"
+export PATH="$JAVA_HOME/bin:$PATH"
 ```
-Must show `sdk.dir=C:\Users\thiss\AppData\Local\Android\Sdk`.
-Missing file → **blocker, report it**, do not create it.
 
-### 0.0.4 Every later command goes in the same window
+If gradle does not complain, leave `JAVA_HOME` alone.
 
-`export`s do not survive into a new terminal. If the shell is restarted, run `. ./scripts/env.sh`
-again before continuing.
+### 0.0.4 Everything later goes in this same window
 
-### 0.0.5 If any of the above fails: STOP
-
-Report which check failed, the exact command, and the verbatim output. Do **not** install anything,
-do not edit `local.properties`, do not switch shells and improvise. **C3 and C4 apply.**
+`export`s do not survive a new terminal.
 
 ---
 
@@ -206,10 +197,42 @@ cd /c/LocalApps/AppDevelopment/fd-manager/fixed-deposit-manager-android
 echo $BASH_VERSION
 
 git fetch origin --prune
-git checkout -B test-472867b origin/arena/b64e0abe-fixed-deposit-manager-android
-git log -1 --oneline          # record it — it goes in the report
-git status --short            # must be clean
-ls -la TEST-INSTRUCTIONS.md   # this file, delivered by git
+git checkout -B test-run origin/arena/b64e0abe-fixed-deposit-manager-android
+git log -1 --oneline
+git status --short
+```
+
+### The local branch is called `test-run` on purpose
+
+It is named after the **source**, never after a SHA. A branch called `test-472867b` that actually
+contains seven later commits is a lie, and that is exactly the mix-up that already happened —
+the runbook said `test-472867b` while the tree was at `93d4e7e`.
+
+The SHA is not in the name. It is what `git log -1` prints, and that is what goes in the report.
+
+### Mandatory: prove local HEAD equals the remote head
+
+```bash
+git rev-parse --short HEAD
+git rev-parse --short origin/arena/b64e0abe-fixed-deposit-manager-android
+```
+
+**These two must be identical.** If they differ, your checkout is stale — run the three commands
+again before doing anything else. Every later step depends on this, and a stale tree silently
+tests the wrong code.
+
+### Mandatory: confirm the file you are reading matches the tree
+
+```bash
+ls -la TEST-INSTRUCTIONS.md
+git status --short
+```
+
+`git status --short` must be **empty**. If `TEST-INSTRUCTIONS.md` shows as modified, someone edited
+the local copy — restore it before continuing:
+
+```bash
+git checkout -- TEST-INSTRUCTIONS.md
 ```
 
 Prove the fix is present before spending four minutes:
@@ -375,7 +398,7 @@ Fewer than 4 distinct hashes = a screen was not changed. Redo that one capture.
 ```markdown
 # TEST REPORT — V35 — Gate 5 evidence
 
-- Branch / commit: arena/b64e0abe-fixed-deposit-manager-android @ <git rev-parse --short HEAD>
+- Branch / commit: test-run @ <git rev-parse --short HEAD>   <- paste real output, both must match origin
 - Environment: Windows 11, Android Studio <real version from Help > About>,
   AVD Pixel_7_API_34 / API 34, Gradle 8.13, AGP 8.13.2, Kotlin 2.0.20, JDK 17.0.16
 - Tiers executed: 2 / 2
