@@ -1,6 +1,7 @@
 package com.example.fdmanager
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
@@ -9,6 +10,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
 import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.swipe
@@ -175,13 +177,24 @@ class SyncStateChipTest {
         }
     }
 
-    /** Scroll the given Settings testTag into view, then click it. */
+    /**
+     * Invoke the row's onClick semantics action directly.
+     *
+     * performClick() injects a TOUCH at the node's centre, and two things break that here:
+     *  - every Settings row shows a Snackbar on click, which overlays the bottom of the screen —
+     *    exactly where performScrollTo() parks the row — so the touch lands on the Snackbar;
+     *  - the row may be off-screen entirely.
+     * The semantics action calls the very same onClick lambda with no hit-testing at all.
+     *
+     * V36 evidence: SAVED and SYNCING were both reached, then OFFLINE never appeared. The state
+     * machine in SettingsScreen is SAVED→SYNCING→OFFLINE→ERROR→SAVED, and FakeSyncRepository
+     * has no auto-transition, so the only explanation is that the second click never landed.
+     */
     private fun clickSyncRow(tag: String) {
-        scrollToTag(tag)
         try {
-            rule.onNodeWithTag(tag).performClick()
+            rule.onNodeWithTag(tag).performSemanticsAction(SemanticsActions.OnClick)
         } catch (e: Throwable) {
-            rule.onNodeWithTag(tag, useUnmergedTree = true).performClick()
+            rule.onNodeWithTag(tag, useUnmergedTree = true).performSemanticsAction(SemanticsActions.OnClick)
         }
         rule.waitForIdle()
     }
