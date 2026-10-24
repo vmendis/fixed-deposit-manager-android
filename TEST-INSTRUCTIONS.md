@@ -47,6 +47,16 @@ Check the exit code before concluding anything is missing:
 Reporting "the fix is not present" when the truth is "grep does not exist in cmd.exe" is exactly the
 false alarm that wasted a whole round. See §0b.
 
+**Signature of a command that leaked to `cmd.exe`:**
+
+```
+'<something>' is not recognized as an internal or external command
+```
+
+That wording only ever comes from `cmd.exe`. A genuine bash failure says
+`bash: <something>: command not found`. If you see the `cmd.exe` wording, the command did not run in
+the shell you think it did — report the shell mismatch, do not work around it.
+
 ### C6. No fabrication, no placeholders
 
 Every value in the report must be real command output. `<...>`, `$(...)`, `(unknown)`, `..`, and
@@ -63,6 +73,10 @@ protocol (§5b) permits exactly one rerun of the failed class, and nothing else.
 > **This file is committed to the session branch on purpose** — go get it with `git pull`, no
 > copy-paste. It is removed in a final commit before the PR merges, so it never reaches `dev` or
 > `master`. The code you test is identical before and after that removal.
+>
+> **Do not edit your local copy.** The V35 run-2 copy came back with C7 duplicated and the whole
+> file converted to CRLF — the executor had rewritten it again. If you think a rule is missing, say
+> so in the report; do not add it.
 
 V34 was **rejected**: wrong Tier2 table, `Android Studio (unknown)`, a UTF-16 logcat with **zero**
 TestRunner lines, and four screenshots that were really the onboarding screen (two byte-identical).
@@ -75,6 +89,70 @@ This run also re-tests a code change: `OnboardingScreen` copy `32 LFC` → `31 L
 > **SHELL RULE — bash only.** `grep`, `ls`, `./gradlew`, `mkdir`, `sleep`, `cat`, `wc`, `md5sum`.
 > **Never** PowerShell, **never** CMD. `powershell -command "..."` fails for two reasons:
 > `-CaseInsensitive` is not a `Select-String` parameter, and bash eats `$vars` inside double quotes.
+
+---
+
+## 0.0 ENVIRONMENT PREFLIGHT — do this before anything else
+
+V35 run 2 executed nothing. Both blockers were **environment, not code**:
+
+```
+adb devices    -> 'adb' is not recognized as an internal or external command
+./gradlew ...  -> ERROR: JAVA_HOME is set to an invalid directory:
+                  /mnt/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot
+```
+
+`adb` is not on `PATH`, and `JAVA_HOME` points at a **WSL-style path** (`/mnt/c/...`).
+Git Bash needs `/c/...`.
+
+### 0.0.1 Open ONE Git Bash window and export these in it
+
+```bash
+export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot"
+export ANDROID_HOME="/c/Users/thiss/AppData/Local/Android/Sdk"
+export ANDROID_SDK_ROOT="$ANDROID_HOME"
+export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+```
+
+Every later command must be typed in **this same window**. A new window loses the exports.
+
+### 0.0.2 Prove it — all four must pass
+
+```bash
+echo "$JAVA_HOME"
+```
+Must print `/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot`.
+**If it starts with `/mnt/`, you are in WSL, not Git Bash — stop.**
+
+```bash
+which java
+which adb
+```
+Both must print a path. Nothing printed → not on `PATH`, do not continue.
+
+```bash
+java -version 2>&1 | head -1
+```
+Must print `openjdk version "17.0.16"`.
+
+```bash
+adb devices
+```
+Must list the emulator with `device`, e.g. `emulator-5554	device`.
+`List of devices attached` with nothing under it means the emulator is not running.
+
+### 0.0.3 The SDK file the build needs
+
+```bash
+cat local.properties
+```
+Must show `sdk.dir=C\:\\Users\\thiss\\AppData\\Local\\Android\\Sdk`.
+If the file is missing that is a **blocker — report it**, do not create it.
+
+### 0.0.4 If any of the above fails: STOP
+
+Report which check failed, the exact command, and the verbatim output. Do **not** install anything,
+do not edit `local.properties`, do not switch shells and improvise. **C3 and C4 apply.**
 
 ---
 
