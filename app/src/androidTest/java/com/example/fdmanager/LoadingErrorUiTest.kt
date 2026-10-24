@@ -228,13 +228,16 @@ class LoadingErrorUiTest {
 
         // Show loading
         scrollToTag("loadingErrorPreview")
+        // Assert on the preview tag, NOT the section header text: scrolling the tall
+        // preview into view pushes the header above the fold, so asserting the header
+        // here failed with a 20s ComposeTimeoutException even though the section exists.
         rule.waitUntil(20000) {
             try {
-                rule.onNodeWithText("Loading & Error (debug #4)", substring = true).assertIsDisplayed()
+                rule.onNodeWithTag("loadingErrorPreview", useUnmergedTree = true).assertIsDisplayed()
                 true
             } catch (e: Throwable) {
                 try {
-                    rule.onNodeWithText("Loading & Error", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    rule.onNodeWithTag("loadingErrorPreview").assertIsDisplayed()
                     true
                 } catch (e2: Throwable) { false }
             }
