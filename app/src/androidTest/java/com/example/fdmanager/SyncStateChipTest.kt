@@ -139,6 +139,42 @@ class SyncStateChipTest {
         }
     }
 
+    /**
+     * Bring the sync row back into the viewport, then assert its state text.
+     *
+     * The Settings body is a verticalScroll Column: clicking "Simulate sync error" or
+     * "Clear sync error" scrolls PAST syncStateRow, so the row holding "Sync state: X" is
+     * above the fold afterwards. assertIsDisplayed() fails on an off-screen node, which
+     * burned the full 20 s waitUntil (V34 failure in syncStateCyclesViaSettings).
+     * Re-scrolling before every assertion is what makes this deterministic.
+     */
+    private fun assertSyncState(label: String) {
+        val text = "Sync state: $label"
+        scrollToTag("syncStateRow")
+        rule.waitUntil(20000) {
+            try {
+                rule.onNodeWithText(text, substring = true).assertIsDisplayed()
+                true
+            } catch (e: Throwable) {
+                try {
+                    rule.onNodeWithText(text, substring = true, useUnmergedTree = true).assertIsDisplayed()
+                    true
+                } catch (e2: Throwable) { false }
+            }
+        }
+    }
+
+    /** Scroll the given Settings testTag into view, then click it. */
+    private fun clickSyncRow(tag: String) {
+        scrollToTag(tag)
+        try {
+            rule.onNodeWithTag(tag).performClick()
+        } catch (e: Throwable) {
+            rule.onNodeWithTag(tag, useUnmergedTree = true).performClick()
+        }
+        rule.waitForIdle()
+    }
+
     @Test
     fun syncChipDisplayedOnHome() {
         ensureHomeTop()
@@ -167,94 +203,24 @@ class SyncStateChipTest {
         rule.waitForIdle()
         ensureSyncMockHeader()
 
-        scrollToTag("syncStateRow")
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: SAVED", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: SAVED", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // SAVED (initial)
+        assertSyncState("SAVED")
 
-        scrollToTag("syncStateRow")
-        try {
-            rule.onNodeWithTag("syncStateRow").performClick()
-        } catch (e: Throwable) {
-            rule.onNodeWithTag("syncStateRow", useUnmergedTree = true).performClick()
-        }
-        rule.waitForIdle()
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: SYNCING", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: SYNCING", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // SAVED -> SYNCING
+        clickSyncRow("syncStateRow")
+        assertSyncState("SYNCING")
 
-        scrollToTag("syncStateRow")
-        try {
-            rule.onNodeWithTag("syncStateRow").performClick()
-        } catch (e: Throwable) {
-            rule.onNodeWithTag("syncStateRow", useUnmergedTree = true).performClick()
-        }
-        rule.waitForIdle()
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: OFFLINE", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: OFFLINE", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // SYNCING -> OFFLINE
+        clickSyncRow("syncStateRow")
+        assertSyncState("OFFLINE")
 
-        scrollToTag("simulateSyncError")
-        try {
-            rule.onNodeWithTag("simulateSyncError").performClick()
-        } catch (e: Throwable) {
-            rule.onNodeWithTag("simulateSyncError", useUnmergedTree = true).performClick()
-        }
-        rule.waitForIdle()
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: ERROR", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: ERROR", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // OFFLINE -> ERROR via the simulate-error row
+        clickSyncRow("simulateSyncError")
+        assertSyncState("ERROR")
 
-        scrollToTag("clearSyncError")
-        try {
-            rule.onNodeWithTag("clearSyncError").performClick()
-        } catch (e: Throwable) {
-            rule.onNodeWithTag("clearSyncError", useUnmergedTree = true).performClick()
-        }
-        rule.waitForIdle()
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: SAVED", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: SAVED", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // reset to SAVED
+        clickSyncRow("clearSyncError")
+        assertSyncState("SAVED")
     }
 
     @Test
