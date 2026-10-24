@@ -102,54 +102,60 @@ adb devices    -> 'adb' is not recognized as an internal or external command
                   /mnt/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot
 ```
 
-`adb` is not on `PATH`, and `JAVA_HOME` points at a **WSL-style path** (`/mnt/c/...`).
-Git Bash needs `/c/...`.
+**Why.** A tool-launched `bash.exe` is not a login shell, so `/etc/profile` never runs and
+`/usr/bin` is never added to `PATH`. `grep`, `ls`, `cat` then vanish — and `adb`/`java` were never
+on `PATH` to begin with. The `cmd.exe` wording in that error is the tell: the command did not run
+in bash at all. Separately, `JAVA_HOME` carried a **WSL** path (`/mnt/c/...`); Git Bash needs `/c/...`.
 
-### 0.0.1 Open ONE Git Bash window and export these in it
-
-```bash
-export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot"
-export ANDROID_HOME="/c/Users/thiss/AppData/Local/Android/Sdk"
-export ANDROID_SDK_ROOT="$ANDROID_HOME"
-export PATH="$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
-```
-
-Every later command must be typed in **this same window**. A new window loses the exports.
-
-### 0.0.2 Prove it — all four must pass
+### 0.0.1 Run this one line
 
 ```bash
-echo "$JAVA_HOME"
+. ./scripts/env.sh
 ```
-Must print `/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot`.
-**If it starts with `/mnt/`, you are in WSL, not Git Bash — stop.**
 
-```bash
-which java
-which adb
-```
-Both must print a path. Nothing printed → not on `PATH`, do not continue.
+**The leading dot matters.** `./scripts/env.sh` runs it in a child shell and every export is
+discarded on exit. `.` is a bash builtin, so it still works when `PATH` is broken.
 
-```bash
-java -version 2>&1 | head -1
+The script is committed to this branch — no copy-paste, nothing to configure in Android Studio.
+It sets `JAVA_HOME`, `ANDROID_HOME`, `ANDROID_SDK_ROOT` and rebuilds `PATH` from scratch, then
+prints a self-check.
+
+### 0.0.2 Read the self-check output
+
 ```
-Must print `openjdk version "17.0.16"`.
+  [OK]   java       openjdk version "17.0.16" ...
+  [OK]   adb        Android Debug Bridge version ...
+  [OK]   grep       grep (GNU grep) ...
+  [OK]   git        git version ...
+  [OK]   repo       /c/LocalApps/.../fixed-deposit-manager-android
+  ALL CHECKS PASSED — you may run the tests.
+```
+
+**If it ends with `CHECKS FAILED`, STOP.** Report the `[FAIL]` lines verbatim. Do not install
+anything, do not edit `local.properties`, do not try a different shell (rules C3 and C4).
+
+It also fails loudly if `JAVA_HOME` starts with `/mnt/` — that means WSL, not Git Bash.
+
+### 0.0.3 The emulator, and the file the build needs
 
 ```bash
 adb devices
 ```
-Must list the emulator with `device`, e.g. `emulator-5554	device`.
-`List of devices attached` with nothing under it means the emulator is not running.
-
-### 0.0.3 The SDK file the build needs
+Must list the emulator with `device`, e.g. `emulator-5554	device`. A bare
+`List of devices attached` means the emulator is not running.
 
 ```bash
 cat local.properties
 ```
-Must show `sdk.dir=C\:\\Users\\thiss\\AppData\\Local\\Android\\Sdk`.
-If the file is missing that is a **blocker — report it**, do not create it.
+Must show `sdk.dir=C:\Users\thiss\AppData\Local\Android\Sdk`.
+Missing file → **blocker, report it**, do not create it.
 
-### 0.0.4 If any of the above fails: STOP
+### 0.0.4 Every later command goes in the same window
+
+`export`s do not survive into a new terminal. If the shell is restarted, run `. ./scripts/env.sh`
+again before continuing.
+
+### 0.0.5 If any of the above fails: STOP
 
 Report which check failed, the exact command, and the verbatim output. Do **not** install anything,
 do not edit `local.properties`, do not switch shells and improvise. **C3 and C4 apply.**
