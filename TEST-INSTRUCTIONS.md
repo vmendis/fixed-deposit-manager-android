@@ -327,6 +327,13 @@ On failure: do NOT fetch/checkout/pull and loop. Report and STOP. Flake rerun, o
 
 ## 6. Screenshots — get past onboarding FIRST, then one at a time
 
+> **Never use `adb shell screencap -p /sdcard/x.png` from Git Bash.** MSYS rewrites any argument
+> starting with `/` into a Windows path, so adb receives `C:/Program Files/Git/sdcard/x.png` and
+> `screencap` prints its usage message instead of capturing. Use `adb exec-out screencap -p > file`
+> — it writes the PNG straight down the pipe, no SD card, no path rewriting, no `adb pull`.
+
+
+
 V34's four captures were all the **onboarding screen**, because the app opens on onboarding after a
 fresh install and nothing navigated past it. Tap through before capturing anything.
 
@@ -345,15 +352,14 @@ Confirm Home before continuing:
 
 ```bash
 sleep 5
-adb shell screencap -p /sdcard/probe.png
-adb pull /sdcard/probe.png test-artifacts-v35/_probe.png
+adb exec-out screencap -p > test-artifacts-v35/_probe.png
 ls -la test-artifacts-v35/_probe.png
 ```
 
 ### Capture 1 of 4 — Home
 
 ```bash
-sleep 5 && adb shell screencap -p /sdcard/shot.png && adb pull /sdcard/shot.png test-artifacts-v35/shot-home-v35.png
+sleep 5 && adb exec-out screencap -p > test-artifacts-v35/shot-home-v35.png && ls -la test-artifacts-v35/shot-home-v35.png
 ```
 
 > **ROO: ask — "Now open the FD list, then say ready."**
@@ -361,7 +367,7 @@ sleep 5 && adb shell screencap -p /sdcard/shot.png && adb pull /sdcard/shot.png 
 ### Capture 2 of 4 — FD list
 
 ```bash
-sleep 5 && adb shell screencap -p /sdcard/shot.png && adb pull /sdcard/shot.png test-artifacts-v35/shot-list-v35.png
+sleep 5 && adb exec-out screencap -p > test-artifacts-v35/shot-list-v35.png && ls -la test-artifacts-v35/shot-list-v35.png
 ```
 
 > **ROO: ask — "Open any FD to its detail screen, then say ready."**
@@ -369,7 +375,7 @@ sleep 5 && adb shell screencap -p /sdcard/shot.png && adb pull /sdcard/shot.png 
 ### Capture 3 of 4 — FD detail
 
 ```bash
-sleep 5 && adb shell screencap -p /sdcard/shot.png && adb pull /sdcard/shot.png test-artifacts-v35/shot-detail-v35.png
+sleep 5 && adb exec-out screencap -p > test-artifacts-v35/shot-detail-v35.png && ls -la test-artifacts-v35/shot-detail-v35.png
 ```
 
 > **ROO: ask — "Go to Settings, scroll to Loading & Error (debug #4), then say ready."**
@@ -377,7 +383,7 @@ sleep 5 && adb shell screencap -p /sdcard/shot.png && adb pull /sdcard/shot.png 
 ### Capture 4 of 4 — Settings
 
 ```bash
-sleep 5 && adb shell screencap -p /sdcard/shot.png && adb pull /sdcard/shot.png test-artifacts-v35/shot-settings-v35.png
+sleep 5 && adb exec-out screencap -p > test-artifacts-v35/shot-settings-v35.png && ls -la test-artifacts-v35/shot-settings-v35.png
 ```
 
 ### 6a. Prove they are four different screens
