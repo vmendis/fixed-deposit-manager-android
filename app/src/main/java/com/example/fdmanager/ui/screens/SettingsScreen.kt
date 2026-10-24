@@ -263,7 +263,7 @@ fun SettingsScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Secure box for your deposits - Track CBSL-regulated FDs (24 LCB + 6 LSB + 32 LFC). Runs entirely on local sample data. No account, no backend, no real money - FDs shown are fictional.",
+                        "Secure box for your deposits - Track CBSL-regulated FDs (24 LCB + 6 LSB + 31 LFC = 61 allowed; 32 LFC listed, 1 prohibited). Runs entirely on local sample data. No account, no backend, no real money - FDs shown are fictional.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
@@ -306,7 +306,11 @@ fun SettingsScreen(
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))
 
                 // ---- Sync state demo #3 — mock states for design review, 0 quota ----
-                SectionHeader("Sync (mock) #3", subtitle = "Demo triggers for Saved/Syncing/Offline/Error chip")
+                SectionHeader(
+                    "Sync (mock) #3",
+                    subtitle = "Demo triggers for Saved/Syncing/Offline/Error chip",
+                    modifier = Modifier.testTag("syncMockSection")
+                )
                 SettingRow(
                     title = "Sync state: ${settings.syncStateName}",
                     subtitle = "Tap to cycle Saved → Syncing → Offline → Error (mock, 0 quota)",
@@ -354,6 +358,55 @@ fun SettingsScreen(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
                 )
 
+                HorizontalDivider(Modifier.padding(vertical = 8.dp))
+
+                // ---- Loading & Error debug #4 — shared pattern, toggled by debug switch for review ----
+                SectionHeader(
+                    "Loading & Error (debug #4)",
+                    subtitle = "Shared skeleton/error — Home, list, detail, calendar (mock, 0 quota)",
+                    modifier = Modifier.testTag("loadingErrorSection")
+                )
+                SettingSwitchRow(
+                    title = "Show loading state",
+                    subtitle = "Skeleton + spinner — Home, list, calendar show loading (mock #4)",
+                    checked = settings.isLoadingDebug,
+                    onCheckedChange = { vm.setLoadingDebug(it) },
+                    testTag = "showLoadingState"
+                )
+                SettingSwitchRow(
+                    title = "Show error state",
+                    subtitle = "Full-screen error with Retry — ${settings.debugErrorMessage}",
+                    checked = settings.isErrorDebug,
+                    onCheckedChange = { vm.setErrorDebug(it) },
+                    testTag = "showErrorState"
+                )
+                SettingRow(
+                    title = "Clear loading/error debug",
+                    subtitle = "Reset to idle — show normal data",
+                    onClick = {
+                        vm.clearLoadingErrorDebug()
+                        scope.launch { snackbarHost.showSnackbar("Loading/error debug cleared → Idle (mock #4)") }
+                    },
+                    testTag = "clearLoadingErrorDebug"
+                )
+                // Preview of shared components
+                Column(Modifier.padding(horizontal = 16.dp, vertical = 8.dp).testTag("loadingErrorPreview").testTag("loadstate-0400r9")) {
+                    Text(
+                        "Preview — shared implementation:",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    com.example.fdmanager.ui.components.LoadingSkeletonCard()
+                    Spacer(Modifier.height(8.dp))
+                    com.example.fdmanager.ui.components.FullScreenError(
+                        title = "Preview error",
+                        message = settings.debugErrorMessage,
+                        onRetry = { vm.clearLoadingErrorDebug() },
+                        modifier = Modifier.fillMaxWidth().height(200.dp)
+                    )
+                }
+
                 Spacer(Modifier.height(48.dp))
             }
         }
@@ -370,11 +423,13 @@ private fun SettingSwitchRow(
     title: String,
     subtitle: String,
     checked: Boolean,
-    onCheckedChange: (Boolean) -> Unit
+    onCheckedChange: (Boolean) -> Unit,
+    testTag: String? = null
 ) {
     Row(
         Modifier
             .fillMaxWidth()
+            .then(if (testTag != null) Modifier.testTag(testTag) else Modifier)
             .padding(horizontal = 16.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -386,7 +441,11 @@ private fun SettingSwitchRow(
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
-        Switch(checked = checked, onCheckedChange = onCheckedChange)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = if (testTag != null) Modifier.testTag("${testTag}Switch") else Modifier
+        )
     }
 }
 

@@ -58,8 +58,11 @@ import androidx.compose.ui.platform.testTag
 import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.BankMonogram
 import com.example.fdmanager.ui.components.CountdownChip
+import com.example.fdmanager.ui.components.FullScreenError
+import com.example.fdmanager.ui.components.FullScreenLoading
 import com.example.fdmanager.ui.components.InfoRow
 import com.example.fdmanager.ui.components.InstitutionRegistry
+import com.example.fdmanager.ui.components.LOADSTATE_GATE
 import com.example.fdmanager.ui.components.RenewDialog
 import com.example.fdmanager.ui.components.StatusChip
 import com.example.fdmanager.ui.theme.statusPalette
@@ -82,6 +85,7 @@ fun FdDetailScreen(
     onOpenFd: (String) -> Unit
 ) {
     val fds by vm.fds.collectAsStateWithLifecycle()
+    val settings by vm.settings.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
     val fd = FdQueries.byId(fds, fdId)
 
@@ -124,11 +128,30 @@ fun FdDetailScreen(
             )
         )
 
+        // #4 loading & error — shared pattern, debug toggles
+        if (settings.isLoadingDebug) {
+            FullScreenLoading(
+                message = "Loading ${fd.fdNumber} (mock #4)...",
+                modifier = Modifier.fillMaxSize().testTag(LOADSTATE_GATE)
+            )
+            return@Column
+        }
+        if (settings.isErrorDebug) {
+            FullScreenError(
+                title = "Failed to load ${fd.fdNumber}",
+                message = settings.debugErrorMessage,
+                onRetry = { vm.clearLoadingErrorDebug() },
+                modifier = Modifier.fillMaxSize().testTag(LOADSTATE_GATE)
+            )
+            return@Column
+        }
+
         Column(
             Modifier
                 .fillMaxSize()
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp)
+                .testTag(LOADSTATE_GATE)
         ) {
             // ---- Header ----
             Card(Modifier.fillMaxWidth()) {

@@ -25,6 +25,7 @@ class SortFilterTest {
     @Before
     fun resetState() {
         SettingsStore.setHasSeenOnboarding(true)
+        SettingsStore.clearLoadingErrorDebug()
         SettingsStore.setDemoMode(true)
         FdRepository.get().reset(SampleData.seed(LocalDate.now()))
     }

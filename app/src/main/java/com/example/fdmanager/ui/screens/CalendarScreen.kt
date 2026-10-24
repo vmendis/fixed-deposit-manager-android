@@ -36,6 +36,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -46,6 +47,10 @@ import com.example.fdmanager.domain.FdQueries
 import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.EmptyState
 import com.example.fdmanager.ui.components.FdCard
+import com.example.fdmanager.ui.components.FullScreenError
+import com.example.fdmanager.ui.components.FullScreenLoading
+import com.example.fdmanager.ui.components.LOADSTATE_GATE
+import com.example.fdmanager.ui.components.LoadingList
 import com.example.fdmanager.ui.components.SectionHeader
 import com.example.fdmanager.ui.theme.statusPalette
 import java.time.LocalDate
@@ -63,6 +68,7 @@ fun CalendarScreen(
     onOpenFd: (String) -> Unit
 ) {
     val fds by vm.fds.collectAsStateWithLifecycle()
+    val settings by vm.settings.collectAsStateWithLifecycle()
     val today = remember { LocalDate.now() }
     var month by remember { mutableStateOf(YearMonth.from(today)) }
     var selected by remember { mutableStateOf<LocalDate?>(today) }
@@ -79,7 +85,25 @@ fun CalendarScreen(
             )
         )
 
-        LazyColumn(Modifier.fillMaxSize()) {
+        // #4 loading & error — shared pattern, debug toggles
+        if (settings.isLoadingDebug) {
+            FullScreenLoading(
+                message = "Loading calendar (mock #4)...",
+                modifier = Modifier.fillMaxSize().testTag(LOADSTATE_GATE)
+            )
+            return@Column
+        }
+        if (settings.isErrorDebug) {
+            FullScreenError(
+                title = "Calendar failed to load",
+                message = settings.debugErrorMessage,
+                onRetry = { vm.clearLoadingErrorDebug() },
+                modifier = Modifier.fillMaxSize().testTag(LOADSTATE_GATE)
+            )
+            return@Column
+        }
+
+        LazyColumn(Modifier.fillMaxSize().testTag(LOADSTATE_GATE)) {
             // ---- Month card ----
             item {
                 Card(
