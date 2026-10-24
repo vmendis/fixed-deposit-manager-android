@@ -8,29 +8,71 @@ report to the architect for triage).
 
 ---
 
+## 0.0 Test branch policy (updated 2026-10-24)
+
+**Tests run against the feature branch, not `dev`.**
+
+The architect works from an Arena.ai chat connected through the GitHub connector. That connector is
+scoped to a session branch (`arena/<session-id>-fixed-deposit-manager-android`) and **cannot push to
+`dev`**. A fix therefore lands on the session branch first.
+
+Flow:
+
+```
+fix → push session branch → tests run ON THE SESSION BRANCH
+    → report GREEN → PR session-branch → dev → merge
+```
+
+**Never merge a PR before a green report exists for that exact commit.** Merging first would put an
+untested fix on `dev`.
+
+Owner/executor sync (replaces `git checkout -B dev origin/dev`):
+
+```bash
+git fetch origin --prune
+git checkout -B test-<short-sha> origin/arena/<session-id>-fixed-deposit-manager-android
+git log -1 --oneline          # record the SHA, it must be the SHA under test
+```
+
+Verify the working tree really carries the fix before running — cheap and catches stale clones:
+
+```bash
+git rev-parse --short HEAD
+git status --short            # must be clean
+```
+
+The report must state this SHA. A report without the SHA cannot be triaged: it is impossible to tell
+whether the fix under discussion was even present.
+
+`dev` is still the integration branch and still receives the merge — it is simply no longer the
+branch that gets tested mid-round.
+
+---
+
 ## 0. Prerequisites
 
-- Branch `dev` checked out, up to date with the remote (must contain the `androidTest` sources
-  listed in §2). If `androidTest/` doesn't exist yet → stop, report "tests missing", do not improvise.
+- The **feature/session branch** checked out per §0.0 (not `dev`), up to date with the remote and
+  containing the `androidTest` sources listed in §2. If `androidTest/` doesn't exist yet → stop,
+  report "tests missing", do not improvise.
 - Android Studio's embedded JDK (17+) — no manual JAVA_HOME needed when launched from AS.
 - **Emulator running, API 34** (matches `compileSdk 34`): verify with `adb devices` (device listed,
   `state: device`).
-- Run all commands from the project root (`fd-manager/`). On Windows use `gradlew.bat`.
+- Run all commands from the project root. Shell is **bash MINGW64** — use `./gradlew`, never `gradlew.bat`.
 
 ---
 
 ## 1. Tier 1 — JVM unit tests (already exist)
 
-```bat
-gradlew.bat testDebugUnitTest
+```bash
+./gradlew testDebugUnitTest
 ```
 
-- **Pass criteria: all tests green** (40 expected as of issue #19: FdMath 7, FdRepository 15,
-  BankRegistry 7, InstitutionRegistry 11; if the count is higher, use it).
+- **Pass criteria: all 58 tests green** (as of #4: AuthValidation 4, BankRegistry 7, FdMath 11,
+  FdRepository 17, InstitutionRegistry 11, LoadingState 4, SyncState 4). If the count is higher, use it.
 - Reports (XML, machine-readable):
-  `app\build\test-results\testDebugUnitTest\*.xml`
+  `app/build/test-results/testDebugUnitTest/*.xml`
 - Reports (HTML, human-readable):
-  `app\build\reports\tests\testDebugUnitTest\index.html`
+  `app/build/reports/tests/testDebugUnitTest/index.html`
 
 ---
 
@@ -99,14 +141,14 @@ debugImplementation("androidx.compose.ui:ui-test-manifest")
 
 ### 2.4 Run
 
-```bat
+```bash
 adb devices
-gradlew.bat connectedDebugAndroidTest
+./gradlew connectedDebugAndroidTest --rerun-tasks
 ```
 
 - **Pass criteria: 0 failed tests.** Failures are *data for the report*, not something to patch.
-- Reports (XML): `app\build\outputs\androidTest-results\connected\*.xml`
-- Reports (HTML): `app\build\reports\androidTests\connected\index.html`
+- Reports (XML): `app/build/outputs/androidTest-results/connected/*.xml`
+- Reports (HTML): `app/build/reports/androidTests/connected/index.html`
 
 ---
 
@@ -116,8 +158,9 @@ The executor creates this file at the project root and hands it to the reviewer:
 
 ```markdown
 # TEST REPORT — <date>
-- Branch / commit: <branch> @ <sha (git rev-parse --short HEAD)>
-- Environment: Windows 11, Android Studio <ver>, AVD <name> / API <level>, gradle <ver>
+- Branch / commit: <branch from §0.0> @ <sha (git rev-parse --short HEAD)>
+- Environment: Windows 11, Android Studio <ver>, AVD <name> / API <level>,
+  Gradle 8.13, AGP 8.13.2, Kotlin 2.0.20, JDK 17.0.16 (from ./gradlew --version — never guessed)
 - Tiers executed: 2 / 2 (both — only write 1/2 if a tier genuinely was not run)
 
 ## Tier 1 — unit tests
@@ -145,15 +188,17 @@ The executor creates this file at the project root and hands it to the reviewer:
 - **No placeholders, no fabrication.** Every `<...>` above must be real command output:
   run `git rev-parse --short HEAD`; Android Studio version from Help → About; AVD API level
   from Device Manager or `adb shell getprop ro.build.version.sdk`; Gradle from
-  `gradlew.bat --version`. Literal `$(...)`, `(unknown)`, or guessed values are rejections.
-- **Tier-2 table completeness:** one row per test class (all 6), per-class counts that sum
-  to the suite total — current suite (issue #19): AddFdValidationTest **3**, BankMonogramUiTest **4**,
-  NavigationFlowTest **2**, RenewalChainTest **1**, SoftDeleteRestoreTest **2**,
-  SortFilterTest **2** = **14** (unit 40: FdMath 7, FdRepository 15, BankRegistry 7, InstitutionRegistry 11). Any test not executed must be NAMED with its reason under
-  "Not covered". The header's commit must equal the SHA actually tested (`git log -1`).
+  `./gradlew --version`. Literal `$(...)`, `(unknown)`, or guessed values are rejections.
+- **Tier-2 table completeness:** one row per test class (all 9), per-class counts that sum
+  to the suite total — current suite (#4): AddFdValidationTest **5**, AuthFlowTest **4**,
+  BankMonogramUiTest **4**, LoadingErrorUiTest **4**, NavigationFlowTest **2**,
+  RenewalChainTest **1**, SoftDeleteRestoreTest **2**, SortFilterTest **2**,
+  SyncStateChipTest **4** = **28** (unit **58**). Any test not executed must be NAMED with its
+  reason under "Not covered". **The header must name the branch AND the SHA actually tested
+  (`git log -1`); a report without the SHA is rejected** — see §0.0.
 - **Every failure section is full:** verbatim assertion message + ≤30 lines of relevant
   logcat + the `<failure>` excerpt (3–10 lines) from
-  `app\build\outputs\androidTest-results\connected\*.xml` — **including the
+  `app/build/outputs/androidTest-results/connected/*.xml` — **including the
   `at com.example.fdmanager.<Test>.…(<Test>.kt:NN)` frame that names the failing line** —
   + a classification proposal (TEST-BUG / CODE-BUG / ENV-FLAKE). Blank template rows are
   rejections.
@@ -162,7 +207,7 @@ The executor creates this file at the project root and hands it to the reviewer:
 instrumentation class filter (plain `--tests` does NOT work on connected tasks):
 
 ```bat
-gradlew.bat connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.fdmanager.RenewalChainTest
+./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.fdmanager.RenewalChainTest --rerun-tasks
 ```
 
 (comma-separate FQCNs to rerun several). Record BOTH results in the failure section. If it
