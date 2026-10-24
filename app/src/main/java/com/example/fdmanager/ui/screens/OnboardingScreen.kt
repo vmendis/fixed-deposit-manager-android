@@ -127,7 +127,7 @@ fun OnboardingScreen(
             FeatureRow(
                 icon = Icons.Filled.TrackChanges,
                 title = "Track all FDs in one place",
-                subtitle = "Total invested, maturing soon, by institution — CBSL-regulated banks only (24 LCB + 6 LSB + 32 LFC)"
+                subtitle = "Total invested, maturing soon, by institution — CBSL-regulated banks only (24 LCB + 6 LSB + 31 LFC = 61 allowed)"
             )
             Spacer(Modifier.height(12.dp))
             FeatureRow(
