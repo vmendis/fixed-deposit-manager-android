@@ -3,12 +3,14 @@ package com.example.fdmanager
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fdmanager.data.FdRepository
@@ -150,17 +152,26 @@ class SyncStateChipTest {
      */
     private fun assertSyncState(label: String) {
         val text = "Sync state: $label"
-        scrollToTag("syncStateRow")
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText(text, substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText(text, substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
+        // The Settings body is a Column(verticalScroll(...)): every child is composed, so the
+        // semantics node EXISTS regardless of where the viewport happens to be. Asserting on
+        // existence is therefore both correct and viewport-independent. assertIsDisplayed()
+        // here is what burned the full 20 s on every attempt (V33, V34, V35) — re-scrolling
+        // cannot fix an assertion that should never have depended on scroll position.
+        try {
+            rule.waitUntil(20_000) {
+                rule.onAllNodesWithText(text, substring = true, ignoreCase = true, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText(text, substring = true, ignoreCase = true)
+                        .fetchSemanticsNodes().isNotEmpty()
             }
+        } catch (e: Throwable) {
+            // Self-diagnosing failure: dump the tree so the report says exactly what the row
+            // renders instead of only "Condition still not satisfied after 20000 ms".
+            throw AssertionError(
+                "Expected \"$text\" in the Settings semantics tree within 20 s.\n" +
+                    "--- semantics tree ---\n" + rule.onRoot().printToString(),
+                e
+            )
         }
     }
 
