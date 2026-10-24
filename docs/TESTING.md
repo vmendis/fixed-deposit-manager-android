@@ -185,6 +185,14 @@ The executor creates this file at the project root and hands it to the reviewer:
 
 **Hard rules — a report containing these violations is REJECTED and re-requested:**
 
+- **Artifacts are REQUIRED.** A round produces `test-artifacts-vN/` containing
+  `logcat-vN.txt` (real `adb logcat -d` filtered output) and **4 screenshots with the app in
+  the foreground** (`dumpsys window | grep mCurrentFocus` must name `com.vssbox.fdmanager`),
+  plus `TEST-REPORT-V<N>.md`. Artifacts never go to the repo root and never get committed.
+  **A report with no artifacts is untriageable** — without the XML `<failure>` block the
+  architect cannot see which line failed, so the round stalls on guesswork. This happened on
+  2026-10-24: three consecutive reports carried no artifacts and no `<Test>.kt:NN` frame.
+
 - **No placeholders, no fabrication.** Every `<...>` above must be real command output:
   run `git rev-parse --short HEAD`; Android Studio version from Help → About; AVD API level
   from Device Manager or `adb shell getprop ro.build.version.sdk`; Gradle from
@@ -206,7 +214,7 @@ The executor creates this file at the project root and hands it to the reviewer:
 **Flake protocol (MANDATORY):** on a failure, rerun that class **once** with the
 instrumentation class filter (plain `--tests` does NOT work on connected tasks):
 
-```bat
+```bash
 ./gradlew connectedDebugAndroidTest -Pandroid.testInstrumentationRunnerArguments.class=com.example.fdmanager.RenewalChainTest --rerun-tasks
 ```
 
