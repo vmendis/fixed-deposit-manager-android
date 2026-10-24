@@ -25,17 +25,45 @@ if [ ! -d "$JAVA_HOME" ]; then
 fi
 
 # ---- Android SDK ----------------------------------------------------------------------------
-export ANDROID_HOME="/c/Users/thiss/AppData/Local/Android/Sdk"
-if [ ! -d "$ANDROID_HOME" ]; then
-    for d in "/c/Users/$USER/AppData/Local/Android/Sdk" "/c/Android/Sdk"; do
-        [ -d "$d" ] && export ANDROID_HOME="$d" && break
+# adb worked from a normal login shell before, so its directory is probably already on PATH.
+# Do NOT assume where the SDK lives: take it from adb itself if adb is reachable, then fall back
+# to the usual locations only if it is not.
+adb_dir_of() {
+    _a=$(command -v adb 2>/dev/null) || return 1
+    cd "$(dirname "$_a")" 2>/dev/null && pwd -P || return 1
+}
+
+if _d=$(adb_dir_of); then
+    :   # adb is already reachable — leave PATH alone, just derive ANDROID_HOME from it
+else
+    for d in \
+        "/c/Users/thiss/AppData/Local/Android/Sdk/platform-tools" \
+        "/c/Users/$USER/AppData/Local/Android/Sdk/platform-tools" \
+        "/c/Android/Sdk/platform-tools" \
+        "/c/Program Files/Android/Android Studio/platform-tools"
+    do
+        if [ -x "$d/adb.exe" ] || [ -x "$d/adb" ]; then
+            PATH="$d:$PATH"
+            _d="$d"
+            break
+        fi
     done
 fi
+
+if [ -n "$_d" ]; then
+    candidate="$(dirname "$_d")"
+    if [ -d "$candidate" ]; then
+        export ANDROID_HOME="${ANDROID_HOME:-$candidate}"
+    fi
+fi
+[ -z "$ANDROID_HOME" ] && export ANDROID_HOME="/c/Users/thiss/AppData/Local/Android/Sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
+unset _d candidate
 
 # ---- PATH -----------------------------------------------------------------------------------
 # /usr/bin and /mingw64/bin are added unconditionally: if the shell did not source
 # /etc/profile, they are missing and nothing else in this project will work.
+# Prepend only. Everything that already worked (including whatever provides adb) stays in $PATH.
 export PATH="/usr/bin:/bin:/mingw64/bin:$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
 
 unset MSYSTEM 2>/dev/null || true
@@ -60,6 +88,8 @@ chk() { # chk <label> <command...>
 }
 chk java   java -version
 chk adb    adb version
+printf '  %-6s %-10s %s\n' "info" "adb"  "$(command -v adb 2>/dev/null || echo 'not on PATH')"
+printf '  %-6s %-10s %s\n' "info" "java" "$(command -v java 2>/dev/null || echo 'not on PATH')"
 chk grep   grep --version
 chk git    git --version
 
