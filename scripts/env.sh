@@ -2,106 +2,111 @@
 # FD Manager — shell environment bootstrap.
 #
 # WHY THIS EXISTS
-# Android Studio / Roo launches the shell as a bare `bash.exe`. A bare bash is NOT a login
-# shell, so /etc/profile never runs and /usr/bin is never added to PATH. Result: `grep`, `ls`,
-# `cat`, `sed` all vanish, and `adb`/`java` were never on PATH to begin with. Commands then fail
-# with "not found" and it looks like the repo is missing files.
+# Roo launches a bare `bash.exe`. That is NOT a login shell, so /etc/profile never runs and the
+# Git Bash PATH is never built. The shell inherits only the Windows PATH, and then:
+#   - grep / ls / cat / sed  -> not found (they live in /usr/bin and /mingw64/bin)
+#   - adb / java             -> not found (their dirs are added by the login PATH)
+# In the owner's normal Git Bash window all of these DO work, because that shell logged in.
 #
 # USAGE — source it, in the SAME window you will run the tests in:
 #
 #     . ./scripts/env.sh
 #
-# NOTE THE LEADING DOT. `./scripts/env.sh` (without the dot) runs it in a child shell and every
-# export is thrown away when it exits. `.` is a bash builtin, so it works even when PATH is broken.
+# NOTE THE LEADING DOT. `./scripts/env.sh` runs it in a child shell and every export is thrown
+# away when it exits. `.` is a bash builtin, so it works even when PATH is already broken.
 
 REPO_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]:-$0}")/.." 2>/dev/null && pwd)"
 
-# ---- JDK 17 ---------------------------------------------------------------------------------
-export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot"
-if [ ! -d "$JAVA_HOME" ]; then
-    for d in "/c/Program Files/Eclipse Adoptium"/jdk-17*; do
+# ---- 1. Rebuild the login PATH ---------------------------------------------------------------
+# If /usr/bin is not on PATH we are in the bare-shell case. Source /etc/profile, which is what a
+# real Git Bash window does on startup. This restores grep/ls/cat and everything else.
+case ":$PATH:" in
+    *:/usr/bin:*) : ;;                       # already a login shell, leave it alone
+    *)
+        if [ -f /etc/profile ]; then
+            . /etc/profile 2>/dev/null || true
+        fi
+        ;;
+esac
+
+# ---- 2. Git Bash coreutils, unconditionally -----------------------------------------------
+# Harmless if already present; essential if /etc/profile did not cover it.
+export PATH="/mingw64/bin:/usr/bin:/bin:$PATH"
+
+# ---- 3. JDK 17 ------------------------------------------------------------------------------
+if [ -z "$JAVA_HOME" ] || [ ! -d "$JAVA_HOME" ]; then
+    for d in \
+        "/c/Program Files/Eclipse Adoptium/jdk-17.0.16.8-hotspot" \
+        "/c/Program Files/Eclipse Adoptium"/jdk-17*
+    do
         [ -d "$d" ] && export JAVA_HOME="$d" && break
     done
 fi
+[ -n "$JAVA_HOME" ] && case ":$PATH:" in
+    *":$JAVA_HOME/bin:"*) : ;;
+    *) export PATH="$JAVA_HOME/bin:$PATH" ;;
+esac
 
-# ---- Android SDK ----------------------------------------------------------------------------
-# adb worked from a normal login shell before, so its directory is probably already on PATH.
-# Do NOT assume where the SDK lives: take it from adb itself if adb is reachable, then fall back
-# to the usual locations only if it is not.
-adb_dir_of() {
-    _a=$(command -v adb 2>/dev/null) || return 1
-    cd "$(dirname "$_a")" 2>/dev/null && pwd -P || return 1
-}
-
-if _d=$(adb_dir_of); then
-    :   # adb is already reachable — leave PATH alone, just derive ANDROID_HOME from it
+# ---- 4. Android SDK — take it from adb, do not assume it ------------------------------------
+# adb works in the owner's login shell, so its directory is the ground truth for the SDK root.
+if _adb=$(command -v adb 2>/dev/null) && [ -n "$_adb" ]; then
+    _pt="$(cd "$(dirname "$_adb")" && pwd -P)"
 else
+    _pt=""
     for d in \
         "/c/Users/thiss/AppData/Local/Android/Sdk/platform-tools" \
         "/c/Users/$USER/AppData/Local/Android/Sdk/platform-tools" \
-        "/c/Android/Sdk/platform-tools" \
-        "/c/Program Files/Android/Android Studio/platform-tools"
+        "/c/Android/Sdk/platform-tools"
     do
-        if [ -x "$d/adb.exe" ] || [ -x "$d/adb" ]; then
-            PATH="$d:$PATH"
-            _d="$d"
-            break
-        fi
+        if [ -x "$d/adb.exe" ] || [ -x "$d/adb" ]; then _pt="$d"; break; fi
     done
+    [ -n "$_pt" ] && export PATH="$_pt:$PATH"
 fi
-
-if [ -n "$_d" ]; then
-    candidate="$(dirname "$_d")"
-    if [ -d "$candidate" ]; then
-        export ANDROID_HOME="${ANDROID_HOME:-$candidate}"
-    fi
+if [ -n "$_pt" ]; then
+    export ANDROID_HOME="${ANDROID_HOME:-$(dirname "$_pt")}"
+else
+    export ANDROID_HOME="${ANDROID_HOME:-/c/Users/thiss/AppData/Local/Android/Sdk}"
 fi
-[ -z "$ANDROID_HOME" ] && export ANDROID_HOME="/c/Users/thiss/AppData/Local/Android/Sdk"
 export ANDROID_SDK_ROOT="$ANDROID_HOME"
-unset _d candidate
-
-# ---- PATH -----------------------------------------------------------------------------------
-# /usr/bin and /mingw64/bin are added unconditionally: if the shell did not source
-# /etc/profile, they are missing and nothing else in this project will work.
-# Prepend only. Everything that already worked (including whatever provides adb) stays in $PATH.
-export PATH="/usr/bin:/bin:/mingw64/bin:$JAVA_HOME/bin:$ANDROID_HOME/platform-tools:$ANDROID_HOME/emulator:$PATH"
+for d in "$ANDROID_HOME/emulator"; do
+    [ -d "$d" ] && case ":$PATH:" in *":$d:"*) : ;; *) export PATH="$d:$PATH" ;; esac
+done
+unset _adb _pt d
 
 unset MSYSTEM 2>/dev/null || true
 
-# ---- Self check -----------------------------------------------------------------------------
+# ---- 5. Self check ---------------------------------------------------------------------------
 echo "----------------------------------------------------------------"
-printf '%-16s %s\n' "JAVA_HOME"    "${JAVA_HOME:-<unset>}"
-printf '%-16s %s\n' "ANDROID_HOME:" "${ANDROID_HOME:-<unset>}"
-printf '%-16s %s\n' "bash"         "${BASH_VERSION:-<not bash>}"
-printf '%-16s %s\n' "pwd"          "$(pwd)"
+printf '%-16s %s\n' "JAVA_HOME"      "${JAVA_HOME:-<unset>}"
+printf '%-16s %s\n' "ANDROID_HOME"   "${ANDROID_HOME:-<unset>}"
+printf '%-16s %s\n' "bash"           "${BASH_VERSION:-<not bash>}"
+printf '%-16s %s\n' "pwd"            "$(pwd)"
 echo "----------------------------------------------------------------"
 
 fail=0
 chk() { # chk <label> <command...>
     label="$1"; shift
     if out=$("$@" 2>&1) && [ -n "$out" ]; then
-        printf '  [OK]   %-10s %s\n' "$label" "$(printf '%s' "$out" | head -1)"
+        printf '  [OK]   %-8s %s\n' "$label" "$(printf '%s' "$out" | head -1)"
+        printf '  info   %-8s %s\n' "$label" "$(command -v "$1" 2>/dev/null || echo '?')"
     else
-        printf '  [FAIL] %-10s %s\n' "$label" "${out:-not found}"
+        printf '  [FAIL] %-8s %s\n' "$label" "${out:-not found}"
         fail=1
     fi
 }
-chk java   java -version
-chk adb    adb version
-printf '  %-6s %-10s %s\n' "info" "adb"  "$(command -v adb 2>/dev/null || echo 'not on PATH')"
-printf '  %-6s %-10s %s\n' "info" "java" "$(command -v java 2>/dev/null || echo 'not on PATH')"
-chk grep   grep --version
-chk git    git --version
+chk java java -version
+chk adb  adb version
+chk grep grep --version
+chk git  git --version
 
-# /mnt/ means a WSL path leaked in — wrong shell entirely.
 case "$JAVA_HOME" in
     /mnt/*) printf '  [FAIL] JAVA_HOME starts with /mnt/ — that is WSL, you are not in Git Bash\n'; fail=1 ;;
 esac
 
-if [ -d "$REPO_ROOT" ] && [ -f "$REPO_ROOT/gradlew" ]; then
-    printf '  [OK]   %-10s %s\n' "repo" "$REPO_ROOT"
+if [ -n "$REPO_ROOT" ] && [ -f "$REPO_ROOT/gradlew" ]; then
+    printf '  [OK]   %-8s %s\n' "repo" "$REPO_ROOT"
 else
-    printf '  [FAIL] %-10s could not locate the repo root from %s\n' "repo" "$0"
+    printf '  [FAIL] %-8s could not locate the repo root from %s\n' "repo" "$0"
     fail=1
 fi
 
@@ -109,7 +114,7 @@ echo "----------------------------------------------------------------"
 if [ "$fail" -eq 0 ]; then
     echo "  ALL CHECKS PASSED — you may run the tests."
 else
-    echo "  CHECKS FAILED — STOP. Report the [FAIL] lines. Do not fix them (rule C3/C4)."
+    echo "  CHECKS FAILED — STOP. Report the [FAIL] lines. Do not fix them (rules C3/C4)."
 fi
 echo "----------------------------------------------------------------"
 
