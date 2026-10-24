@@ -1,14 +1,18 @@
 package com.example.fdmanager
 
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.printToString
 import androidx.compose.ui.test.swipe
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fdmanager.data.FdRepository
@@ -139,6 +143,62 @@ class SyncStateChipTest {
         }
     }
 
+    /**
+     * Bring the sync row back into the viewport, then assert its state text.
+     *
+     * The Settings body is a verticalScroll Column: clicking "Simulate sync error" or
+     * "Clear sync error" scrolls PAST syncStateRow, so the row holding "Sync state: X" is
+     * above the fold afterwards. assertIsDisplayed() fails on an off-screen node, which
+     * burned the full 20 s waitUntil (V34 failure in syncStateCyclesViaSettings).
+     * Re-scrolling before every assertion is what makes this deterministic.
+     */
+    private fun assertSyncState(label: String) {
+        val text = "Sync state: $label"
+        // The Settings body is a Column(verticalScroll(...)): every child is composed, so the
+        // semantics node EXISTS regardless of where the viewport happens to be. Asserting on
+        // existence is therefore both correct and viewport-independent. assertIsDisplayed()
+        // here is what burned the full 20 s on every attempt (V33, V34, V35) — re-scrolling
+        // cannot fix an assertion that should never have depended on scroll position.
+        try {
+            rule.waitUntil(20_000) {
+                rule.onAllNodesWithText(text, substring = true, ignoreCase = true, useUnmergedTree = true)
+                    .fetchSemanticsNodes().isNotEmpty() ||
+                    rule.onAllNodesWithText(text, substring = true, ignoreCase = true)
+                        .fetchSemanticsNodes().isNotEmpty()
+            }
+        } catch (e: Throwable) {
+            // Self-diagnosing failure: dump the tree so the report says exactly what the row
+            // renders instead of only "Condition still not satisfied after 20000 ms".
+            throw AssertionError(
+                "Expected \"$text\" in the Settings semantics tree within 20 s.\n" +
+                    "--- semantics tree ---\n" + rule.onRoot().printToString(),
+                e
+            )
+        }
+    }
+
+    /**
+     * Invoke the row's onClick semantics action directly.
+     *
+     * performClick() injects a TOUCH at the node's centre, and two things break that here:
+     *  - every Settings row shows a Snackbar on click, which overlays the bottom of the screen —
+     *    exactly where performScrollTo() parks the row — so the touch lands on the Snackbar;
+     *  - the row may be off-screen entirely.
+     * The semantics action calls the very same onClick lambda with no hit-testing at all.
+     *
+     * V36 evidence: SAVED and SYNCING were both reached, then OFFLINE never appeared. The state
+     * machine in SettingsScreen is SAVED→SYNCING→OFFLINE→ERROR→SAVED, and FakeSyncRepository
+     * has no auto-transition, so the only explanation is that the second click never landed.
+     */
+    private fun clickSyncRow(tag: String) {
+        try {
+            rule.onNodeWithTag(tag).performSemanticsAction(SemanticsActions.OnClick)
+        } catch (e: Throwable) {
+            rule.onNodeWithTag(tag, useUnmergedTree = true).performSemanticsAction(SemanticsActions.OnClick)
+        }
+        rule.waitForIdle()
+    }
+
     @Test
     fun syncChipDisplayedOnHome() {
         ensureHomeTop()
@@ -167,94 +227,24 @@ class SyncStateChipTest {
         rule.waitForIdle()
         ensureSyncMockHeader()
 
-        scrollToTag("syncStateRow")
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: SAVED", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: SAVED", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // SAVED (initial)
+        assertSyncState("SAVED")
 
-        scrollToTag("syncStateRow")
-        try {
-            rule.onNodeWithTag("syncStateRow").performClick()
-        } catch (e: Throwable) {
-            rule.onNodeWithTag("syncStateRow", useUnmergedTree = true).performClick()
-        }
-        rule.waitForIdle()
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: SYNCING", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: SYNCING", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // SAVED -> SYNCING
+        clickSyncRow("syncStateRow")
+        assertSyncState("SYNCING")
 
-        scrollToTag("syncStateRow")
-        try {
-            rule.onNodeWithTag("syncStateRow").performClick()
-        } catch (e: Throwable) {
-            rule.onNodeWithTag("syncStateRow", useUnmergedTree = true).performClick()
-        }
-        rule.waitForIdle()
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: OFFLINE", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: OFFLINE", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // SYNCING -> OFFLINE
+        clickSyncRow("syncStateRow")
+        assertSyncState("OFFLINE")
 
-        scrollToTag("simulateSyncError")
-        try {
-            rule.onNodeWithTag("simulateSyncError").performClick()
-        } catch (e: Throwable) {
-            rule.onNodeWithTag("simulateSyncError", useUnmergedTree = true).performClick()
-        }
-        rule.waitForIdle()
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: ERROR", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: ERROR", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // OFFLINE -> ERROR via the simulate-error row
+        clickSyncRow("simulateSyncError")
+        assertSyncState("ERROR")
 
-        scrollToTag("clearSyncError")
-        try {
-            rule.onNodeWithTag("clearSyncError").performClick()
-        } catch (e: Throwable) {
-            rule.onNodeWithTag("clearSyncError", useUnmergedTree = true).performClick()
-        }
-        rule.waitForIdle()
-        rule.waitUntil(20000) {
-            try {
-                rule.onNodeWithText("Sync state: SAVED", substring = true).assertIsDisplayed()
-                true
-            } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithText("Sync state: SAVED", substring = true, useUnmergedTree = true).assertIsDisplayed()
-                    true
-                } catch (e2: Throwable) { false }
-            }
-        }
+        // reset to SAVED
+        clickSyncRow("clearSyncError")
+        assertSyncState("SAVED")
     }
 
     @Test

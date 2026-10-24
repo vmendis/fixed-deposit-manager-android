@@ -1,6 +1,9 @@
-# TEST INSTRUCTIONS — V33 — #4 Loading & Error — dev @a0da5ca+ — BASH (MINGW64)
-Branch: dev
-SHA: a0da5ca+ (after header tags fix)
+# TEST INSTRUCTIONS — #4 Loading & Error — session branch @<SHA> — BASH (MINGW64)
+Branch: arena/<session-id>-fixed-deposit-manager-android   (NOT dev — see docs/TESTING.md §0.0)
+SHA: <paste `git log -1 --oneline` output — mandatory, a report without it is rejected>
+
+WHY: this chat connects through the Arena.ai GitHub connector, which is scoped to the session
+branch and cannot push to dev. Testing dev would test code WITHOUT the fix.
 
 SHELL NOTE: Owner + Roo in bash MINGW64. Use bash commands (grep/ls/./gradlew/mkdir). Do NOT use CMD: chcp/findstr/dir/gradlew.bat/if not exist/timeout /t
 
