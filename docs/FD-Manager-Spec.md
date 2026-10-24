@@ -97,15 +97,16 @@ users/{userId}/fds/{fdId}
 
 **Principle:** For user safety, FD Manager only tracks Fixed Deposits at **CBSL-regulated institutions**. Non-regulated entities (co-ops, unlicensed lenders, investment schemes) cannot be stored. The app must refuse to save with a clear safety message.
 
-**Registry contents:**
-- **Licensed Commercial Banks (LCB)** — ~26 (e.g., BOC, Peoples Bank, Sampath, HNB, Commercial, NSB, NDB, DFCC, Seylan, NTB, Pan Asia, Union, etc.)
-- **Licensed Specialised Banks (LSB)** — ~6
-- **Licensed Finance Companies (LFC)** — ~39 licensed under Finance Business Act No. 42 of 2011 (e.g., LOLC Finance, LOLC Development Finance, People's Leasing & Finance PLC, Serendib Finance, Citizens Development Business Finance CDB, Central Finance, Alliance Finance, LB Finance, Commercial Leasing, Orient Finance, Siyapatha, Singer Finance, Softlogic Finance, Vallibel Finance, HNB Finance, etc.)
-- Total ~70 entries. Each entry: display name, short code (BOC/NSB/LOLC/PLC/CDB…), InstitutionType { BANK, FINANCE_COMPANY }, brand color, alias list for search/normalization (e.g., "LOLC", "People's Leasing", "PLC" → People's Leasing & Finance PLC).
+**Registry contents — 61 allowed institutions (CBSL notice as at 31.12.2025):**
+- **Licensed Commercial Banks (LCB) — 24:** Amana, Bank of Ceylon (BOC), Bank of China, Cargills, Citibank NA, Commercial Bank of Ceylon, Deutsche Bank, DFCC, Habib Bank, HNB, Indian Bank, Indian Overseas Bank, MCB, NDB, Nations Trust Bank, Pan Asia, People's Bank, Public Bank Berhad, Sampath, Seylan, Standard Chartered, State Bank of India, HSBC, Union Bank of Colombo.
+- **Licensed Specialised Banks (LSB) — 6:** HDFC, National Savings Bank (NSB), Pradeshiya Sanwardhana Bank (RDB), SANASA Development Bank, Sri Lanka Savings Bank, State Mortgage and Investment Bank (SMIB).
+- **Licensed Finance Companies (LFC) — 32 listed, 31 allowed.** Licensed under the Finance Business Act No. 42 of 2011. **Nation Lanka Finance PLC is excluded:** the CBSL notice prohibits it from mobilising new deposits (footnote), so it is not in the registry.
+- **Total allowed: 24 + 6 + 31 = 61 institutions.**
+- Each entry: display name, short code (BOC/NSB/LOLC/PLC/CDB…), InstitutionType { BANK, FINANCE_COMPANY }, brand color, alias list for search/normalization (e.g., "LOLC", "People's Leasing", "PLC" → People's Leasing & Finance PLC).
 
 **Registry implementation:**
 - In-app only (bundled, offline, no network fetch) — `InstitutionRegistry` (evolved from `BankRegistry`). `BankRegistry.resolve(name)` → `InstitutionRegistry.resolve(name)` with same monogram fallback for defensive rendering, but **entry is blocked** if not found.
-- `lastUpdated` field (e.g., "2026-08-18") sourced from CBSL "Registered Finance Leasing Establishments" and licensed banks lists. Updated with each app release via manual diff of cbsl.gov.lk. Optional helper script in `docs/` to fetch and compare, but manual review required.
+- `lastUpdated` field (`2025-12-31` — see `InstitutionRegistry.LAST_UPDATED`) sourced from CBSL "Registered Finance Leasing Establishments" and licensed banks lists. Updated with each app release via manual diff of cbsl.gov.lk. Optional helper script in `docs/` to fetch and compare, but manual review required.
 - No image assets — monogram tiles only, via existing process (logo evidence → initials, luminance contrast rule).
 
 **Safety UX:**
@@ -278,7 +279,7 @@ stored `renewOption` (no user interaction; works while the app opens).
 - **SettingsScreen → About:**
   - Primary branding home — 72dp cube + `vssbox` titleLarge bold primary + `FD Manager` titleMedium + `by vssbox` labelSmall
   - Version: `Version 1.0 · front-end mock · © 2026 vssbox` bodySmall
-  - Description: `Secure box for your deposits — Track CBSL-regulated FDs (24 LCB + 6 LSB + 32 LFC). Runs entirely on local sample data. No account, no backend, no real money — FDs shown are fictional.`
+  - Description: `Secure box for your deposits — Track CBSL-regulated FDs (24 LCB + 6 LSB + 31 LFC = 61 allowed; 32 LFC listed, 1 prohibited). Runs entirely on local sample data. No account, no backend, no real money — FDs shown are fictional.`
   - Row: `Built by vssbox • vssbox.com (coming soon)` — testTag `aboutBranding`, `vssboxLogoAbout`
   - Demo mode toggle: `SettingsStore.isDemoMode` + `setDemoMode()` — opt-in demo per #1
 - **Avoid:** FdCard, BankSummaryCard — those show institution monograms (BOC/NSB/COM). Mixing company logo there would confuse institution identity.

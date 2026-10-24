@@ -1,5 +1,6 @@
 package com.example.fdmanager
 
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.ComposeContentTestRule
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.onAllNodesWithTag
@@ -24,7 +25,22 @@ import androidx.compose.ui.test.swipeUp
  */
 internal fun ComposeContentTestRule.swipeUntilTag(tag: String, maxSwipes: Int = 50) {
     repeat(maxSwipes) {
-        if (onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()) return
+        if (isTagDisplayed(tag)) return
+
+        // A Column with verticalScroll() composes ALL of its children, so the node can
+        // exist in the semantics tree long before it is on screen. An existence check
+        // would return here without ever scrolling, and the caller's assertIsDisplayed()
+        // would then burn its full timeout. Scroll the node into view directly first.
+        val scrolled = try {
+            onAllNodesWithTag(tag)[0].performScrollTo()
+            waitForIdle()
+            true
+        } catch (e: Throwable) {
+            false
+        }
+        if (scrolled && isTagDisplayed(tag)) return
+
+        // Still not visible (e.g. a LazyColumn item that is not composed yet) — swipe.
         onRoot().performTouchInput {
             // Aggressive swipe: 80% of height to 20% — scrolls more per gesture than default swipeUp()
             val h = visibleSize.height
@@ -39,10 +55,52 @@ internal fun ComposeContentTestRule.swipeUntilTag(tag: String, maxSwipes: Int = 
     }
 }
 
+/**
+ * True when a node with [tag] exists AND is actually on screen.
+ *
+ * Existence alone is not enough: verticalScroll Columns compose their whole content,
+ * so `onAllNodesWithTag(tag).fetchSemanticsNodes().isNotEmpty()` is true even when the
+ * node sits far below the viewport. Testing visibility is what makes the helpers work.
+ */
+private fun ComposeContentTestRule.isTagDisplayed(tag: String): Boolean {
+    if (onAllNodesWithTag(tag).fetchSemanticsNodes().isEmpty()) return false
+    return try {
+        onAllNodesWithTag(tag)[0].assertIsDisplayed()
+        true
+    } catch (e: Throwable) {
+        false
+    }
+}
+
 /** Same idea as [swipeUntilTag], for lazy lists addressed by visible text. */
 internal fun ComposeContentTestRule.swipeUntilText(text: String, maxSwipes: Int = 50) {
     repeat(maxSwipes) {
-        if (onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()) return
+        // Same existence-vs-visibility trap as swipeUntilTag — see the comment there.
+        if (onAllNodesWithText(text).fetchSemanticsNodes().isNotEmpty()) {
+            val displayed = try {
+                onAllNodesWithText(text)[0].assertIsDisplayed()
+                true
+            } catch (e: Throwable) {
+                false
+            }
+            if (displayed) return
+            val scrolled = try {
+                onAllNodesWithText(text)[0].performScrollTo()
+                waitForIdle()
+                true
+            } catch (e: Throwable) {
+                false
+            }
+            if (scrolled) {
+                val nowDisplayed = try {
+                    onAllNodesWithText(text)[0].assertIsDisplayed()
+                    true
+                } catch (e: Throwable) {
+                    false
+                }
+                if (nowDisplayed) return
+            }
+        }
         onRoot().performTouchInput {
             val h = visibleSize.height
             val w = visibleSize.width

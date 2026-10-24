@@ -263,7 +263,7 @@ fun SettingsScreen(
                     )
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Secure box for your deposits - Track CBSL-regulated FDs (24 LCB + 6 LSB + 32 LFC). Runs entirely on local sample data. No account, no backend, no real money - FDs shown are fictional.",
+                        "Secure box for your deposits - Track CBSL-regulated FDs (24 LCB + 6 LSB + 31 LFC = 61 allowed; 32 LFC listed, 1 prohibited). Runs entirely on local sample data. No account, no backend, no real money - FDs shown are fictional.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
