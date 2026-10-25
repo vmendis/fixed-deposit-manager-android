@@ -42,6 +42,16 @@ class FdViewModel : ViewModel() {
 
     fun clearAllFds() = repo.clearAll()
 
+    /**
+     * #5 trust UX — apply the chosen wipe categories to the settings store.
+     * Deposits are cleared separately by the caller (only when that box was ticked), so this
+     * never removes data behind the user's back.
+     */
+    fun applyDataWipe(selection: com.example.fdmanager.domain.WipeSelection) {
+        val next = com.example.fdmanager.domain.DataWipe.applyTo(SettingsStore.state.value, selection)
+        SettingsStore.replaceWith(next)
+    }
+
     fun setThemeMode(mode: ThemeMode) = SettingsStore.setThemeMode(mode)
     fun setNotificationsEnabled(enabled: Boolean) = SettingsStore.setNotificationsEnabled(enabled)
     fun setNotifyLeadDays(days: Int) = SettingsStore.setNotifyLeadDays(days)

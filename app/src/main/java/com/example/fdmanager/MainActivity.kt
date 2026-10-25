@@ -37,6 +37,7 @@ import com.example.fdmanager.ui.screens.FdDetailScreen
 import com.example.fdmanager.ui.screens.FdListScreen
 import com.example.fdmanager.ui.screens.ForgotPasswordScreen
 import com.example.fdmanager.ui.screens.HomeScreen
+import com.example.fdmanager.ui.screens.LockScreen
 import com.example.fdmanager.ui.screens.OnboardingScreen
 import com.example.fdmanager.ui.screens.RecycleBinScreen
 import com.example.fdmanager.ui.screens.SettingsScreen
@@ -54,6 +55,7 @@ object Routes {
     const val FD_DETAIL = "fd/{fdId}"
     const val EDIT = "edit/{fdId}"
     const val ONBOARDING = "onboarding" // #27 vssbox branding on new-user screen
+    const val LOCK = "lock" // #5 trust UX — app lock, shown on cold start when enabled
     const val SIGN_IN = "signin" // #2 mock auth
     const val SIGN_UP = "signup"
     const val FORGOT = "forgot"
@@ -95,8 +97,14 @@ fun FdManagerApp() {
     val settings by vm.settings.collectAsStateWithLifecycle()
 
     // #1 onboarding funnel + #27 vssbox branding — fresh install → welcome → add first FD → Home
+    // #5 trust UX — app lock wins over onboarding: an enabled lock must gate the app on cold start
     // ONBOARDING_GATE = onboarding-0100r9, HOME_SCROLL_GATE = home-scroll-0100r9, DEMO_GATE = demo-0100r9, AUTH_GATE = auth-0100r9
-    val startDest = if (!settings.hasSeenOnboarding) Routes.ONBOARDING else Routes.HOME
+    // LOCK_GATE = lock-0500r9
+    val startDest = when {
+        settings.biometricEnabled -> Routes.LOCK
+        !settings.hasSeenOnboarding -> Routes.ONBOARDING
+        else -> Routes.HOME
+    }
 
     val backStackEntry by nav.currentBackStackEntryAsState()
     val currentRoute = backStackEntry?.destination?.route
@@ -150,6 +158,16 @@ fun FdManagerApp() {
                         vm.toggleDemoMode(true)
                         nav.navigate(Routes.HOME) {
                             popUpTo(Routes.ONBOARDING) { inclusive = true }
+                        }
+                    }
+                )
+            }
+            // #5 trust UX — app lock. Cold-start gate when Settings → Security → Biometric lock is on.
+            composable(Routes.LOCK) {
+                LockScreen(
+                    onUnlock = {
+                        nav.navigate(Routes.HOME) {
+                            popUpTo(Routes.LOCK) { inclusive = true }
                         }
                     }
                 )

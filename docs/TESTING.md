@@ -185,10 +185,11 @@ The executor creates this file at the project root and hands it to the reviewer:
 
 **Hard rules — a report containing these violations is REJECTED and re-requested:**
 
-- **Artifacts are REQUIRED.** A round produces `test-artifacts-vN/` containing
-  `logcat-vN.txt` (real `adb logcat -d` filtered output) and **4 screenshots with the app in
+- **Artifacts are REQUIRED.** A round produces `test-artifacts-<NNN>/` (issue number, zero-padded to
+  three digits — `test-artifacts-005` for issue #5) containing
+  `logcat.txt` (real `adb logcat -d` filtered output) and **4 screenshots with the app in
   the foreground** (`dumpsys window | grep mCurrentFocus` must name `com.vssbox.fdmanager`),
-  plus `TEST-REPORT-V<N>.md`. Artifacts never go to the repo root and never get committed.
+  plus `TEST-REPORT.md`. Artifacts never go to the repo root and never get committed.
   **A report with no artifacts is untriageable** — without the XML `<failure>` block the
   architect cannot see which line failed, so the round stalls on guesswork. This happened on
   2026-10-24: three consecutive reports carried no artifacts and no `<Test>.kt:NN` frame.
