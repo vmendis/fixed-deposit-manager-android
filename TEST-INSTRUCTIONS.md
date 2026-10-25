@@ -17,7 +17,7 @@
 | # | Rule |
 |---|---|
 | C1 | bash (MINGW64) only. Never PowerShell, never cmd.exe |
-| C2 | Verify the shell before anything else: `echo $BASH_VERSION` — must print a version |
+| C2 | Run commands **directly in the MINGW64 prompt**. Never wrap them in `bash -c "..."` — the wrapper expands `$VAR` and nested quotes before bash sees them, which is what breaks. Verify the shell with `bash --version \| head -1` |
 | C3 | Never edit app code, never invent selectors. If a selector is missing, record **SELECTOR-MISSING** and stop |
 | C4 | One Tier2 run. No loops, no retry-the-world |
 | C5 | Flake protocol: rerun only the failed class, **once**. Still failing → report it as a failure |
@@ -30,10 +30,22 @@
 
 ```bash
 cd /c/LocalApps/AppDevelopment/fd-manager/fixed-deposit-manager-android
-echo $BASH_VERSION
+bash --version | head -1
 ./gradlew --version
 java -version 2>&1 | head -1
 ```
+
+> **Do not run these through `bash -c "..."`.** You already have a MINGW64 prompt open — type
+> them into it. Wrapping them re-expands `$BASH_VERSION` and any nested quotes first, and bash
+> then tries to execute the value as code:
+>
+> ```
+> bash: -c: line 1: syntax error near unexpected token `('
+> bash: -c: line 1: `echo 5.3.9(1)-release'
+> ```
+>
+> That is not a broken environment. It is the wrapper. `bash --version | head -1` has no `$` and no
+> nested quotes, so it survives either way.
 
 Record the real output. Expected:
 
@@ -94,6 +106,8 @@ Contents required at the end:
 
 ```
 test-artifacts/
+  unit-run.log
+  connected-run.log
   logcat.txt
   unit/            <- copies of app/build/test-results/testDebugUnitTest/*.xml
   connected/       <- copies of app/build/outputs/androidTest-results/connected/*.xml
@@ -110,11 +124,14 @@ No artifacts → the report is **REJECTED** and the run is untriageable.
 ## §3 Tier1 — 95 unit tests
 
 ```bash
-./gradlew cleanTestDebugUnitTest testDebugUnitTest --rerun-tasks --console=plain
+./gradlew testDebugUnitTest --rerun-tasks --console=plain | tee test-artifacts/unit-run.log
 grep -h "time" app/build/test-results/testDebugUnitTest/*.xml
-mkdir -p test-artifacts/unit
 cp app/build/test-results/testDebugUnitTest/*.xml test-artifacts/unit/
 ```
+
+> This takes **several minutes**. `--rerun-tasks` already forces every task to re-execute, so
+> `cleanTestDebugUnitTest` is redundant — dropping it halves the runtime and the odds of hitting a
+> command timeout. If Roo kills and restarts the command, that is a timeout, not a failing test.
 
 **Expected — 95 tests, 0 failures:**
 
@@ -144,9 +161,8 @@ ONE RUN. Not a loop.
 
 ```bash
 adb devices
-./gradlew connectedDebugAndroidTest --rerun-tasks --console=plain
+./gradlew connectedDebugAndroidTest --rerun-tasks --console=plain | tee test-artifacts/connected-run.log
 grep -h "time" app/build/outputs/androidTest-results/connected/*.xml
-mkdir -p test-artifacts/connected
 cp app/build/outputs/androidTest-results/connected/*.xml test-artifacts/connected/
 ```
 
