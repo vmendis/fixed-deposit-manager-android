@@ -1,5 +1,6 @@
 package com.example.fdmanager
 
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
@@ -8,9 +9,13 @@ import androidx.compose.ui.test.onAllNodesWithTag
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onRoot
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
+import androidx.compose.ui.test.performTouchInput
+import androidx.compose.ui.test.swipe
 import androidx.test.core.app.ActivityScenario
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import com.example.fdmanager.data.FdRepository
@@ -28,15 +33,20 @@ import java.time.LocalDate
 /**
  * #5 Trust UX — export chooser, delete-all confirmation gate, app lock, privacy line.
  *
- * Two rules this class obeys, both learned from the first failed run:
+ * Three rules this class obeys, each learned from a failed run:
  *
- * 1. **Navigate to Settings before looking for Settings rows.** The app starts on Home; the
- *    bottom-bar "Settings" label is how every other UI test gets there.
+ * 1. **Navigate to Settings first.** The app starts on Home. The bottom-bar "Settings" label is how
+ *    every other UI test gets there.
  *
- * 2. **Use createEmptyComposeRule + an explicit ActivityScenario.** `createAndroidComposeRule`
- *    launches the activity *before* `@Before` runs, so the start destination was computed from
- *    whatever state the previous test left in the SettingsStore singleton. Launching by hand
- *    after resetting the store makes every test a genuine cold start with known state.
+ * 2. **createEmptyComposeRule + an explicit ActivityScenario.** `createAndroidComposeRule` launches
+ *    the activity *before* `@Before` runs, so the start destination was computed from whatever the
+ *    previous test left in the SettingsStore singleton. And `scenario.recreate()` restores the
+ *    NavController back stack, so `startDest` is never re-evaluated. A fresh ActivityScenario is
+ *    the only honest cold start.
+ *
+ * 3. **ComposeTestRule, not ComposeContentTestRule.** The shared `swipeUntilTag` helper extends
+ *    ComposeContentTestRule, which `createEmptyComposeRule` does not return. This file carries its
+ *    own scroller that works on the base type.
  */
 @RunWith(AndroidJUnit4::class)
 class TrustUxUiTest {
@@ -50,9 +60,9 @@ class TrustUxUiTest {
     fun launchWithKnownState() {
         resetStore()
         scenario = ActivityScenario.launch(MainActivity::class.java)
-        // Wait for the first frame: the bottom bar is always present on Home.
+        // The bottom bar is always present on Home — wait for the first frame.
         rule.waitUntil(15_000) {
-            rule.onAllNodesWithText("Settings", substring = false).fetchSemanticsNodes().isNotEmpty()
+            rule.onAllNodesWithText("Settings").fetchSemanticsNodes().isNotEmpty()
         }
         rule.waitForIdle()
     }
@@ -71,6 +81,13 @@ class TrustUxUiTest {
         FdRepository.get().reset(SampleData.seed(LocalDate.now()))
     }
 
+    /** Relaunch the app from scratch with the lock enabled. */
+    private fun relaunchWithLockOn() {
+        scenario.close()
+        SettingsStore.setBiometricEnabled(true)
+        scenario = ActivityScenario.launch(MainActivity::class.java)
+    }
+
     // ---------------------------------------------------------------- helpers
 
     /** Home -> Settings via the bottom navigation bar. */
@@ -78,26 +95,42 @@ class TrustUxUiTest {
         rule.onNodeWithText("Settings").performClick()
         rule.waitForIdle()
         rule.waitUntil(15_000) {
-            rule.onAllNodesWithText("Currency", substring = true).fetchSemanticsNodes().isNotEmpty()
+            rule.onAllNodesWithText("Currency").fetchSemanticsNodes().isNotEmpty()
         }
     }
 
-    private fun scrollToTag(tag: String) {
-        try { rule.swipeUntilTag(tag) } catch (e: Throwable) {}
-        repeat(3) {
+    /**
+     * Scroll a verticalScroll Column until [tag] is on screen.
+     * Works on ComposeTestRule, so it does not depend on the shared ComposeContentTestRule helper.
+     */
+    private fun scrollToTag(tag: String, maxSwipes: Int = 25) {
+        repeat(maxSwipes) {
             try {
                 rule.onNodeWithTag(tag).performScrollTo()
                 rule.waitForIdle()
                 return
+            } catch (e: Throwable) { }
+
+            try {
+                rule.onNodeWithTag(tag, useUnmergedTree = true).performScrollTo()
+                rule.waitForIdle()
+                return
+            } catch (e: Throwable) { }
+
+            try {
+                rule.onRoot().performTouchInput {
+                    val h = visibleSize.height
+                    val w = visibleSize.width
+                    swipe(
+                        start = Offset(w / 2f, h * 0.8f),
+                        end = Offset(w / 2f, h * 0.2f),
+                        durationMillis = 300
+                    )
+                }
+                rule.waitForIdle()
             } catch (e: Throwable) {
-                try {
-                    rule.onNodeWithTag(tag, useUnmergedTree = true).performScrollTo()
-                    rule.waitForIdle()
-                    return
-                } catch (e2: Throwable) { }
+                return
             }
-            try { rule.swipeUntilTag(tag); rule.waitForIdle() } catch (e: Throwable) { }
-            rule.waitForIdle()
         }
     }
 
@@ -119,6 +152,13 @@ class TrustUxUiTest {
         rule.waitUntil(15_000) {
             rule.onAllNodesWithTag("wipeDataDialog").fetchSemanticsNodes().isNotEmpty()
         }
+    }
+
+    /** Type the confirmation phrase into a field that may already hold text. */
+    private fun typePhrase(text: String) {
+        rule.onNodeWithTag("wipeTypedInput").performTextClearance()
+        rule.onNodeWithTag("wipeTypedInput").performTextInput(text)
+        rule.waitForIdle()
     }
 
     // ---------------------------------------------------------------- export
@@ -155,20 +195,18 @@ class TrustUxUiTest {
         rule.waitForIdle()
         rule.onNodeWithTag("wipeConfirm").assertIsNotEnabled()
 
-        rule.onNodeWithTag("wipeTypedInput").performTextInput("delete")
-        rule.waitForIdle()
+        typePhrase("delete")
         rule.onNodeWithTag("wipeConfirm").assertIsNotEnabled()
 
-        rule.onNodeWithTag("wipeTypedInput").performTextInput("DELETE")
-        rule.waitForIdle()
+        // Replace, not append — performTextClearance prevents "deleteDELETE".
+        typePhrase("DELETE")
         rule.onNodeWithTag("wipeConfirm").assertIsEnabled()
     }
 
     @Test
     fun wipeWithPhraseButNoCategoryStaysDisabled() {
         openWipeDialog()
-        rule.onNodeWithTag("wipeTypedInput").performTextInput("DELETE")
-        rule.waitForIdle()
+        typePhrase("DELETE")
         rule.onNodeWithTag("wipeConfirm").assertIsNotEnabled()
     }
 
@@ -179,8 +217,7 @@ class TrustUxUiTest {
 
         openWipeDialog()
         rule.onNodeWithTag("wipeCategory_SETTINGS").performClick()
-        rule.onNodeWithTag("wipeTypedInput").performTextInput("DELETE")
-        rule.waitForIdle()
+        typePhrase("DELETE")
         rule.onNodeWithTag("wipeConfirm").performClick()
         rule.waitForIdle()
 
@@ -197,8 +234,7 @@ class TrustUxUiTest {
 
         openWipeDialog()
         rule.onNodeWithTag("wipeCategory_FDS").performClick()
-        rule.onNodeWithTag("wipeTypedInput").performTextInput("DELETE")
-        rule.waitForIdle()
+        typePhrase("DELETE")
         rule.onNodeWithTag("wipeConfirm").performClick()
         rule.waitForIdle()
 
@@ -209,11 +245,7 @@ class TrustUxUiTest {
 
     @Test
     fun lockScreenAppearsOnColdStartWhenEnabled() {
-        // Relaunch from scratch with the lock on — that is the real cold-start path.
-        scenario.close()
-        SettingsStore.setBiometricEnabled(true)
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
+        relaunchWithLockOn()
         rule.waitUntil(15_000) {
             rule.onAllNodesWithTag("lockScreen").fetchSemanticsNodes().isNotEmpty()
         }
@@ -223,10 +255,7 @@ class TrustUxUiTest {
 
     @Test
     fun unlockLeavesTheLockScreen() {
-        scenario.close()
-        SettingsStore.setBiometricEnabled(true)
-        scenario = ActivityScenario.launch(MainActivity::class.java)
-
+        relaunchWithLockOn()
         rule.waitUntil(15_000) {
             rule.onAllNodesWithTag("unlockButton").fetchSemanticsNodes().isNotEmpty()
         }
