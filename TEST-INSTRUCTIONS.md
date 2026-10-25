@@ -16,13 +16,14 @@
 
 | # | Rule |
 |---|---|
-| C1 | bash (MINGW64) only. Never PowerShell, never cmd.exe |
+| C1 | bash (MINGW64) only. Never PowerShell, never cmd.exe. **Never substitute a Windows/cmd tool for a bash one** — see the table in §0c |
 | C2 | Run commands **directly in the MINGW64 prompt**. Never wrap them in `bash -c "..."` — the wrapper expands `$VAR` and nested quotes before bash sees them, which is what breaks. Verify the shell with `bash --version \| head -1` |
 | C3 | Never edit app code, never invent selectors. If a selector is missing, record **SELECTOR-MISSING** and stop |
 | C4 | One Tier2 run. No loops, no retry-the-world |
 | C5 | Flake protocol: rerun only the failed class, **once**. Still failing → report it as a failure |
 | C6 | Every number in the report is copied from a real file, never typed from memory |
 | C7 | The owner captures screenshots when **you** tell them to. You confirm each one before moving on |
+| C8 | **If a command fails, do not reach for a different tool.** Report the failure with the exact output and stop. Swapping `grep` for `findstr` is how a passing gate turns into a false failure |
 
 ---
 
@@ -80,6 +81,31 @@ git status --short
 
 ---
 
+## §0c Tool map — the only shell you have
+
+Every command in this file is bash. Some of these have already been attempted; all of them failed.
+
+| Do NOT run | Why it fails here | Run this |
+|---|---|---|
+| `chcp 65001` | Windows **cmd** builtin. Git Bash has no `chcp` → `command not found` | nothing — output is already UTF-8 |
+| `findstr "x" file` | Windows tool. In Git Bash it mangles the path → `FINDSTR: Cannot open file` | `grep -n "x" file` |
+| `dir` | cmd | `ls -la` |
+| `type file` | cmd | `cat file` |
+| `copy a b` | cmd | `cp a b` |
+| `del file` | cmd | `rm file` |
+| `where java` | cmd | `command -v java` |
+| `gradlew.bat ...` | cmd shim | `./gradlew ...` |
+| `timeout /t 5` | cmd | `sleep 5` |
+| `bash -c "..."` | expands `$VAR` and nested quotes first | type the command directly |
+
+**`chcp` and `findstr` appearing in the console are noise, not failures.** They were attempted,
+the shell rejected them, and the real command afterwards worked. Do not retry them.
+
+**A `findstr` line that prints `Cannot open` is not a failed gate.** The gate is the `grep -q ... && echo`
+line. If that prints `OK`, the gate passed — regardless of what else was attempted.
+
+---
+
 ## §1 Freshness gates — run before spending time on tests
 
 ```bash
@@ -97,15 +123,16 @@ All five must print `OK`. Any miss → the tree is stale. **Stop**, report, do n
 ## §2 Artifacts — required
 
 ```
-mkdir test-artifacts
+mkdir test-artifacts-5
 ```
 
-No `-p`. No `-Force`. Both create a folder literally named that.
+**The folder carries the issue number.** For issue #5 it is `test-artifacts-5`. No `-p`. No `-Force`.
+Both create a folder literally named that.
 
 Contents required at the end:
 
 ```
-test-artifacts/
+test-artifacts-5/
   unit-run.log
   connected-run.log
   logcat.txt
@@ -124,9 +151,9 @@ No artifacts → the report is **REJECTED** and the run is untriageable.
 ## §3 Tier1 — 95 unit tests
 
 ```bash
-./gradlew testDebugUnitTest --rerun-tasks --console=plain | tee test-artifacts/unit-run.log
+./gradlew testDebugUnitTest --rerun-tasks --console=plain | tee test-artifacts-5/unit-run.log
 grep -h "time" app/build/test-results/testDebugUnitTest/*.xml
-cp app/build/test-results/testDebugUnitTest/*.xml test-artifacts/unit/
+cp app/build/test-results/testDebugUnitTest/*.xml test-artifacts-5/unit/
 ```
 
 > This takes **several minutes**. `--rerun-tasks` already forces every task to re-execute, so
@@ -161,9 +188,9 @@ ONE RUN. Not a loop.
 
 ```bash
 adb devices
-./gradlew connectedDebugAndroidTest --rerun-tasks --console=plain | tee test-artifacts/connected-run.log
+./gradlew connectedDebugAndroidTest --rerun-tasks --console=plain | tee test-artifacts-5/connected-run.log
 grep -h "time" app/build/outputs/androidTest-results/connected/*.xml
-cp app/build/outputs/androidTest-results/connected/*.xml test-artifacts/connected/
+cp app/build/outputs/androidTest-results/connected/*.xml test-artifacts-5/connected/
 ```
 
 **Expected — 38 tests, 0 failures:**
@@ -197,8 +224,8 @@ Flake protocol: rerun **only** the failed class, **once**:
 ## §5 Logcat
 
 ```bash
-adb logcat -d | grep -i "TestRunner" > test-artifacts/logcat.txt
-wc -l test-artifacts/logcat.txt
+adb logcat -d | grep -i "TestRunner" > test-artifacts-5/logcat.txt
+wc -l test-artifacts-5/logcat.txt
 ```
 
 Paste up to 30 real lines in the report. A count of zero means instrumentation never ran — report
@@ -224,7 +251,7 @@ screenshot is a **REJECTED** artifact.
 Then capture and pull:
 
 ```bash
-adb exec-out screencap -p > test-artifacts/shot-settings-data.png
+adb exec-out screencap -p > test-artifacts-5/shot-settings-data.png
 ```
 
 > Use `exec-out`. Git Bash rewrites `/`-leading adb arguments if you use `screencap -p /sdcard/...`.
@@ -244,7 +271,7 @@ Only then move to the next.
 ### md5 check — all four must differ
 
 ```bash
-md5sum test-artifacts/*.png
+md5sum test-artifacts-5/*.png
 ```
 
 Four identical hashes means the screen never changed. Report it.
@@ -286,7 +313,7 @@ Four identical hashes means the screen never changed. Report it.
 - launcher screenshots
 - `--rerun-tasks` omitted
 - gates in §1 unchecked
-- artifacts at repo root instead of `test-artifacts/`
+- artifacts at repo root instead of `test-artifacts-<issue>/`
 - the executor edited app code
 
 ---
