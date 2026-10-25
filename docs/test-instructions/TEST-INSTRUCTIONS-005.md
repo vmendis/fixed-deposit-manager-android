@@ -114,6 +114,73 @@ line. If that prints `OK`, the gate passed — regardless of what else was attem
 
 ---
 
+## §0d When a run goes wrong — the loop killer
+
+Observed on the first run of this issue. Read this before troubleshooting anything.
+
+### A. "Unresolved reference" in EVERY test file is not a code error
+
+```
+e: ...DataWipeTest.kt:4:30 Unresolved reference 'data'.
+e: ...AuthValidationTest.kt:3:30 Unresolved reference 'domain'.
+e: ...BankRegistryTest.kt:3:30 Unresolved reference 'data'.
+```
+
+Untouched test classes failing the same way means **the app classes were never compiled**.
+Look further up for the real error:
+
+```
+> Task :app:mergeDebugResources FAILED
+> Cannot access output property 'incrementalFolder' ...
+>   java.nio.file.NoSuchFileException: ...\app\build\intermediates\incremental\debug\mergeDebugResources\merged.dir\values-th
+```
+
+That is a **corrupt `app/build` directory**, not a code defect. One recovery, then rerun:
+
+```bash
+./gradlew --stop
+rm -rf app/build
+./gradlew testDebugUnitTest --rerun-tasks --console=plain | tee test-artifacts-005/unit-run.log
+```
+
+If the same `NoSuchFileException` survives that, **stop and report**. Do not repeat the recovery.
+
+### B. Never kill java.exe
+
+```
+taskkill /F /IM java.exe        <-- WRONG, never run this
+```
+
+This kills the Gradle daemon mid-write, which is exactly what corrupts `app/build`.
+`--stop` already shuts daemons down cleanly. There is no reason to force-kill.
+
+### C. Gradle prints nothing while it works
+
+A long task shows no output until it finishes. That is normal.
+**Do not poll.** All of these are noise and were seen on the last run:
+
+```
+$ echo "waiting"                  x12
+$ cho "waiting"                   bash: cho: command not found
+$ echo "checking final status"
+```
+
+Echoing into the console does not check anything, does not speed anything up, and makes the
+transcript unreadable. Run the command, then **wait for the prompt to come back**. One command,
+one result, one report.
+
+### D. Two recoveries maximum, ever
+
+| Attempt | Allowed |
+|---|---|
+| 1st failure | diagnose from the log, apply one recovery, rerun once |
+| 2nd failure | report and **STOP** |
+| 3rd attempt | never |
+
+A third attempt is the loop. The architect needs the log more than it needs another run.
+
+---
+
 ## §1 Freshness gates — run before spending time on tests
 
 ```bash
