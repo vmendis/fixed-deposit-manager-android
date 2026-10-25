@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.DeleteForever
 import androidx.compose.material.icons.filled.FileDownload
 import androidx.compose.material.icons.filled.Logout
 import androidx.compose.material.icons.filled.Person
@@ -34,8 +35,13 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
@@ -45,7 +51,13 @@ import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.vssbox.fdmanager.R
 import com.example.fdmanager.data.ThemeMode
+import com.example.fdmanager.domain.DataWipe
+import com.example.fdmanager.domain.ExportFormat
+import com.example.fdmanager.domain.FdExport
+import com.example.fdmanager.domain.WipeSelection
 import com.example.fdmanager.ui.FdViewModel
+import com.example.fdmanager.ui.components.DeleteAllDataDialog
+import com.example.fdmanager.ui.components.ExportFormatDialog
 import com.example.fdmanager.ui.components.SectionHeader
 import kotlinx.coroutines.launch
 
@@ -61,6 +73,40 @@ fun SettingsScreen(
     val scope = rememberCoroutineScope()
 
     fun placeholder(msg: String) = scope.launch { snackbarHost.showSnackbar(msg) }
+
+    // #5 trust UX — export + delete-all state
+    val context = LocalContext.current
+    val fds by vm.fds.collectAsStateWithLifecycle()
+    var showExportDialog by remember { mutableStateOf(false) }
+    var pendingFormat by remember { mutableStateOf(ExportFormat.CSV) }
+    var showWipeDialog by remember { mutableStateOf(false) }
+
+    // #5 trust UX — SAF write. Kept in one place so the mime type chosen at launch can never
+    // disagree with the format actually serialised.
+    fun writeExport(uri: android.net.Uri?) {
+        if (uri == null) {
+            placeholder("Export cancelled.")
+            return
+        }
+        val format = pendingFormat
+        val content = if (format == ExportFormat.CSV) FdExport.toCsv(fds) else FdExport.toJson(fds)
+        val written = runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { out ->
+                out.write(content.toByteArray(Charsets.UTF_8))
+            } ?: error("no output stream")
+        }
+        if (written.isSuccess) {
+            placeholder("Exported ${fds.size} deposits as ${format.name}.")
+        } else {
+            placeholder("Export failed: ${written.exceptionOrNull()?.message ?: "unknown error"}")
+        }
+    }
+
+    // "*/*" because the contract's mime type is fixed at construction while the user picks the
+    // format in the dialog; the suggested file name carries the extension.
+    val exportLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("*/*")
+    ) { uri -> writeExport(uri) }
 
     Box(Modifier.fillMaxSize()) {
         Column(Modifier.fillMaxSize()) {
@@ -173,10 +219,17 @@ fun SettingsScreen(
                 SectionHeader("Security")
                 SettingSwitchRow(
                     title = "Biometric lock",
-                    subtitle = "Requires Firebase Authentication - wired up later",
-                    checked = false,
-                    onCheckedChange = {
-                        placeholder("Biometrics need the auth backend - disabled in this mock.")
+                    subtitle = if (settings.biometricEnabled) {
+                        "Lock screen on every launch (mock biometrics — real ones arrive with the backend)"
+                    } else {
+                        "Lock the app when it starts — mock unlock for now"
+                    },
+                    checked = settings.biometricEnabled,
+                    onCheckedChange = { enabled ->
+                        vm.setBiometricEnabled(enabled)
+                        if (enabled) {
+                            placeholder("Lock enabled — the lock screen now shows on every launch.")
+                        }
                     }
                 )
 
@@ -190,11 +243,25 @@ fun SettingsScreen(
                     trailing = { Text("LKR (Rs)", fontWeight = FontWeight.SemiBold) }
                 )
                 SettingRow(
-                    title = "Export to CSV",
-                    subtitle = "Planned enhancement",
-                    onClick = { placeholder("CSV export is a planned backend-era feature.") },
+                    testTag = "exportRow",
+                    title = "Export deposits",
+                    subtitle = "CSV or JSON — saves wherever you choose (${fds.size} records)",
+                    onClick = { showExportDialog = true },
                     trailing = {
                         Icon(Icons.Filled.FileDownload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                    }
+                )
+                SettingRow(
+                    testTag = "deleteDataRow",
+                    title = "Delete data",
+                    subtitle = "Choose what to remove. Requires typing ${DataWipe.CONFIRM_PHRASE}",
+                    onClick = { showWipeDialog = true },
+                    trailing = {
+                        Icon(
+                            Icons.Filled.DeleteForever,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.error
+                        )
                     }
                 )
                 SettingRow(
@@ -266,6 +333,14 @@ fun SettingsScreen(
                         "Secure box for your deposits - Track CBSL-regulated FDs (24 LCB + 6 LSB + 31 LFC = 61 allowed; 32 LFC listed, 1 prohibited). Runs entirely on local sample data. No account, no backend, no real money - FDs shown are fictional.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    // #5 trust UX — privacy one-liner, cross-referenced by onboarding
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Privacy: your deposits never leave this device. Nothing is uploaded, shared or sold — export and delete are entirely yours to control.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.testTag("privacyLine")
                     )
                     Spacer(Modifier.height(8.dp))
                     Row(
@@ -415,6 +490,31 @@ fun SettingsScreen(
             hostState = snackbarHost,
             modifier = Modifier.align(Alignment.BottomCenter)
         )
+
+        // #5 trust UX — export format chooser
+        if (showExportDialog) {
+            ExportFormatDialog(
+                onDismiss = { showExportDialog = false },
+                onPick = { format ->
+                    pendingFormat = format
+                    showExportDialog = false
+                    exportLauncher.launch(FdExport.suggestedFileName(format))
+                }
+            )
+        }
+
+        // #5 trust UX — delete-all with per-category choice + typed confirmation
+        if (showWipeDialog) {
+            DeleteAllDataDialog(
+                onDismiss = { showWipeDialog = false },
+                onConfirm = { selection: WipeSelection ->
+                    if (selection.clearsDeposits) vm.clearAllFds()
+                    vm.applyDataWipe(selection)
+                    showWipeDialog = false
+                    placeholder("Deleted: ${DataWipe.summary(selection)}")
+                }
+            )
+        }
     }
 }
 

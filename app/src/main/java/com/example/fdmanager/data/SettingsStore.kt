@@ -87,4 +87,13 @@ object SettingsStore {
     fun clearLoadingErrorDebug() {
         _state.value = _state.value.copy(isLoadingDebug = false, isErrorDebug = false)
     }
+
+    /**
+     * #5 trust UX — replace the whole state in one atomic step.
+     * Used by the delete-data flow so a multi-category wipe cannot fire a chain of partial
+     * updates that leaves the store briefly inconsistent.
+     */
+    fun replaceWith(next: SettingsState) {
+        _state.value = next
+    }
 }
