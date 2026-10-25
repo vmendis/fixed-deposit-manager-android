@@ -1,7 +1,12 @@
-# TEST-INSTRUCTIONS.md
+# TEST-INSTRUCTIONS-005.md
+
+> **Permanent.** This file is committed and ships to `master`. It is **not** deleted before the
+> final merge — the lifecycle rule that said otherwise was retired on 2026-10-25, because a file
+> that exists only on a branch is a file Roo cannot find when he needs it.
+
 
 **Executor:** Roo · **Owner:** vmendis (screenshots only) · **Architect:** Arena agent
-**Branch under test:** `arena/de56d239-fixed-deposit-manager-android` @ `fd5dd80`
+**Branch under test:** `arena/de56d239-fixed-deposit-manager-android` @ `6aa2cce`
 **Feature:** #5 Trust UX — export, delete-all-data, app lock
 
 > **Roo always follows this file.** No ad-hoc command lists come from the architect unless the
@@ -69,14 +74,17 @@ EOF
 
 ## §0b Sync the branch — owner runs, or Roo if the owner delegates
 
+> The instruction file is in the repo, so **you can read it on any branch**. Sync the branch under
+> test first, then re-read this file from that branch — it is the copy that matches the code.
+
 ```bash
 git fetch origin --prune
-git checkout -B test-fd5dd80 origin/arena/de56d239-fixed-deposit-manager-android
+git checkout -B test-6aa2cce origin/arena/de56d239-fixed-deposit-manager-android
 git log -1 --oneline
 git status --short
 ```
 
-**Must print:** `fd5dd80 #5 Trust UX: real export, per-category delete-all, app lock`
+**Must print:** `6aa2cce test: tool map, no-substitution rule, issue number in artifact folder`
 **Must print nothing** for `git status --short`.
 
 ---
@@ -123,16 +131,16 @@ All five must print `OK`. Any miss → the tree is stale. **Stop**, report, do n
 ## §2 Artifacts — required
 
 ```
-mkdir test-artifacts-5
+mkdir test-artifacts-005
 ```
 
-**The folder carries the issue number.** For issue #5 it is `test-artifacts-5`. No `-p`. No `-Force`.
+**The folder carries the issue number.** For issue #5 it is `test-artifacts-005`. No `-p`. No `-Force`.
 Both create a folder literally named that.
 
 Contents required at the end:
 
 ```
-test-artifacts-5/
+test-artifacts-005/
   unit-run.log
   connected-run.log
   logcat.txt
@@ -151,9 +159,9 @@ No artifacts → the report is **REJECTED** and the run is untriageable.
 ## §3 Tier1 — 95 unit tests
 
 ```bash
-./gradlew testDebugUnitTest --rerun-tasks --console=plain | tee test-artifacts-5/unit-run.log
+./gradlew testDebugUnitTest --rerun-tasks --console=plain | tee test-artifacts-005/unit-run.log
 grep -h "time" app/build/test-results/testDebugUnitTest/*.xml
-cp app/build/test-results/testDebugUnitTest/*.xml test-artifacts-5/unit/
+cp app/build/test-results/testDebugUnitTest/*.xml test-artifacts-005/unit/
 ```
 
 > This takes **several minutes**. `--rerun-tasks` already forces every task to re-execute, so
@@ -188,9 +196,9 @@ ONE RUN. Not a loop.
 
 ```bash
 adb devices
-./gradlew connectedDebugAndroidTest --rerun-tasks --console=plain | tee test-artifacts-5/connected-run.log
+./gradlew connectedDebugAndroidTest --rerun-tasks --console=plain | tee test-artifacts-005/connected-run.log
 grep -h "time" app/build/outputs/androidTest-results/connected/*.xml
-cp app/build/outputs/androidTest-results/connected/*.xml test-artifacts-5/connected/
+cp app/build/outputs/androidTest-results/connected/*.xml test-artifacts-005/connected/
 ```
 
 **Expected — 38 tests, 0 failures:**
@@ -224,8 +232,8 @@ Flake protocol: rerun **only** the failed class, **once**:
 ## §5 Logcat
 
 ```bash
-adb logcat -d | grep -i "TestRunner" > test-artifacts-5/logcat.txt
-wc -l test-artifacts-5/logcat.txt
+adb logcat -d | grep -i "TestRunner" > test-artifacts-005/logcat.txt
+wc -l test-artifacts-005/logcat.txt
 ```
 
 Paste up to 30 real lines in the report. A count of zero means instrumentation never ran — report
@@ -251,7 +259,7 @@ screenshot is a **REJECTED** artifact.
 Then capture and pull:
 
 ```bash
-adb exec-out screencap -p > test-artifacts-5/shot-settings-data.png
+adb exec-out screencap -p > test-artifacts-005/shot-settings-data.png
 ```
 
 > Use `exec-out`. Git Bash rewrites `/`-leading adb arguments if you use `screencap -p /sdcard/...`.
@@ -271,7 +279,7 @@ Only then move to the next.
 ### md5 check — all four must differ
 
 ```bash
-md5sum test-artifacts-5/*.png
+md5sum test-artifacts-005/*.png
 ```
 
 Four identical hashes means the screen never changed. Report it.
@@ -313,7 +321,7 @@ Four identical hashes means the screen never changed. Report it.
 - launcher screenshots
 - `--rerun-tasks` omitted
 - gates in §1 unchecked
-- artifacts at repo root instead of `test-artifacts-<issue>/`
+- artifacts at repo root instead of `test-artifacts-<NNN>/`
 - the executor edited app code
 
 ---

@@ -22,3 +22,6 @@ local.properties
 # --- OS noise ---
 .DS_Store
 Thumbs.db
+
+# --- Test artifacts: local only, produced by Roo, never committed ---
+test-artifacts-*/
