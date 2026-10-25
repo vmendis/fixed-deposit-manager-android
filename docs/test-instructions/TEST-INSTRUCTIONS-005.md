@@ -181,6 +181,67 @@ A third attempt is the loop. The architect needs the log more than it needs anot
 
 ---
 
+## §0e You are already inside bash — never launch it
+
+Look at your own prompt:
+
+```
+thiss@Windows11-DEV MINGW64 /c/LocalApps/.../fixed-deposit-manager-android (test-bae8499)
+$
+```
+
+**That prompt *is* bash.** Every command below is typed straight into it. There is no bash to find,
+no bash to launch, no shell path to set.
+
+### The failure this prevents
+
+```
+$ C:\Users\thiss\AppData\Local\Microsoft\WindowsApps\bash.exe -c "ls -la gradlew"
+bash: C:UsersthissAppDataLocalMicrosoftWindowsAppsbash.exe: command not found
+```
+
+Two bugs in one line:
+
+| Bug | What happened |
+|---|---|
+| Backslashes are escape characters in bash | `\U`, `\A`, `\M` … were eaten, so the path collapsed to `C:Usersthiss...` |
+| That path is the **WSL stub**, not Git Bash | `WindowsApps\bash.exe` launches WSL. It is not your shell and has no JDK, no SDK |
+
+The fix is not a better path. The fix is **not launching bash at all**.
+
+### Hard bans
+
+| Never | Because |
+|---|---|
+| `C:\...\bash.exe -c "..."` | you are already in bash |
+| `where bash` / `where java` / `which bash` | looking for a tool you are already using |
+| `sed -i` on **any tracked file** | rewrites the repo. `sed -i 's/\r$//' gradlew` was attempted — it would have modified a tracked file |
+| `./gradlew` prefixed by a shell path | `./gradlew` already runs |
+
+### If the console shows exploration, the run is already over
+
+Any of these mean Roo has stopped following instructions and started guessing:
+
+```
+where ...        which ...        ls /c/
+export JAVA_HOME=...             trying a different bash.exe
+the same command repeated        echo "waiting"
+```
+
+**Stop. Do not fix it yourself. Report the last good output and end the run.**
+
+### If `gradlew` ever looks broken
+
+Do **not** edit it. Restore it:
+
+```bash
+git checkout -- gradlew
+chmod +x gradlew
+./gradlew --version
+```
+
+---
+
 ## §1 Freshness gates — run before spending time on tests
 
 ```bash
