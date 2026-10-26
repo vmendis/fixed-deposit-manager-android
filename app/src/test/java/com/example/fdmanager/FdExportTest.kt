@@ -1,5 +1,6 @@
 package com.example.fdmanager
 
+import com.example.fdmanager.data.model.CompoundingFrequency
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
 import com.example.fdmanager.data.model.PayoutFrequency
@@ -196,6 +197,33 @@ class FdExportTest {
         assertEquals(2, ExportFormat.entries.size)
         assertEquals("csv", ExportFormat.CSV.extension)
         assertEquals("json", ExportFormat.JSON.extension)
+    }
+
+    // ---- Issue #6 — compounding column ----
+
+    @Test
+    fun `compounding is the last csv column and the header count is pinned`() {
+        assertEquals("compounding", FdExport.CSV_HEADER.last())
+        assertEquals(18, FdExport.CSV_HEADER.size)
+        assertEquals(18, FdExport.CSV_HEADER.distinct().size)
+    }
+
+    @Test
+    fun `csv and json both write the compounding frequency`() {
+        val quarterly = fd().copy(compounding = CompoundingFrequency.QUARTERLY)
+
+        val csv = FdExport.toCsv(listOf(quarterly)).trimEnd()
+        val row = parseCsvRow(csv.split("\r\n")[1])
+        assertEquals("QUARTERLY", row[FdExport.CSV_HEADER.indexOf("compounding")])
+
+        val json = FdExport.toJson(listOf(quarterly))
+        assertTrue(json.contains("\"compounding\": \"QUARTERLY\""))
+    }
+
+    @Test
+    fun `a default fd exports as simple`() {
+        val row = parseCsvRow(FdExport.toCsv(listOf(fd())).trimEnd().split("\r\n")[1])
+        assertEquals("SIMPLE", row[FdExport.CSV_HEADER.indexOf("compounding")])
     }
 
     /** Minimal RFC 4180 reader — enough to prove a row splits back to the declared column count. */

@@ -65,6 +65,7 @@ users/{userId}/fds/{fdId}
   "durationDays": number | null,
   "tenorUnit": "MONTHS | DAYS",
   "interestRate": number,
+  "compounding": "SIMPLE | MONTHLY | QUARTERLY | SEMI_ANNUAL | ANNUAL",
   "maturityDate": number,
   "branch": "string | null",
   "branchCode": "number | null",

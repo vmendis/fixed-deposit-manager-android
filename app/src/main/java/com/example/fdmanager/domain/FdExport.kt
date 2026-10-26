@@ -21,7 +21,10 @@ object FdExport {
     val CSV_HEADER: List<String> = listOf(
         "fdNumber", "bank", "amount", "interestRate", "openedDate", "durationMonths",
         "durationDays", "tenorUnit", "maturityDate", "payoutFrequency", "renewOption",
-        "autoRenew", "status", "branch", "branchCode", "parentFdId", "isDeleted"
+        "autoRenew", "status", "branch", "branchCode", "parentFdId", "isDeleted",
+        // Issue #6 — appended last so an existing spreadsheet keeps every earlier column
+        // in the position it has always had.
+        "compounding"
     )
 
     /** RFC 4180: CRLF line endings, quote when the field contains a delimiter, quote or newline. */
@@ -51,7 +54,8 @@ object FdExport {
         fd.branch ?: "",
         fd.branchCode ?: "",
         fd.parentFdId ?: "",
-        fd.isDeleted.toString()
+        fd.isDeleted.toString(),
+        fd.compounding.name
     ).joinToString(",") { escapeCsv(it) }
 
     /**
@@ -112,7 +116,8 @@ object FdExport {
             "branch" to fd.branch,
             "branchCode" to fd.branchCode,
             "parentFdId" to fd.parentFdId,
-            "isDeleted" to fd.isDeleted.toString()
+            "isDeleted" to fd.isDeleted.toString(),
+            "compounding" to fd.compounding.name
         )
         val body = fields.entries.joinToString(", ") { (k, v) ->
             if (v == null) "\"$k\": null" else "\"$k\": \"${escapeJson(v)}\""

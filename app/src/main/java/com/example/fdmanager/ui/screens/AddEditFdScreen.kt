@@ -47,10 +47,12 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.example.fdmanager.data.model.CompoundingFrequency
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
 import com.example.fdmanager.data.model.PayoutFrequency
@@ -135,6 +137,11 @@ fun AddEditFdScreen(
     var branch by remember { mutableStateOf(editing?.branch ?: "") }
     var branchCode by remember { mutableStateOf(editing?.branchCode ?: "") }
     var payoutFrequency by remember { mutableStateOf(editing?.payoutFrequency) }
+    // Issue #6 — a NEW deposit starts on Quarterly (Sri Lankan bank practice). An existing one
+    // keeps whatever it was saved with, so editing never silently changes the math.
+    var compounding by remember {
+        mutableStateOf(editing?.compounding ?: CompoundingFrequency.QUARTERLY)
+    }
     var renewOption by remember { mutableStateOf(editing?.renewOption ?: RenewOption.CAPITALIZE) }
     var autoRenew by remember { mutableStateOf(editing?.autoRenew ?: false) }
     var showInstitutionPicker by remember { mutableStateOf(false) }
@@ -441,6 +448,40 @@ fun AddEditFdScreen(
             }
             Spacer(Modifier.height(8.dp))
 
+            // Compounding — Issue #6. Always has a value, so it never blocks Save.
+            Text(
+                "Compounding",
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.SemiBold
+            )
+            Spacer(Modifier.height(4.dp))
+            Row(
+                Modifier
+                    .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
+            ) {
+                CompoundingFrequency.entries.forEach { c ->
+                    FilterChip(
+                        selected = compounding == c,
+                        onClick = { compounding = c },
+                        label = { Text(c.label) },
+                        modifier = Modifier.testTag("compound_${c.name}")
+                    )
+                    Spacer(Modifier.width(8.dp))
+                }
+            }
+            Text(
+                if (compounding == CompoundingFrequency.SIMPLE) {
+                    "Interest is paid on the original amount only."
+                } else {
+                    "Interest is added to the balance every " +
+                        compounding.label.lowercase().removeSuffix("ly") + "; the estimate below compounds it."
+                },
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Spacer(Modifier.height(8.dp))
+
             // Stored renewal instruction
             Text("On renewal", style = MaterialTheme.typography.labelMedium, fontWeight = FontWeight.SemiBold)
             Spacer(Modifier.height(4.dp))
@@ -526,23 +567,24 @@ fun AddEditFdScreen(
                         InfoRow("Matures on", Dates.format(previewMaturity))
                         InfoRow("Tenor", FdMath.tenorLabel(durationMonths ?: 0, durationDays, tenorUnit))
                         InfoRow(
+                            "Compounding",
+                            compounding.label,
+                            valueTag = "previewCompounding"
+                        )
+                        InfoRow(
                             "Est. interest",
                             Lkr.full(
-                                if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS) {
-                                    FdMath.interestEarned(amount!!, rate!!, 0, durationDays, tenorUnit)
-                                } else {
-                                    FdMath.interestEarned(amount!!, rate!!, durationMonths!!)
-                                }
+                                FdMath.interestEarned(
+                                    amount!!, rate!!, durationMonths ?: 0, durationDays, tenorUnit, compounding
+                                )
                             )
                         )
                         InfoRow(
                             "Est. maturity value",
                             Lkr.full(
-                                if (tenorUnit == com.example.fdmanager.data.model.TenorUnit.DAYS) {
-                                    amount!! + FdMath.interestEarned(amount!!, rate!!, 0, durationDays, tenorUnit)
-                                } else {
-                                    FdMath.maturityValue(amount!!, rate!!, durationMonths!!)
-                                }
+                                FdMath.maturityValue(
+                                    amount!!, rate!!, durationMonths ?: 0, durationDays, tenorUnit, compounding
+                                )
                             )
                         )
                         Spacer(Modifier.height(2.dp))
@@ -587,7 +629,8 @@ fun AddEditFdScreen(
                             createdAt = editing?.createdAt ?: System.currentTimeMillis(),
                             isDeleted = false,
                             durationDays = d,
-                            tenorUnit = tenorUnit
+                            tenorUnit = tenorUnit,
+                            compounding = compounding
                         )
                         if (editing == null) vm.addFd(fd) else vm.updateFd(fd)
                         onBack()

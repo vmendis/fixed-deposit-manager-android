@@ -1,5 +1,7 @@
 package com.example.fdmanager
 
+import com.example.fdmanager.data.model.CompoundingFrequency
+import com.example.fdmanager.data.model.TenorUnit
 import com.example.fdmanager.domain.FdMath
 import com.example.fdmanager.domain.Lkr
 import org.junit.Assert.assertEquals
@@ -98,6 +100,31 @@ class FdMathTest {
         assertEquals("1 day", FdMath.tenorLabel(0, 1, com.example.fdmanager.data.model.TenorUnit.DAYS))
         assertEquals("100 days", FdMath.tenorLabel(0, 100, com.example.fdmanager.data.model.TenorUnit.DAYS))
         assertEquals("300 days", FdMath.tenorLabel(0, 300, com.example.fdmanager.data.model.TenorUnit.DAYS))
+    }
+
+    // Issue #6 — compounding enters through FdMath, so the old entry points must not move.
+    @Test
+    fun `years of maps months to twelfths and days to 365ths`() {
+        assertEquals(1.0, FdMath.yearsOf(12, null, TenorUnit.MONTHS), 0.000001)
+        assertEquals(0.5, FdMath.yearsOf(6, null, TenorUnit.MONTHS), 0.000001)
+        assertEquals(0.25, FdMath.yearsOf(3, null, TenorUnit.MONTHS), 0.000001)
+        assertEquals(100 / 365.0, FdMath.yearsOf(0, 100, TenorUnit.DAYS), 0.000001)
+        // A day count is ignored when the tenor unit is months, and vice versa.
+        assertEquals(1.0, FdMath.yearsOf(12, 999, TenorUnit.MONTHS), 0.000001)
+    }
+
+    @Test
+    fun `a simple compounding frequency is the old simple-interest arithmetic`() {
+        assertEquals(
+            FdMath.interestEarned(750_000.0, 8.5, 6),
+            FdMath.interestEarned(750_000.0, 8.5, 6, CompoundingFrequency.SIMPLE),
+            1e-9
+        )
+        assertEquals(
+            FdMath.interestEarned(1_000_000.0, 10.0, 0, 100, TenorUnit.DAYS),
+            FdMath.interestEarned(1_000_000.0, 10.0, 0, 100, TenorUnit.DAYS, CompoundingFrequency.SIMPLE),
+            1e-9
+        )
     }
 
     @Test

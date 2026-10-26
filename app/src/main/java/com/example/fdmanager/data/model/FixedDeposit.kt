@@ -37,6 +37,23 @@ enum class TenorUnit(val label: String) {
     DAYS("Days")
 }
 
+/**
+ * Issue #6 — how often the bank adds accrued interest back to the principal.
+ *
+ * [periodsPerYear] is 0 for [SIMPLE], which is the "no compounding" case. Ordering matters:
+ * the form renders the chips in declaration order and [FdMath] relies on the value increasing
+ * with the number of periods.
+ */
+enum class CompoundingFrequency(val label: String, val periodsPerYear: Int) {
+    SIMPLE("Simple", 0),
+    MONTHLY("Monthly", 12),
+    QUARTERLY("Quarterly", 4),
+    SEMI_ANNUAL("Half-yearly", 2),
+    ANNUAL("Yearly", 1);
+
+    val compounds: Boolean get() = periodsPerYear > 0
+}
+
 data class FixedDeposit(
     val id: String,
     val fdNumber: String,
@@ -58,7 +75,14 @@ data class FixedDeposit(
     val isDeleted: Boolean = false,   // soft delete (spec: never destroy data)
     // Issue #17 — day-based tenors
     val durationDays: Int? = null,                // used when tenorUnit=DAYS (1–999)
-    val tenorUnit: TenorUnit = TenorUnit.MONTHS   // MONTHS (default, backward compat) or DAYS
+    val tenorUnit: TenorUnit = TenorUnit.MONTHS,  // MONTHS (default, backward compat) or DAYS
+    /**
+     * Issue #6 — compounding frequency. Defaults to [CompoundingFrequency.SIMPLE], which is
+     * exactly the interest model every earlier round used: a record written before #6 keeps the
+     * numbers it has always shown. The *form* defaults a new FD to QUARTERLY (Sri Lankan bank
+     * practice) — see `AddEditFdScreen`.
+     */
+    val compounding: CompoundingFrequency = CompoundingFrequency.SIMPLE
 )
 
 /** Bank-wise aggregate shown on the home screen. */

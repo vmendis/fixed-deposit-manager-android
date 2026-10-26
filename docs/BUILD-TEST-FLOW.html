@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>FD Manager — Build → Test Flow (One Sheet) — v1.5</title>
+<title>FD Manager — Build → Test Flow (One Sheet) — v1.7</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 :root{--teal:#0f766e;--teal2:#115e59;--bg:#f8fafc;--card:#ffffff;--muted:#64748b;--border:#e2e8f0;--amber:#f59e0b;--red:#ef4444;--green:#16a34a;--blue:#2563eb}
@@ -30,16 +30,17 @@ table{border-collapse:collapse;width:100%;font-size:12px} th,td{border:1px solid
 </head>
 <body>
 <header>
-<h1>FD Manager — Build → Test Flow (One Sheet)</h1><p style="margin:4px 0 0"><b style="background:#fff;color:#0f766e;padding:2px 8px;border-radius:20px;font-size:12px;letter-spacing:.04em">VERSION 1.5</b></p>
-<p>Architect (arena.ai Agent Mode) → Executor (Roo, Windows 11 AVD Pixel_7_API_34) → Reviewer (vmendis) · <b>bash MINGW64</b> · <b>tests run on the SESSION BRANCH, not dev</b> · 95 unit / 38 instrumented</p>
+<h1>FD Manager — Build → Test Flow (One Sheet)</h1><p style="margin:4px 0 0"><b style="background:#fff;color:#0f766e;padding:2px 8px;border-radius:20px;font-size:12px;letter-spacing:.04em">VERSION 1.7</b></p>
+<p>Architect (arena.ai Agent Mode) → Executor (Roo, Windows 11 AVD Pixel_7_API_34) → Reviewer (vmendis) · <b>bash MINGW64</b> · <b>one branch: session → master</b> · 119 unit / 44 instrumented</p>
 </header>
 <div class="wrap">
 
 <div class="new" style="margin-bottom:16px;padding:12px 14px">
-<b>STRATEGY CHANGE — 2026-10-24.</b> Tests run against the <b>session branch</b>, not <code>dev</code>.
-Arena.ai chats connect through a GitHub connector that is scoped to
-<code>arena/&lt;session-id&gt;-fixed-deposit-manager-android</code> and <b>cannot push to <code>dev</code></b>.
-Testing <code>dev</code> mid-round therefore tests code that does <b>not</b> contain the fix.
+<b>STRATEGY CHANGE — 2026-10-26. <code>dev</code> IS RETIRED.</b> There is one path now:
+<b>session branch → <code>master</code></b>. No integration branch, no promotion PR, no second merge.
+The Arena connector is scoped to <code>arena/&lt;session-id&gt;-fixed-deposit-manager-android</code>; the owner merges
+that branch straight into <code>master</code>, which is also the repo's <b>default</b> branch — so a
+<code>Closes</code> line now fires on the feature PR itself (§6b).
 </div>
 
 <div class="card">
@@ -49,9 +50,9 @@ Testing <code>dev</code> mid-round therefore tests code that does <b>not</b> con
   <div class="arrow">→</div>
   <div class="box exec">Executor<span class="step">Roo syncs the session branch<br>follows docs/test-instructions/</span></div>
   <div class="arrow">→</div>
-  <div class="box">Tier1<span class="step">95 unit<br>./gradlew testDebugUnitTest</span></div>
+  <div class="box">Tier1<span class="step">119 unit<br>./gradlew testDebugUnitTest</span></div>
   <div class="arrow">→</div>
-  <div class="box">Tier2<span class="step">38 instrumented<br>./gradlew connectedDebugAndroidTest</span></div>
+  <div class="box">Tier2<span class="step">44 instrumented<br>./gradlew connectedDebugAndroidTest</span></div>
   <div class="arrow">→</div>
   <div class="box rev">Report<span class="step">TEST-REPORT-V&lt;N&gt;.md<br><b>branch + SHA mandatory</b></span></div>
   <div class="arrow">→</div>
@@ -59,7 +60,7 @@ Testing <code>dev</code> mid-round therefore tests code that does <b>not</b> con
   <div class="arrow">→</div>
   <div class="box arch">GREEN<span class="step">report shows the fix passing<br>for that exact SHA</span></div>
   <div class="arrow">→</div>
-  <div class="box arch">Merge Gate<span class="step">PR session-branch → dev<br>dev→master, delete dev</span></div>
+  <div class="box arch">Merge Gate<span class="step">PR session-branch → master<br>merge, then the branch is done</span></div>
 </div>
 </div>
 
@@ -85,16 +86,17 @@ the agent's job. A handoff without the text is an incomplete handoff.</p>
 <tr><td>Closing an issue</td><td>the full closing comment — evidence, checkboxes, SHAs</td><td>paste → <b>Close with comment</b></td></tr>
 <tr><td>Moving a card</td><td>the exact item, target column, and why</td><td>drag</td></tr>
 <tr><td>Merging a PR</td><td>the PR — title, body, acceptance evidence</td><td>click <b>Merge</b></td></tr>
-<tr><td>Promoting dev → master</td><td>the promotion PR body incl. every <span class="k">Closes</span> line</td><td>open it, merge it</td></tr>
+<tr><td>Merging the feature PR</td><td>the PR — title, body, acceptance evidence, and the <span class="k">Closes</span> line</td><td>click <b>Merge</b> in the browser</td></tr>
 <tr><td>Test sign-off</td><td>artifacts, report, md5s, logcat proof</td><td>screenshots only</td></tr>
 </table>
 
 <h3>Branch lifecycle</h3>
 <ul>
-<li><b>Session branch</b> = where fixes land and where tests run. Named by the Arena session</li>
-<li><b>dev</b> = integration branch. Receives merges only, <b>never</b> tested mid-round</li>
+<li><b>Session branch</b> = where fixes land, where tests run, and what gets merged. Named by the Arena session</li>
+<li><b>master</b> = the only long-lived branch. Every PR targets it. It is also the repo's default branch</li>
+<li><b>No <code>dev</code>.</b> Retired 2026-10-26 after the #5 promotion — it cost a merge, a promotion PR and a
+branch-create every round, and delivered nothing the PR review did not already give</li>
 <li><b>Never merge before a green report exists for that exact commit</b></li>
-<li>After the feature PR merges → downstream dev→master handling proceeds as before; <b>no long-lived dev between features</b></li>
 <li>master is never deleted. <b>Instruction files DO ship to master</b> — see §5b</li>
 </ul>
 
@@ -107,6 +109,40 @@ the agent's job. A handoff without the text is an incomplete handoff.</p>
 <li>Settings rows live in a <span class="k">verticalScroll</span> Column that composes <b>every</b> child — so assert on <b>semantics-tree existence</b>, never on <span class="k">assertIsDisplayed()</span>. Scroll only before a <b>click</b></li>
 <li>If missing: record <b>SELECTOR-MISSING</b>, do not edit app code</li>
 </ul>
+</div>
+
+<div class="card">
+<h2>2b. The shell — one command settles it</h2>
+<div class="hard" style="padding:10px 12px">
+<b>2026-10-26: a whole round died on this.</b> Roo was handed <span class="k">cmd.exe</span>. It reported
+<b>four</b> blockers — &ldquo;not MINGW64&rdquo;, &ldquo;java not found&rdquo;, &ldquo;<span class="k">./gradlew</span> not
+recognized&rdquo;, &ldquo;<span class="k">head</span> not recognized&rdquo;. That is <b>one</b> blocker:
+the process was spawned as <span class="k">cmd.exe</span>. Everything else is a symptom of it.
+</div>
+<p>Never diagnose the shell from inside the shell. Run <b>one</b> line — it works in cmd.exe, PowerShell
+and MINGW64 alike, because it names the interpreter instead of assuming one:</p>
+<pre>"C:\Program Files\Git\bin\bash.exe" tools/preflight.sh</pre>
+<p>Seven checks, one verdict. <span class="k">READY</span> &rarr; carry on to §3. <span class="k">NOT READY</span> &rarr;
+paste the block and stop: it already names what is missing.</p>
+<table>
+<tr><th>Output</th><th>Meaning</th><th>Never</th></tr>
+<tr><td><span class="k">FAIL shell</span></td><td>the executor was handed cmd.exe</td><td>launch another shell, run <span class="k">where bash</span></td></tr>
+<tr><td><span class="k">FAIL java</span></td><td>no JDK reachable from this shell</td><td>hunt with <span class="k">find /c</span></td></tr>
+<tr><td><span class="k">FAIL android sdk</span></td><td><span class="k">local.properties</span> missing</td><td>invent a path</td></tr>
+<tr><td><span class="k">FAIL adb device</span></td><td>no emulator running</td><td>start one yourself</td></tr>
+</table>
+<h3 id="prompt">The prompt the owner pastes to Roo</h3>
+<pre>Open docs/test-instructions/TEST-INSTRUCTIONS-&lt;NNN&gt;.md and follow it.
+
+- Run ONLY the commands in that document, in the order it gives them.
+- Never PowerShell. Never a Windows/cmd replacement for a bash command.
+- If anything fails: STOP. Record it verbatim in the test report.
+  Do not troubleshoot it, do not try another shell or tool, do not fix code.
+- Do not change anything in the repo.
+- Then wait for me.</pre>
+<p>Roo has been given this and still run <span class="k">bash -c "./gradlew --version"</span> and
+<span class="k">find /c -name "java.exe"</span>. Both are banned in §3. The line that does the work is
+&ldquo;if anything fails: STOP&rdquo; &mdash; it is what turns five fabricated blockers into one real one.</p>
 </div>
 
 <div class="card">
@@ -132,35 +168,35 @@ Type into the MINGW64 prompt directly. Any command Roo wraps must contain no <sp
 </div>
 
 <h3>Gates</h3>
-<pre>grep -r "navgate-0500r9" app/src/androidTest/java/com/example/fdmanager/
-grep -r "fdcard-0200r9" app/src/main/java/com/example/fdmanager/ui/components/
-grep -r "home-scroll-0100r9" app/src/main/java/com/example/fdmanager/ui/screens/
-grep -r "loadstate-0400r9" app/src/main/java/com/example/fdmanager/ui/components/
-grep -r "syncMockSection" app/src/main/java/com/example/fdmanager/ui/screens/SettingsScreen.kt
-grep -r "loadingErrorSection" app/src/main/java/com/example/fdmanager/ui/screens/SettingsScreen.kt
-ls app/src/main/res/drawable/vssbox_cube.png</pre>
+<pre>grep -q "interestForYears" app/src/main/java/com/example/fdmanager/domain/FdMath.kt && echo "GATE math OK"
+grep -q "enum class CompoundingFrequency" app/src/main/java/com/example/fdmanager/data/model/FixedDeposit.kt && echo "GATE model OK"
+grep -q "compound_" app/src/main/java/com/example/fdmanager/ui/screens/AddEditFdScreen.kt && echo "GATE form OK"
+grep -q "detailCompounding" app/src/main/java/com/example/fdmanager/ui/screens/FdDetailScreen.kt && echo "GATE detail OK"
+grep -q "compounding" app/src/main/java/com/example/fdmanager/domain/FdExport.kt && echo "GATE export OK"
+grep -q "previewCompounding" app/src/main/java/com/example/fdmanager/ui/screens/AddEditFdScreen.kt && echo "GATE preview OK"</pre>
+<p>All six must print <span class="k">OK</span>. A miss means the tree is stale — stop, do not run tests.</p>
 
-<h3>Tier1 — 95 unit tests</h3>
+<h3>Tier1 — 119 unit tests</h3>
 <pre>./gradlew testDebugUnitTest --rerun-tasks --console=plain
 grep -h "time" app/build/test-results/testDebugUnitTest/*.xml</pre>
 <p><b>No <span class="k">clean</span>.</b> <span class="k">--rerun-tasks</span> already forces every task to re-execute;
 adding <span class="k">cleanTestDebugUnitTest</span> doubles the runtime for nothing and makes a command timeout more likely.</p>
-<p>AuthValidation 4 · BankRegistry 7 · <b>DataWipe 17</b> · <b>FdExport 20</b> · FdMath 11 · FdRepository 17 · InstitutionRegistry 11 · LoadingState 4 · SyncState 4 = <b>95</b>. Real durations, never summed.</p>
+<p>AuthValidation 4 · BankRegistry 7 · <b>Compounding 18</b> · DataWipe 17 · <b>FdExport 23</b> · <b>FdMath 13</b> · <b>FdRepository 18</b> · InstitutionRegistry 11 · LoadingState 4 · SyncState 4 = <b>119</b>. Real durations, never summed.</p>
 
-<h3>Tier2 — 38 instrumented tests (ONE RUN, NO LOOP)</h3>
+<h3>Tier2 — 44 instrumented tests (ONE RUN, NO LOOP)</h3>
 <pre>adb devices
 ./gradlew connectedDebugAndroidTest --rerun-tasks --console=plain
 grep -h "time" app/build/outputs/androidTest-results/connected/*.xml</pre>
-<p>AddFdValidation 5 · AuthFlow 4 · BankMonogram 4 · LoadingErrorUi 4 · NavigationFlow 2 · RenewalChain 1 · SoftDeleteRestore 2 · SortFilter 2 · SyncStateChip 4 · <b>TrustUxUi 10</b> = <b>38</b></p>
+<p>AddFdValidation 5 · AuthFlow 4 · BankMonogram 4 · <b>CompoundingUi 6</b> · LoadingErrorUi 4 · NavigationFlow 2 · RenewalChain 1 · SoftDeleteRestore 2 · SortFilter 2 · SyncStateChip 4 · TrustUxUi 10 = <b>44</b></p>
 
 <h3>Single-class re-run (flake protocol, once only)</h3>
 <pre>./gradlew connectedDebugAndroidTest \
   -Pandroid.testInstrumentationRunnerArguments.class=com.example.fdmanager.SyncStateChipTest --rerun-tasks</pre>
 
 <h3>Logcat</h3>
-<pre>mkdir test-artifacts-5
-adb logcat -d | grep -i "TestRunner" > test-artifacts-5/logcat.txt
-cat test-artifacts-5/logcat.txt</pre>
+<pre>mkdir test-artifacts-006
+adb logcat -d | grep -i "TestRunner" > test-artifacts-006/logcat.txt
+cat test-artifacts-006/logcat.txt</pre>
 
 <h3>Screenshots — MUST be the app, not the launcher</h3>
 <pre>./gradlew installDebug
@@ -168,7 +204,7 @@ adb shell am start -n com.vssbox.fdmanager/com.example.fdmanager.MainActivity
 sleep 5
 adb shell dumpsys window | grep mCurrentFocus
 adb shell screencap -p /sdcard/shot.png
-adb exec-out screencap -p > test-artifacts-5/shot-settings-data.png</pre>
+adb exec-out screencap -p > test-artifacts-006/shot-form-compounding.png</pre>
 
 <div class="hard" style="padding:8px 10px;margin-top:10px">
 <b>ANTI-LOOP:</b> on failure do <b>not</b> fetch / checkout / pull and rerun the world. Report and <b>STOP</b>.
@@ -178,7 +214,7 @@ adb exec-out screencap -p > test-artifacts-5/shot-settings-data.png</pre>
 <div class="card">
 <h2>4. Complete Handover — Owner vs Roo</h2>
 <div class="new" style="padding:8px 10px;margin-bottom:10px">
-<b>Sync the SESSION BRANCH, not dev.</b> The old <span class="k">git checkout -B dev origin/dev</span> is retired for mid-round testing.
+<b>Sync the SESSION BRANCH.</b> There is nothing else to sync — <span class="k">dev</span> no longer exists
 </div>
 
 <h3>Owner — Step 1: verify folders</h3>
@@ -208,8 +244,8 @@ git status --short              # must be clean</pre>
 # merge in the BROWSER — there is no gh CLI on the Windows machine
 https://github.com/vmendis/fixed-deposit-manager-android/pulls</pre>
 <div class="hard" style="padding:8px 10px;margin-top:8px">
-<b>Never merge before the green report exists.</b> Merging first puts an untested fix on <span class="k">dev</span>.
-This mistake was made on PR #12 on 2026-10-24.
+<b>Never merge before the green report exists.</b> Merging first puts an untested fix on <span class="k">master</span>,
+which is the shipped state. This mistake was made on PR #12 on 2026-10-24 — never again.
 </div>
 </div>
 
@@ -302,15 +338,15 @@ which line failed, and the round stalls on guesswork. That happened three times 
   Gradle 8.13, AGP 8.13.2, Kotlin 2.0.20, JDK 17.0.16
 - Tiers executed: 2 / 2
 
-## Tier1 (95)   | Test class | Tests | Passed | Failed | Duration | Report path |
-## Tier2 (38)   | Test class | Tests | Passed | Failed | Duration | Report path |
+## Tier1 (119)  | Test class | Tests | Passed | Failed | Duration | Report path |
+## Tier2 (44)   | Test class | Tests | Passed | Failed | Duration | Report path |
 
 ## Evidence of GREEN  (real logcat, real png)
 ## Failures          (verbatim message + <=30 logcat + XML 3-10 lines incl. "...(Test.kt:NN)")
 ## Blockers          (SELECTOR-MISSING)
 ## Not covered</pre>
 <div class="hard" style="padding:8px 10px;margin-top:8px">
-<b>REJECTED if:</b> <b>no branch/SHA</b>; literal <span class="k">$(...)</span> or <span class="k">(unknown)</span>; guessed versions; Tier1 not 95 or Tier2 not 38;
+<b>REJECTED if:</b> <b>no branch/SHA</b>; literal <span class="k">$(...)</span> or <span class="k">(unknown)</span>; guessed versions; Tier1 not 119 or Tier2 not 44;
 durations summed; "see logcat" placeholders; <b>no <span class="k">Test.kt:NN</span> frame in a failure section</b>; launcher screenshots;
 no <span class="k">--rerun-tasks</span>; gates unchecked; artifacts in repo root; executor edited app code.
 </div>
@@ -321,7 +357,7 @@ no <span class="k">--rerun-tasks</span>; gates unchecked; artifacts in repo root
 <p>One file per issue, under <code>docs/test-instructions/</code>, <b>zero-padded to three digits</b>
 so they sort correctly forever.</p>
 <pre>docs/test-instructions/
-  TEST-INSTRUCTIONS-005.md     issue #5
+  TEST-INSTRUCTIONS-005.md     issue #5   (shipped)
   TEST-INSTRUCTIONS-006.md     issue #6
   TEST-INSTRUCTIONS-010.md     issue #10   <- sorts after 005, not before</pre>
 
@@ -364,24 +400,30 @@ so they sort correctly forever.</p>
 <em>"The special keywords in a pull request description are interpreted only when the pull request targets the repository's
 <b>default</b> branch. If the pull request targets <b>any other branch</b>, then these keywords are ignored, no links are
 created, and merging the PR has no effect on the issues."</em><br>
-The code repo's default branch is <span class="k">master</span>. Feature PRs target <span class="k">dev</span>.
-A <span class="k">Closes</span> line on a feature PR therefore does nothing — and raises no error.
+The code repo's default branch is <span class="k">master</span>, and since 2026-10-26 <b>every PR targets it</b> —
+<span class="k">dev</span> is retired. The keyword therefore <b>does</b> fire on the feature PR.
 </div>
 
 <table>
 <tr><th>Condition</th><th>Requirement</th></tr>
 <tr><td>1 — syntax</td><td>cross-repo form is mandatory: <span class="k">Closes vmendis/fd-manager-roadmap#N</span>.
 A bare <span class="k">Closes #N</span> looks for that issue in the <b>code</b> repo and finds nothing</td></tr>
-<tr><td>2 — base branch</td><td>the PR must target <span class="k">master</span> — i.e. the <b>dev→master promotion PR</b>,
-never the feature PR</td></tr>
+<tr><td>2 — base branch</td><td>the PR must target <span class="k">master</span> — the only base branch there is</td></tr>
 <tr><td>3 — merge</td><td>merged, not closed. Closing a PR without merging closes nothing</td></tr>
 </table>
 
 <table>
 <tr><th>PR</th><th>Base</th><th>Line to write</th><th>Closes?</th></tr>
-<tr><td>Feature / arena</td><td><span class="k">dev</span></td><td><span class="k">Refs vmendis/fd-manager-roadmap#N</span></td><td>No</td></tr>
-<tr><td>Promotion</td><td><span class="k">master</span></td><td><span class="k">Closes vmendis/fd-manager-roadmap#N</span> — one keyword per issue</td><td><b>Yes</b></td></tr>
+<tr><td>Feature / arena</td><td><span class="k">master</span></td><td><span class="k">Closes vmendis/fd-manager-roadmap#N</span> — one keyword per issue</td><td><b>Yes</b></td></tr>
+<tr><td>Docs-only</td><td><span class="k">master</span></td><td><span class="k">Refs vmendis/fd-manager-roadmap#N</span></td><td>No</td></tr>
 </table>
+
+<div class="hard">
+<b>A PR body is executable.</b> Free text that reads <span class="k">Close vmendis/fd-manager-roadmap#5</span>
+anywhere in the body closes the issue on merge — <i>including a sentence telling the owner to close it by hand</i>.
+That is exactly what happened on PR #20: an instruction to close #5 manually executed as a closing keyword.
+Write <b>Refs</b> whenever the text is documentation; write <b>Closes</b> only when you mean it.
+</div>
 
 <p><span class="k">Closes a#1, b#2</span> closes only the first. Repeat the keyword for every reference.</p>
 <p>Then the chain finishes itself: <span class="k">merge → issue closes → Project workflow sets Status = Done</span>.
@@ -389,19 +431,20 @@ The project's built-in <b>Item closed → Done</b> workflow is on by default.</p
 </div>
 
 <div class="card">
-<h2>7. Current state — 2026-10-25</h2>
+<h2>7. Current state — 2026-10-26</h2>
 <table>
 <tr><th>Ref</th><th>SHA</th><th>State</th></tr>
-<tr><td>master</td><td>a994572</td><td>PR #15 merged (dev→master). Round #4 shipped</td></tr>
-<tr><td>dev</td><td>—</td><td>deleted after promotion; recreate fresh from master next issue</td></tr>
-<tr><td>session branch</td><td>2d1e10a</td><td>#5 Trust UX built; TEST-INSTRUCTIONS-005 committed; this doc committed</td></tr>
+<tr><td>master</td><td>2772103</td><td>PR #20 merged. Rounds #4 and #5 shipped. <b>The only long-lived branch</b></td></tr>
+<tr><td>dev</td><td>—</td><td><b>Retired and deleted 2026-10-26.</b> Not recreated. PRs go to <span class="k">master</span></td></tr>
+<tr><td>session branch</td><td>—</td><td><span class="k">arena/9e247e5f-fixed-deposit-manager-android</span> — issue #6</td></tr>
 </table>
 <ul>
-<li><b>V35 ACCEPTED</b> at <span class="k">ef4a660</span> — Tier1 <b>58/58</b>, Tier2 <b>28/28</b>. #5 raises those to <b>95 / 38</b> — not yet run</li>
 <li>#4 Loading &amp; Error: shipped and <b>closed</b>, card <b>Done</b>. Gate <span class="k">loadstate-0400r9</span></li>
-<li>#5 Trust UX: export (CSV/JSON), per-category delete-all with typed DELETE, app lock on cold start</li>
+<li>#5 Trust UX: shipped and <b>closed</b> — PR #19 (branch → dev) and PR #20 (dev → master). Tier1 <b>95/95</b>, Tier2 <b>38/38</b></li>
+<li>#6 Compounding frequency: in flight on the session branch. Suite becomes <b>119 / 44</b>. Purely additive — every
+pre-#6 overload still means simple interest, so no earlier test changes</li>
 <li>Firebase blocked until #23 / #24 — everything mock, 0 quota</li>
-<li><b>project</b> <span class="k">users/vmendis/projects/2/views/2</span> — 28 items, all from <b>roadmap</b>. Board fully consistent</li>
+<li><b>project</b> <span class="k">users/vmendis/projects/2/views/2</span> — 28 items, all from <b>roadmap</b></li>
 <li><b>roadmap</b> must stay <b>public</b>, or the project renders as empty. Visibility filter on the items, not an empty board</li>
 </ul>
 </div>
@@ -432,7 +475,9 @@ The version is in the &lt;title&gt; and in the header banner.</p>
 <tr><td><b>1.2</b></td><td>22,147 B</td><td>8660615c</td><td>6b Issue &harr; PR linking. Current state refresh. No <span class="k">gh</span> CLI.</td></tr>
 <tr><td><b>1.3</b></td><td>19,850 B</td><td>a6c4dcc</td><td>Tier1 95 / Tier2 38. No <span class="k">bash -c</span>. Drop redundant <span class="k">clean</span>.</td></tr>
 <tr><td><b>1.4</b></td><td>this file</td><td><i>see /version</i></td><td>Tool map (no <span class="k">chcp</span> / <span class="k">findstr</span>). 5b permanent numbered instructions. Artifacts <span class="k">test-artifacts-NNN</span>.</td></tr>
-<tr><td><b>1.5</b></td><td>this file</td><td><i>see /version</i></td><td><b>Restores what 1.4 dropped:</b> The split — permanent, 6b Issue &harr; PR linking, refreshed §7, no <span class="k">gh</span> CLI. 1.4 was rebuilt from the v1.0 upload and silently lost them.</td></tr>
+<tr><td><b>1.5</b></td><td>27,372 B</td><td>72e2db18</td><td><b>Restores what 1.4 dropped:</b> The split — permanent, 6b Issue &harr; PR linking, refreshed §7, no <span class="k">gh</span> CLI. 1.4 was rebuilt from the v1.0 upload and silently lost them.</td></tr>
+<tr><td><b>1.6</b></td><td>28,876 B</td><td>43affb6f</td><td><b><span class="k">dev</span> retired.</b> One path: session branch → <span class="k">master</span>. §6b rewritten — the closing keyword now fires on the feature PR, plus the &ldquo;a PR body is executable&rdquo; rule learned from PR #20. Counts 119 / 44. §3 gates are #6.</td></tr>
+<tr><td><b>1.7</b></td><td>this file</td><td><i>see /version</i></td><td><b>§2b &mdash; the shell.</b> <span class="k">tools/preflight.sh</span>, one line that works from cmd.exe, one verdict. The owner&rsquo;s Roo prompt, verbatim. Why four &ldquo;blockers&rdquo; are always one.</td></tr>
 </table>
 <p class="k" style="background:none;border:none;padding:0">A file cannot contain its own md5 — editing it to add the hash changes the hash. Use <span class="k">/version</span> on the server, or <span class="k">md5sum</span> locally. 1.2 and 1.3 are out of order by size because the file was rebuilt from the uploaded v1.0 after a sandbox reboot — 1.3 is a superset of 1.2 but was built on the 1.0 base.</p>
 </div>

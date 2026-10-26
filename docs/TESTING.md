@@ -8,25 +8,34 @@ report to the architect for triage).
 
 ---
 
-## 0.0 Test branch policy (updated 2026-10-24)
+## 0.0 Test branch policy (updated 2026-10-26)
 
-**Tests run against the feature branch, not `dev`.**
+**One branch: the session branch → `master`. `dev` is retired.**
 
 The architect works from an Arena.ai chat connected through the GitHub connector. That connector is
-scoped to a session branch (`arena/<session-id>-fixed-deposit-manager-android`) and **cannot push to
-`dev`**. A fix therefore lands on the session branch first.
+scoped to a session branch (`arena/<session-id>-fixed-deposit-manager-android`). All work lands there,
+is tested there, and is merged from there.
 
 Flow:
 
 ```
 fix → push session branch → tests run ON THE SESSION BRANCH
-    → report GREEN → PR session-branch → dev → merge
+    → report GREEN → PR session-branch → master → merge
 ```
 
-**Never merge a PR before a green report exists for that exact commit.** Merging first would put an
-untested fix on `dev`.
+There is no integration branch and no promotion PR. `dev` was deleted on 2026-10-26 after the #5
+promotion and is not recreated: it added a second merge and a branch-create every round without
+catching anything the PR review did not.
 
-Owner/executor sync (replaces `git checkout -B dev origin/dev`):
+Because `master` is also the repository's **default** branch, a cross-repo closing keyword
+(`Closes vmendis/fd-manager-roadmap#N`) fires on the feature PR itself. Say `Refs` when the PR body
+is documentation only — a `Close <ref>` written anywhere in the body, even inside a sentence that
+tells the owner to close the issue by hand, is executed on merge.
+
+**Never merge a PR before a green report exists for that exact commit.** `master` is the shipped
+state; merging first puts an untested fix straight into it.
+
+Owner/executor sync:
 
 ```bash
 git fetch origin --prune
@@ -44,14 +53,11 @@ git status --short            # must be clean
 The report must state this SHA. A report without the SHA cannot be triaged: it is impossible to tell
 whether the fix under discussion was even present.
 
-`dev` is still the integration branch and still receives the merge — it is simply no longer the
-branch that gets tested mid-round.
-
 ---
 
 ## 0. Prerequisites
 
-- The **feature/session branch** checked out per §0.0 (not `dev`), up to date with the remote and
+- The **session branch** checked out per §0.0, up to date with the remote and
   containing the `androidTest` sources listed in §2. If `androidTest/` doesn't exist yet → stop,
   report "tests missing", do not improvise.
 - Android Studio's embedded JDK (17+) — no manual JAVA_HOME needed when launched from AS.

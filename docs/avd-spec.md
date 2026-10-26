@@ -80,7 +80,7 @@ gradlew.bat connectedDebugAndroidTest --rerun-tasks
 - V17 first run failed `No compose hierarchies` — happens after cold boot. Fix: run tests once (may fail 12), then rerun with `--rerun-tasks` (second run GREEN). That's what logcat-v21.txt shows: 15:38 run 12 failed, 15:46 run 16/16 GREEN.
 - maxSwipes 50 + no performScrollTo (gate navgate-0500r9) needed for taller Option B cards (words+exact+invested 3 lines + payout 4 bullets)
 
-## For V22 (current dev @ c70ca0a)
+## For V22 (was the dev tip @ c70ca0a, now on `master`)
 - Same AVD `Pixel_7_API_34` API 34
 - Freshness gates: `navgate-0500r9` in `TestSupport.kt`, `fdcard-0200r9` in `Components.kt` (search `findstr /S /C:"fdcard-0200r9"`)
 - Expected: Tier1 46, Tier2 16 GREEN, FdCard meta shows `Monthly payout` / `At maturity`
