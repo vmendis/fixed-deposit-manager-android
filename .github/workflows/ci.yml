@@ -1,0 +1,55 @@
+# CI — roadmap #7: build + Tier1 unit tests on every PR to master.
+#
+# Triggers:
+#   - pull_request -> master : the green/red check the issue asks for
+#   - push -> master         : keeps the merge commit itself verified
+#   - push -> arena/**       : session branches get the same signal BEFORE the
+#                              PR exists, which is how "tests GREEN -> PR" is
+#                              proven without a local JDK.
+#
+# Tier2 (instrumented/emulator) is deliberately NOT here — out of #7's scope.
+
+name: CI
+
+on:
+  pull_request:
+    branches: [master]
+  push:
+    branches:
+      - master
+      - 'arena/**'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-and-unit-tests:
+    name: Build + Tier1 unit tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: JDK 17 (Temurin)
+        uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - name: Gradle with dependency cache
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build + unit tests
+        run: ./gradlew build testDebugUnitTest --console=plain
+
+      - name: Upload reports on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports
+          path: |
+            app/build/reports/
+            app/build/test-results/
+          retention-days: 14
