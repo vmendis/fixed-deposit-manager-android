@@ -428,7 +428,15 @@ Four identical hashes means the screen never changed. Report it.
 
 ---
 
-## §7 Report — `TEST-REPORT.md`
+## §7 Report — `test-artifacts-006/TEST-REPORT.md`
+
+Write the report **inside the artifacts directory**, not the repo root. The root is tracked by
+git; the artifacts directory is gitignored and travels with the evidence it describes.
+
+```bash
+# the report lives here:
+test-artifacts-006/TEST-REPORT.md
+```
 
 ```
 # TEST REPORT
