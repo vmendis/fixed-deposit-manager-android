@@ -406,6 +406,12 @@ adb exec-out screencap -p > test-artifacts-006/shot-form-quarterly.png
 ./gradlew installDebug
 ```
 
+**Then load the demo data — the fresh install starts EMPTY.** The uninstall removed the app's
+data with it, and sample FDs are opt-in by design. Captures 3 depends on NSB-78412 existing.
+On the device: **Settings tab → section "Demo" → toggle "Demo mode" ON** (subtitle flips to
+"Sample FDs visible (opt-in demo)") → back to **Home**. Home must now show bank cards including
+National Savings Bank (NSB). An empty Home at capture 3 means this step was skipped, not a bug.
+
 ### The four captures, in this order, one at a time
 
 | # | Screen | Roo tells the owner | What it must show |
