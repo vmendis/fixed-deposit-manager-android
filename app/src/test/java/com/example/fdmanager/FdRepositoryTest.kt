@@ -1,6 +1,7 @@
 package com.example.fdmanager
 
 import com.example.fdmanager.data.FdRepository
+import com.example.fdmanager.data.model.CompoundingFrequency
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
 import com.example.fdmanager.data.model.RenewOption
@@ -170,6 +171,22 @@ class FdRepositoryTest {
         val newId = repo.renew("d")
         // 300,000 @ 8.5% × 6/12 → +12,750 (stored CAPITALIZE was applied)
         assertEquals(312_750.0, repo.get(newId)!!.amount, 0.001)
+    }
+
+    // ---- Issue #6: compounding feeds the renewal capitalisation ----
+
+    @Test
+    fun `renew with CAPITALIZE capitalises compounded interest when the fd compounds`() {
+        val quarterly = seed().first { it.id == "d" }.copy(compounding = CompoundingFrequency.QUARTERLY)
+        val repo = FdRepository(seed().map { if (it.id == "d") quarterly else it })
+
+        val newId = repo.renew("d", RenewOption.CAPITALIZE)
+
+        // FD-D: 300,000 @ 8.5% for 6 months, quarterly → two whole periods
+        // 300,000 × (1 + 0.085/4)^2 = 312,885.46875
+        assertEquals(312_885.469, repo.get(newId)!!.amount, 0.001)
+        // The same FD without compounding keeps the #25 figure — see
+        // `renew with CAPITALIZE adds accrued interest to principal`.
     }
 
     @Test

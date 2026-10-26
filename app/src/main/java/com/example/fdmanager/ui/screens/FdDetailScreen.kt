@@ -202,11 +202,14 @@ fun FdDetailScreen(
                     )
                     Spacer(Modifier.height(8.dp))
                     InfoRow("Interest rate", "${FdMath.formatRate(fd.interestRate)}% p.a.")
+                    InfoRow("Compounding", fd.compounding.label, valueTag = "detailCompounding")
                     InfoRow("Est. interest earned", Lkr.full(interest))
                     InfoRow("Est. maturity value", Lkr.full(maturityValue))
                     Spacer(Modifier.height(4.dp))
                     Text(
-                        "Simple-interest estimate — the actual payout depends on the institution's terms.",
+                        "Estimate — interest is added at each compounding period, with simple "
+                            + "interest on any part-period left at maturity. The actual payout "
+                            + "depends on the institution's terms.",
                         style = MaterialTheme.typography.labelSmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )

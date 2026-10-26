@@ -1,5 +1,6 @@
 package com.example.fdmanager.data
 
+import com.example.fdmanager.data.model.CompoundingFrequency
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
 import com.example.fdmanager.data.model.PayoutFrequency
@@ -167,7 +168,10 @@ object SampleData {
             payoutFrequency = PayoutFrequency.MONTHLY,
             renewOption = RenewOption.CAPITALIZE,
             autoRenew = true,
-            status = FdStatus.ACTIVE
+            status = FdStatus.ACTIVE,
+            // Issue #6 — the demo's flagship FD compounds quarterly (Sri Lankan bank practice),
+            // so the detail screen shows a compounded estimate without anyone having to add one.
+            compounding = CompoundingFrequency.QUARTERLY
         ),
         FixedDeposit(
             id = "fd2",
