@@ -27,10 +27,19 @@ echo " FD Manager - test environment preflight"
 echo "=============================================="
 
 # --- 1. which shell are we actually in? ----
-if [ -n "${BASH_VERSION:-}" ]; then
-    pass "shell" "bash $BASH_VERSION"
-else
+# A bash is not necessarily THE bash. WSL bash is a Linux shell with no JDK and
+# no Android SDK; it fails later in a way that looks like a broken machine.
+if [ -z "${BASH_VERSION:-}" ]; then
     fail_it "shell" "not bash - the executor is in cmd.exe or PowerShell"
+else
+    case "$(uname -s 2>/dev/null)" in
+        MINGW*|MSYS*|CYGWIN*)
+            pass "shell" "bash $BASH_VERSION - Git Bash on Windows" ;;
+        Linux*)
+            fail_it "shell" "bash on Linux/WSL - NOT Git Bash; no JDK, no Android SDK here" ;;
+        *)
+            fail_it "shell" "bash $BASH_VERSION on $(uname -s 2>/dev/null) - unrecognised platform" ;;
+    esac
 fi
 
 # --- 2. where did we land? ----
@@ -66,7 +75,20 @@ if command -v java >/dev/null 2>&1; then
 elif [ -n "${JAVA_HOME:-}" ] && [ -x "$JAVA_HOME/bin/java" ]; then
     pass "java" "via JAVA_HOME: $JAVA_HOME/bin/java"
 else
-    fail_it "java" "no java on PATH and JAVA_HOME unset"
+    # Look, do not guess. Naming the candidates stops the executor hunting with
+    # find /c and stops the owner being sent to a folder that may not exist.
+    candidates=""
+    for c in "/c/Program Files/Android/Android Studio/jbr" \
+             "/c/Program Files/Eclipse Adoptium"/* \
+             "/c/Program Files/Java"/* \
+             "${LOCALAPPDATA:-/nonexistent}/Programs/Android Studio/jbr"; do
+        [ -x "$c/bin/java.exe" ] && candidates="$candidates $c"
+    done
+    if [ -n "$candidates" ]; then
+        fail_it "java" "not on PATH and JAVA_HOME unset - but found:$candidates"
+    else
+        fail_it "java" "no java on PATH and JAVA_HOME unset (no JDK found in the usual places)"
+    fi
 fi
 
 # --- 5. the Android SDK ----
