@@ -13,6 +13,34 @@
 > **Roo guides the owner through screenshots.** The owner does not decide what to capture and does
 > not run commands. Roo names one screen, waits, confirms, then names the next.
 
+---
+
+## The prompt the owner pastes to Roo
+
+```
+Open docs/test-instructions/TEST-INSTRUCTIONS-006.md and follow it.
+
+- Run ONLY the commands in that document, in the order it gives them.
+- Never PowerShell. Never a Windows/cmd replacement for a bash command.
+- If anything fails: STOP. Record it verbatim in the test report.
+  Do not troubleshoot it, do not try another shell or tool, do not fix code.
+- Do not change anything in the repo.
+- Then wait for me.
+```
+
+**Why each line exists**
+
+| Line | Stops |
+|---|---|
+| "Run ONLY the commands in that document" | `find /c -name java.exe`, `where java`, `which bash` |
+| "Never a Windows/cmd replacement" | `dir` for `ls`, `findstr` for `grep` |
+| "If anything fails: STOP … verbatim" | the five-command exploration spiral that turns one broken shell into five "blockers" |
+| "Do not change anything in the repo" | `sed -i`, `chmod`, edits to `gradlew` |
+
+A previous round was handed this prompt and still ran `bash -c "./gradlew --version"` and
+`find /c -name "java.exe"`. Both are banned in §0e. The first thing Roo does is §0f — and if §0f
+fails there is nothing left to try, which is the point.
+
 > **`dev` is retired (2026-10-26).** There is one branch path: session branch → `master`. Do not
 > check out `dev`; it does not exist. Do not create it.
 
@@ -160,6 +188,64 @@ If `gradlew` ever looks broken, restore it; never edit it:
 git checkout -- gradlew
 chmod +x gradlew
 ```
+
+### But first — look at your prompt, not the tool list
+
+This section only applies **if** your prompt ends in `MINGW64`. Look at it now:
+
+```
+thiss@Windows11-DEV MINGW64 /c/LocalApps/.../fixed-deposit-manager-android (test-compounding)
+$                                        ^^^^^^^
+```
+
+If your prompt looks like `C:\LocalApps\...>` instead, you are in **cmd.exe** and none of the above
+is your problem — the shell is. Do not look for bash, do not set `JAVA_HOME`, do not try a path.
+Go straight to §0f, which is one command and settles it.
+
+---
+
+## §0f Pre-flight — prove the shell before anything else
+
+**Run this first. Before §0a, before the gates, before anything.**
+
+```
+"C:\Program Files\Git\bin\bash.exe" tools/preflight.sh
+```
+
+That is one line. It runs in cmd.exe, in PowerShell and in MINGW64 without modification, because it
+names the interpreter explicitly instead of assuming one. No quoting puzzles, no `$`, no pipes, no
+`./`.
+
+### If it prints READY
+
+```
+ RESULT: READY (7 checks passed)
+```
+
+Then your shell question is answered and you continue at §0a. Note which shell it reported — if it
+says `bash 5.x` you were right to use the line; if your own prompt already said `MINGW64`, the line
+was harmless.
+
+### If it prints NOT READY
+
+**Stop.** Paste the whole block into the test report and wait. It names exactly which of the seven
+things is missing, so there is nothing left to investigate. In particular:
+
+| Output | Meaning | Do NOT |
+|---|---|---|
+| `FAIL shell  not bash` | the executor was handed cmd.exe | launch another shell, try `where bash` |
+| `FAIL java  no java on PATH` | no JDK reachable from this shell | go hunting with `find /c` |
+| `FAIL android sdk` | `local.properties` missing | invent a path |
+| `FAIL adb device` | no emulator running | start one yourself |
+
+### The rule this replaces
+
+A whole round was lost to this on 2026-10-26. The report listed four blockers —
+"not in MINGW64", "java not found", "`./gradlew` not recognized", "`head` not recognized" — that were
+all one blocker: **the process was spawned as cmd.exe.** Four symptoms, one cause, and the fix was a
+setting on the owner's side, not anything in the repo.
+
+One command, one verdict, one thing to send back.
 
 ---
 
