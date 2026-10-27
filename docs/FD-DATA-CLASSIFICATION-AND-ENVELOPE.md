@@ -2,9 +2,9 @@
 
 | | |
 |---|---|
-| **Version** | 1.0 (DRAFT — for #23 decision) |
+| **Version** | 1.1 (FINAL) |
 | **Date** | 2026-10-27 |
-| **Status** | Proposed. Becomes final when #23 closes. |
+| **Status** | FINAL — all §F items confirmed by owner 2026-10-27 in the roadmap-23 close-out. |
 | **Inputs** | `FD_Manager_Security_Architecture.md` (owner + security advisor) §2–§5; repo `docs/FD-Manager-Spec.md` §3.2; code `FixedDeposit.kt` @ `67464fa` |
 | **Size / md5** | *(filled in footer)* |
 
@@ -91,7 +91,7 @@ envelopes, all versioned). No plaintext key ever leaves a device.
 uid · auth email · sign-in times · number of FD documents · blob sizes · write timestamps
 · device/key-envelope count. **Content: none.**
 
-## F. Decisions this artifact asks the owner to confirm in the #23 close-out
+## F. Decisions — ✅ ALL FOUR CONFIRMED by owner, 2026-10-27 (roadmap-23 close-out)
 
 1. All 21 domain fields in the blob — **zero cleartext exceptions** (accepting: no
    server-side reminders, ever).
@@ -100,4 +100,5 @@ uid · auth email · sign-in times · number of FD documents · blob sizes · wr
 4. `schemaVersion`-inside-blob + defaults-are-law + AEAD binding adopted as stated.
 
 ---
-*Footer: v1.0 · size and md5 recorded in the version row of the session log at commit time. Sensitive info: NO — generic schema design, no credentials, no personal data.*
+*Footer: v1.1 · size and md5 recorded in the session log at commit time. Sensitive info: NO — generic schema design, no credentials, no personal data.*
+*History: v1.0 DRAFT 2026-10-27 (6,349 B, md5 97450f7a) → v1.1 FINAL 2026-10-27 (§F confirmed, status FINAL).*
