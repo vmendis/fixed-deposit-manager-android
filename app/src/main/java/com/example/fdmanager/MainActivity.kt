@@ -29,6 +29,7 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.fdmanager.data.FirebaseProbe
 import com.example.fdmanager.data.SettingsStore
 import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.screens.AddEditFdScreen
@@ -68,6 +69,7 @@ object Routes {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        FirebaseProbe.run(applicationContext) // debug-only Firestore connectivity probe (roadmap #8); no-op in release and when unconfigured
         setContent {
             val settings by SettingsStore.state.collectAsStateWithLifecycle()
             FdManagerTheme(mode = settings.themeMode) {
