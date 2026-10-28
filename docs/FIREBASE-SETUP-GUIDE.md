@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 1.0 |
+| **Version** | 1.1 |
 | **Date** | 2026-10-28 |
 | **Scope** | Roadmap #8, console side only (owner steps). Gradle/app wiring is the agent's half, shipped separately via PR. |
 | **Account** | ALL steps are done signed in as the NEW dedicated Google account (2FA enabled). Never the personal account. |
@@ -27,8 +27,10 @@ dev stays Spark forever · email+password auth (roadmap #23) · emulator-first d
 
 ## STEP 2 — Register the Android app  (YOU, ~2 min)
 
-1. On the project dashboard, click the **Android** icon (robot) under "Get started by
-   adding Firebase to your app".
+1. On the project dashboard, click **+ Add app** (button directly under the project
+   name), then pick the **Android** icon from the platform choices.
+   Ignore all "Next steps with Gemini" cards and the Gemini side panel — marketing,
+   not setup.
 2. **Android package name:** `com.vssbox.fdmanager`  ← copy-paste, must match exactly.
 3. **App nickname:** `FD Manager dev`.
 4. **Debug signing certificate SHA-1:** leave EMPTY (only needed for Google-sign-in /
@@ -82,4 +84,4 @@ TEST-INSTRUCTIONS-008 — as a PR for you to merge.
 
 ---
 *Sensitive info check: NO — package name and console navigation only; no keys, no credentials.*
-*History: v1.0 2026-10-28 — initial, covers console-side setup for roadmap #8.*
+*History: v1.0 2026-10-28 — initial, covers console-side setup for roadmap #8. · v1.1 2026-10-28 — Step 2.1 matched to the 2026 console UI (+ Add app button, no robot icon).*
