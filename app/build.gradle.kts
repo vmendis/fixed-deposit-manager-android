@@ -40,8 +40,21 @@ android {
     }
 }
 
+// Roadmap #8: the google-services plugin is applied ONLY when the config file exists.
+// - Owner's machine: app/google-services.json present (gitignored) → plugin runs, Firebase configured.
+// - CI / fresh clones: file absent → plugin skipped, build stays green, app runs local-only.
+// NEVER commit google-services.json — the repo is public.
+if (file("google-services.json").exists()) {
+    apply(plugin = "com.google.gms.google-services")
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.0.4")
+
+    // Roadmap #8 — Firebase (BoM pins individual versions)
+    implementation(platform("com.google.firebase:firebase-bom:33.4.0"))
+    implementation("com.google.firebase:firebase-auth")
+    implementation("com.google.firebase:firebase-firestore")
 
     implementation("androidx.core:core-ktx:1.13.1")
     implementation("androidx.activity:activity-compose:1.9.2")

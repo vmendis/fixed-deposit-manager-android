@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>FD Manager — Build → Test Flow (One Sheet) — v1.8</title>
+<title>FD Manager — Build → Test Flow (One Sheet) — v1.9</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 :root{--teal:#0f766e;--teal2:#115e59;--bg:#f8fafc;--card:#ffffff;--muted:#64748b;--border:#e2e8f0;--amber:#f59e0b;--red:#ef4444;--green:#16a34a;--blue:#2563eb}
@@ -30,7 +30,7 @@ table{border-collapse:collapse;width:100%;font-size:12px} th,td{border:1px solid
 </head>
 <body>
 <header>
-<h1>FD Manager — Build → Test Flow (One Sheet)</h1><p style="margin:4px 0 0"><b style="background:#fff;color:#0f766e;padding:2px 8px;border-radius:20px;font-size:12px;letter-spacing:.04em">VERSION 1.8</b></p>
+<h1>FD Manager — Build → Test Flow (One Sheet)</h1><p style="margin:4px 0 0"><b style="background:#fff;color:#0f766e;padding:2px 8px;border-radius:20px;font-size:12px;letter-spacing:.04em">VERSION 1.9</b></p>
 <p>Architect (arena.ai Agent Mode) → Executor (Roo, Windows 11 AVD Pixel_7_API_34) → Reviewer (vmendis) · <b>bash MINGW64</b> · <b>one branch: session → master</b> · 119 unit / 44 instrumented</p>
 </header>
 <div class="wrap">
@@ -500,7 +500,8 @@ The version is in the &lt;title&gt; and in the header banner.</p>
 <tr><td><b>1.5</b></td><td>27,372 B</td><td>72e2db18</td><td><b>Restores what 1.4 dropped:</b> The split — permanent, 6b Issue &harr; PR linking, refreshed §7, no <span class="k">gh</span> CLI. 1.4 was rebuilt from the v1.0 upload and silently lost them.</td></tr>
 <tr><td><b>1.6</b></td><td>28,876 B</td><td>43affb6f</td><td><b><span class="k">dev</span> retired.</b> One path: session branch → <span class="k">master</span>. §6b rewritten — the closing keyword now fires on the feature PR, plus the &ldquo;a PR body is executable&rdquo; rule learned from PR #20. Counts 119 / 44. §3 gates are #6.</td></tr>
 <tr><td><b>1.7</b></td><td>31,579 B</td><td>6a54c083</td><td><b>§2b &mdash; the shell.</b> <span class="k">tools/preflight.sh</span>, one line that works from cmd.exe, one verdict. The owner&rsquo;s Roo prompt, verbatim. Why four &ldquo;blockers&rdquo; are always one.</td></tr>
-<tr><td><b>1.8</b></td><td>this file</td><td><i>see /version</i></td><td><b>§2c CI (#7).</b> GitHub Actions on PRs/pushes to <span class="k">master</span> + <span class="k">arena/**</span>; gradlew 100755 lesson; §6 gains the delete-merged-branches habit (agent-provable).</td></tr>
+<tr><td><b>1.8</b></td><td>33,597 B</td><td>46940858</td><td><b>§2c CI (#7).</b> GitHub Actions on PRs/pushes to <span class="k">master</span> + <span class="k">arena/**</span>; gradlew 100755 lesson; §6 gains the delete-merged-branches habit (agent-provable).</td></tr>
+<tr><td><b>1.9</b></td><td>this file</td><td><i>see /version</i></td><td><b>Firebase wiring (#8).</b> Deps via BoM; google-services plugin applied ONLY if <span class="k">app/google-services.json</span> exists (file is gitignored — public repo, never commit it). CI builds json-less = Mode A. Debug-only <span class="k">FirebaseProbe</span>: PERMISSION_DENIED in Logcat = PASS. INTERNET permission added (first network permission in the app).</td></tr>
 </table>
 <p class="k" style="background:none;border:none;padding:0">A file cannot contain its own md5 — editing it to add the hash changes the hash. Use <span class="k">/version</span> on the server, or <span class="k">md5sum</span> locally. 1.2 and 1.3 are out of order by size because the file was rebuilt from the uploaded v1.0 after a sandbox reboot — 1.3 is a superset of 1.2 but was built on the 1.0 base.</p>
 </div>

@@ -1,6 +1,11 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
+    <!-- Added in roadmap #8: required for Firebase (Auth/Firestore). Before this the app
+         had NO network permission at all. Sync remains opt-in per roadmap #23 — holding
+         the permission does not mean data leaves the device. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+
     <application
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"

@@ -19,6 +19,9 @@ local.properties
 *.keystore
 *.jks
 
+# --- Firebase config: machine-local, NEVER in a public repo (roadmap #8) ---
+google-services.json
+
 # --- OS noise ---
 .DS_Store
 Thumbs.db
