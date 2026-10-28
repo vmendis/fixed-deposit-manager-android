@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 1.2 |
+| **Version** | 1.3 |
 | **Date** | 2026-10-28 |
 | **Scope** | Roadmap #8. Steps 1–4 = console side (owner). Steps 5–7 = repo side, ONLY after the agent's code PR is merged. |
 | **Account** | ALL steps are done signed in as the NEW dedicated Google account (2FA enabled). Never the personal account. |
@@ -49,6 +49,8 @@ Created `fd-manager-dev`, Google Analytics OFF, Spark plan verified (no card req
 ## STEP 4 — Create the Firestore database  (YOU, ~2 min)
 
 1. Left menu → **Build → Firestore Database** → **Create database**.
+   If asked to choose an edition: **Standard** (Spark free tier + Android SDK + security
+   rules live there; Enterprise is the MongoDB-compatible offering — wrong tool, not free).
 2. Location: pick `asia-south1 (Mumbai)` — per roadmap #8; closest region to Sri Lanka;
    it cannot be changed later. Click **Next**.
 3. Security rules mode: choose **Start in production mode** (locked — deny all reads/
@@ -95,4 +97,4 @@ and the exact Logcat filter are in the test instructions.
 *History: v1.0 2026-10-28 initial · v1.1 2026-10-28 Step 2.1 matched to 2026 console UI ·
 v1.2 2026-10-28 resequenced: json placement moved AFTER the agent's code PR + pull (old
 Step 3 trap removed — .gitignore must exist locally first); phases A/B introduced;
-Firestore probe tied to roadmap #8 acceptance.*
+Firestore probe tied to roadmap #8 acceptance. · v1.3 2026-10-28 Step 4.1: edition choice = Standard.*
