@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<title>FD Manager — Build → Test Flow (One Sheet) — v1.9</title>
+<title>FD Manager — Build → Test Flow (One Sheet) — v1.10</title>
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <style>
 :root{--teal:#0f766e;--teal2:#115e59;--bg:#f8fafc;--card:#ffffff;--muted:#64748b;--border:#e2e8f0;--amber:#f59e0b;--red:#ef4444;--green:#16a34a;--blue:#2563eb}
@@ -30,8 +30,8 @@ table{border-collapse:collapse;width:100%;font-size:12px} th,td{border:1px solid
 </head>
 <body>
 <header>
-<h1>FD Manager — Build → Test Flow (One Sheet)</h1><p style="margin:4px 0 0"><b style="background:#fff;color:#0f766e;padding:2px 8px;border-radius:20px;font-size:12px;letter-spacing:.04em">VERSION 1.9</b></p>
-<p>Architect (arena.ai Agent Mode) → Executor (Roo, Windows 11 AVD Pixel_7_API_34) → Reviewer (vmendis) · <b>bash MINGW64</b> · <b>one branch: session → master</b> · 119 unit / 44 instrumented</p>
+<h1>FD Manager — Build → Test Flow (One Sheet)</h1><p style="margin:4px 0 0"><b style="background:#fff;color:#0f766e;padding:2px 8px;border-radius:20px;font-size:12px;letter-spacing:.04em">VERSION 1.10</b></p>
+<p>Architect (arena.ai Agent Mode) → Executor (Roo, Windows 11 AVD Pixel_7_API_34) → Reviewer (vmendis) · <b>bash MINGW64</b> · <b>one branch: session → master</b> · 123 unit / 44 instrumented</p>
 </header>
 <div class="wrap">
 
@@ -50,7 +50,7 @@ that branch straight into <code>master</code>, which is also the repo's <b>defau
   <div class="arrow">→</div>
   <div class="box exec">Executor<span class="step">Roo syncs the session branch<br>follows docs/test-instructions/</span></div>
   <div class="arrow">→</div>
-  <div class="box">Tier1<span class="step">119 unit<br>./gradlew testDebugUnitTest</span></div>
+  <div class="box">Tier1<span class="step">123 unit<br>./gradlew testDebugUnitTest</span></div>
   <div class="arrow">→</div>
   <div class="box">Tier2<span class="step">44 instrumented<br>./gradlew connectedDebugAndroidTest</span></div>
   <div class="arrow">→</div>
@@ -193,12 +193,12 @@ grep -q "compounding" app/src/main/java/com/example/fdmanager/domain/FdExport.kt
 grep -q "previewCompounding" app/src/main/java/com/example/fdmanager/ui/screens/AddEditFdScreen.kt && echo "GATE preview OK"</pre>
 <p>All six must print <span class="k">OK</span>. A miss means the tree is stale — stop, do not run tests.</p>
 
-<h3>Tier1 — 119 unit tests</h3>
+<h3>Tier1 — 123 unit tests</h3>
 <pre>./gradlew testDebugUnitTest --rerun-tasks --console=plain
 grep -h "time" app/build/test-results/testDebugUnitTest/*.xml</pre>
 <p><b>No <span class="k">clean</span>.</b> <span class="k">--rerun-tasks</span> already forces every task to re-execute;
 adding <span class="k">cleanTestDebugUnitTest</span> doubles the runtime for nothing and makes a command timeout more likely.</p>
-<p>AuthValidation 4 · BankRegistry 7 · <b>Compounding 18</b> · DataWipe 17 · <b>FdExport 23</b> · <b>FdMath 13</b> · <b>FdRepository 18</b> · InstitutionRegistry 11 · LoadingState 4 · SyncState 4 = <b>119</b>. Real durations, never summed.</p>
+<p>AuthValidation 4 · BankRegistry 7 · <b>Compounding 18</b> · DataWipe 17 · <b>FdExport 23</b> · <b>FdMath 13</b> · <b>FdRepository 18</b> · InstitutionRegistry 11 · LoadingState 4 · SyncState 4 · <b>SessionGate 4</b> = <b>123</b>. Real durations, never summed.</p>
 
 <h3>Tier2 — 44 instrumented tests (ONE RUN, NO LOOP)</h3>
 <pre>adb devices
@@ -355,7 +355,7 @@ which line failed, and the round stalls on guesswork. That happened three times 
   Gradle 8.13, AGP 8.13.2, Kotlin 2.0.20, JDK 17.0.16
 - Tiers executed: 2 / 2
 
-## Tier1 (119)  | Test class | Tests | Passed | Failed | Duration | Report path |
+## Tier1 (123)  | Test class | Tests | Passed | Failed | Duration | Report path |
 ## Tier2 (44)   | Test class | Tests | Passed | Failed | Duration | Report path |
 
 ## Evidence of GREEN  (real logcat, real png)
@@ -363,7 +363,7 @@ which line failed, and the round stalls on guesswork. That happened three times 
 ## Blockers          (SELECTOR-MISSING)
 ## Not covered</pre>
 <div class="hard" style="padding:8px 10px;margin-top:8px">
-<b>REJECTED if:</b> <b>no branch/SHA</b>; literal <span class="k">$(...)</span> or <span class="k">(unknown)</span>; guessed versions; Tier1 not 119 or Tier2 not 44;
+<b>REJECTED if:</b> <b>no branch/SHA</b>; literal <span class="k">$(...)</span> or <span class="k">(unknown)</span>; guessed versions; Tier1 not 123 or Tier2 not 44;
 durations summed; "see logcat" placeholders; <b>no <span class="k">Test.kt:NN</span> frame in a failure section</b>; launcher screenshots;
 no <span class="k">--rerun-tasks</span>; gates unchecked; artifacts in repo root; executor edited app code.
 </div>
@@ -458,14 +458,13 @@ The project's built-in <b>Item closed → Done</b> workflow is on by default.</p
 <tr><th>Ref</th><th>SHA</th><th>State</th></tr>
 <tr><td>master</td><td>2772103</td><td>PR #20 merged. Rounds #4 and #5 shipped. <b>The only long-lived branch</b></td></tr>
 <tr><td>dev</td><td>—</td><td><b>Retired and deleted 2026-10-26.</b> Not recreated. PRs go to <span class="k">master</span></td></tr>
-<tr><td>session branch</td><td>—</td><td><span class="k">arena/9e247e5f-fixed-deposit-manager-android</span> — issue #6</td></tr>
+<tr><td>session branch</td><td>—</td><td><span class="k">arena/666e44f1-fixed-deposit-manager-android</span> — issue #9</td></tr>
 </table>
 <ul>
-<li>#4 Loading &amp; Error: shipped and <b>closed</b>, card <b>Done</b>. Gate <span class="k">loadstate-0400r9</span></li>
-<li>#5 Trust UX: shipped and <b>closed</b> — PR #19 (branch → dev) and PR #20 (dev → master). Tier1 <b>95/95</b>, Tier2 <b>38/38</b></li>
-<li>#6 Compounding frequency: in flight on the session branch. Suite becomes <b>119 / 44</b>. Purely additive — every
-pre-#6 overload still means simple interest, so no earlier test changes</li>
-<li>Firebase blocked until #23 / #24 — everything mock, 0 quota</li>
+<li>#1–#7: shipped and <b>closed</b> (details: version history below + TEST-INSTRUCTIONS per round)</li>
+<li>#23 / #24 decided 2026-10-27 → <b>Firebase gate lifted</b>. #8 shipped (PR #24): dev project <span class="k">fd-manager-dev</span>, Spark, deny-all rules, probe PASS</li>
+<li>#9 Firebase Auth: in flight on the session branch. Real/fake provider split; suite becomes <b>123 / 44</b>. Tier2 flows force the fake path — still 0 quota</li>
+<li>google-services.json: local-only, gitignored, NEVER committed (public repo)</li>
 <li><b>project</b> <span class="k">users/vmendis/projects/2/views/2</span> — 28 items, all from <b>roadmap</b></li>
 <li><b>roadmap</b> must stay <b>public</b>, or the project renders as empty. Visibility filter on the items, not an empty board</li>
 </ul>
@@ -501,7 +500,8 @@ The version is in the &lt;title&gt; and in the header banner.</p>
 <tr><td><b>1.6</b></td><td>28,876 B</td><td>43affb6f</td><td><b><span class="k">dev</span> retired.</b> One path: session branch → <span class="k">master</span>. §6b rewritten — the closing keyword now fires on the feature PR, plus the &ldquo;a PR body is executable&rdquo; rule learned from PR #20. Counts 119 / 44. §3 gates are #6.</td></tr>
 <tr><td><b>1.7</b></td><td>31,579 B</td><td>6a54c083</td><td><b>§2b &mdash; the shell.</b> <span class="k">tools/preflight.sh</span>, one line that works from cmd.exe, one verdict. The owner&rsquo;s Roo prompt, verbatim. Why four &ldquo;blockers&rdquo; are always one.</td></tr>
 <tr><td><b>1.8</b></td><td>33,597 B</td><td>46940858</td><td><b>§2c CI (#7).</b> GitHub Actions on PRs/pushes to <span class="k">master</span> + <span class="k">arena/**</span>; gradlew 100755 lesson; §6 gains the delete-merged-branches habit (agent-provable).</td></tr>
-<tr><td><b>1.9</b></td><td>this file</td><td><i>see /version</i></td><td><b>Firebase wiring (#8).</b> Deps via BoM; google-services plugin applied ONLY if <span class="k">app/google-services.json</span> exists (file is gitignored — public repo, never commit it). CI builds json-less = Mode A. Debug-only <span class="k">FirebaseProbe</span>: PERMISSION_DENIED in Logcat = PASS. INTERNET permission added (first network permission in the app).</td></tr>
+<tr><td><b>1.9</b></td><td>34,040 B</td><td>bc6cabd6</td><td><b>Firebase wiring (#8).</b> Deps via BoM; google-services plugin applied ONLY if <span class="k">app/google-services.json</span> exists (file is gitignored — public repo, never commit it). CI builds json-less = Mode A. Debug-only <span class="k">FirebaseProbe</span>: PERMISSION_DENIED in Logcat = PASS. INTERNET permission added (first network permission in the app).</td></tr>
+<tr><td><b>1.10</b></td><td>this file</td><td><i>see /version</i></td><td><b>Firebase Auth (#9).</b> Real/fake provider split (<span class="k">AuthRepositoryProvider</span>, tests force fake — 0 quota). Session gate <span class="k">session-0900r9</span> for account-holders only. Google Sign-In via Credential Manager (guide PHASE C: provider toggle + SHA-1 + json replacement). Counts: Tier1 <b>123</b> (+SessionGate 4) / Tier2 44.</td></tr>
 </table>
 <p class="k" style="background:none;border:none;padding:0">A file cannot contain its own md5 — editing it to add the hash changes the hash. Use <span class="k">/version</span> on the server, or <span class="k">md5sum</span> locally. 1.2 and 1.3 are out of order by size because the file was rebuilt from the uploaded v1.0 after a sandbox reboot — 1.3 is a superset of 1.2 but was built on the 1.0 base.</p>
 </div>

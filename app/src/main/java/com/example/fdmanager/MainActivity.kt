@@ -4,13 +4,18 @@ import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.DateRange
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.Button
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -21,7 +26,10 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
@@ -29,8 +37,11 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import com.example.fdmanager.data.AuthRepositoryProvider
+import com.example.fdmanager.data.DevicePrefs
 import com.example.fdmanager.data.FirebaseProbe
 import com.example.fdmanager.data.SettingsStore
+import com.example.fdmanager.domain.SessionGate
 import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.screens.AddEditFdScreen
 import com.example.fdmanager.ui.screens.CalendarScreen
@@ -69,6 +80,9 @@ object Routes {
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // #9 — must run before any ViewModel exists: persisted has-account flag + real/fake auth selection
+        DevicePrefs.init(applicationContext)
+        AuthRepositoryProvider.init(applicationContext)
         FirebaseProbe.run(applicationContext) // debug-only Firestore connectivity probe (roadmap #8); no-op in release and when unconfigured
         setContent {
             val settings by SettingsStore.state.collectAsStateWithLifecycle()
@@ -92,11 +106,44 @@ private val TABS = listOf(
     TabSpec(Routes.SETTINGS, "Settings", Icons.Filled.Settings)
 )
 
+/**
+ * #9 — session gate for ACCOUNT-HOLDERS only (SESSION_GATE = session-0900r9).
+ * A device that never used a real account never sees this screen.
+ */
+@Composable
+private fun SessionGateScreen(onSignIn: () -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(32.dp)
+            .testTag("session-0900r9"),
+        verticalArrangement = Arrangement.Center,
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Text("Signed out", style = MaterialTheme.typography.headlineSmall)
+        Spacer(Modifier.height(8.dp))
+        Text(
+            "Your deposits stay safely on this device. Sign in to see them again.",
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Spacer(Modifier.height(24.dp))
+        Button(onClick = onSignIn, modifier = Modifier.testTag("sessionGateSignIn")) {
+            Text("Sign in to continue")
+        }
+    }
+}
+
 @Composable
 fun FdManagerApp() {
     val nav = rememberNavController()
     val vm: FdViewModel = viewModel()
     val settings by vm.settings.collectAsStateWithLifecycle()
+
+    // #9 — gate data screens when an account exists on this device but is signed out.
+    val authState by vm.authState.collectAsStateWithLifecycle()
+    val hasAccount by DevicePrefs.hasAccountOnDevice.collectAsStateWithLifecycle()
+    val sessionLocked = SessionGate.isLocked(hasAccount, authState.isLoggedIn)
 
     // #1 onboarding funnel + #27 vssbox branding — fresh install → welcome → add first FD → Home
     // #5 trust UX — app lock wins over onboarding: an enabled lock must gate the app on cold start
@@ -134,7 +181,7 @@ fun FdManagerApp() {
             }
         },
         floatingActionButton = {
-            if (currentRoute == Routes.HOME) {
+            if (currentRoute == Routes.HOME && !sessionLocked) {
                 FloatingActionButton(onClick = { nav.navigate(Routes.ADD) }) {
                     Icon(Icons.Filled.Add, contentDescription = "Add FD")
                 }
@@ -175,7 +222,8 @@ fun FdManagerApp() {
                 )
             }
             composable(Routes.HOME) {
-                HomeScreen(
+                if (sessionLocked) SessionGateScreen(onSignIn = { nav.navigate(Routes.SIGN_IN) })
+                else HomeScreen(
                     vm = vm,
                     onOpenBank = { nav.navigate(Routes.bank(it)) },
                     onOpenFd = { nav.navigate(Routes.fdDetail(it)) },
@@ -184,7 +232,8 @@ fun FdManagerApp() {
                 )
             }
             composable(Routes.CALENDAR) {
-                CalendarScreen(
+                if (sessionLocked) SessionGateScreen(onSignIn = { nav.navigate(Routes.SIGN_IN) })
+                else CalendarScreen(
                     vm = vm,
                     onOpenFd = { nav.navigate(Routes.fdDetail(it)) }
                 )
@@ -251,11 +300,13 @@ fun FdManagerApp() {
                 )
             }
             composable(Routes.BIN) {
-                RecycleBinScreen(vm = vm, onBack = { nav.popBackStack() })
+                if (sessionLocked) SessionGateScreen(onSignIn = { nav.navigate(Routes.SIGN_IN) })
+                else RecycleBinScreen(vm = vm, onBack = { nav.popBackStack() })
             }
             composable(Routes.BANK) { entry ->
                 val bank = entry.arguments?.getString("bank").orEmpty()
-                FdListScreen(
+                if (sessionLocked) SessionGateScreen(onSignIn = { nav.navigate(Routes.SIGN_IN) })
+                else FdListScreen(
                     vm = vm,
                     bank = bank,
                     onBack = { nav.popBackStack() },
@@ -266,7 +317,8 @@ fun FdManagerApp() {
             }
             composable(Routes.FD_DETAIL) { entry ->
                 val id = entry.arguments?.getString("fdId").orEmpty()
-                FdDetailScreen(
+                if (sessionLocked) SessionGateScreen(onSignIn = { nav.navigate(Routes.SIGN_IN) })
+                else FdDetailScreen(
                     vm = vm,
                     fdId = id,
                     onBack = { nav.popBackStack() },
@@ -275,11 +327,13 @@ fun FdManagerApp() {
                 )
             }
             composable(Routes.ADD) {
-                AddEditFdScreen(vm = vm, fdId = null, onBack = { nav.popBackStack() })
+                if (sessionLocked) SessionGateScreen(onSignIn = { nav.navigate(Routes.SIGN_IN) })
+                else AddEditFdScreen(vm = vm, fdId = null, onBack = { nav.popBackStack() })
             }
             composable(Routes.EDIT) { entry ->
                 val id = entry.arguments?.getString("fdId").orEmpty()
-                AddEditFdScreen(vm = vm, fdId = id, onBack = { nav.popBackStack() })
+                if (sessionLocked) SessionGateScreen(onSignIn = { nav.navigate(Routes.SIGN_IN) })
+                else AddEditFdScreen(vm = vm, fdId = id, onBack = { nav.popBackStack() })
             }
         }
     }

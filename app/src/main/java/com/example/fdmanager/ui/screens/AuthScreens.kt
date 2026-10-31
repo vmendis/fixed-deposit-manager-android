@@ -181,8 +181,31 @@ fun SignInScreen(
                 }
             }
             Spacer(Modifier.height(12.dp))
+            // #9 — Google Sign-In (decision: offer both methods). Fake path: instant mock
+            // session. Real path: Credential Manager → Firebase credential.
+            val googleContext = androidx.compose.ui.platform.LocalContext.current
+            OutlinedButton(
+                onClick = {
+                    generalError = null
+                    scope.launch {
+                        val res = vm.signInWithGoogle(googleContext)
+                        if (res.isSuccess) {
+                            onSignedIn()
+                        } else {
+                            generalError = res.exceptionOrNull()?.message ?: "Google Sign-In failed"
+                        }
+                    }
+                },
+                modifier = Modifier.fillMaxWidth().testTag("googleSignInButton")
+            ) {
+                Text("Continue with Google")
+            }
+            Spacer(Modifier.height(12.dp))
             Text(
-                "Mock session - no backend. Phase 2 will replace with Firebase Auth without layout changes.",
+                if (vm.isAuthBackendReal())
+                    "Secured by Firebase Authentication."
+                else
+                    "Mock session - no backend. Phase 2 will replace with Firebase Auth without layout changes.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

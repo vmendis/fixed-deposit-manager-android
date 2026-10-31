@@ -13,6 +13,8 @@ interface AuthRepository {
     suspend fun signIn(email: String, password: String): Result<Unit>
     suspend fun signUp(email: String, password: String, confirmPassword: String): Result<Unit>
     suspend fun sendPasswordReset(email: String): Result<Unit>
+    /** #9 — Google Sign-In: exchange a Google ID token for a session. */
+    suspend fun signInWithGoogleIdToken(idToken: String): Result<Unit>
     suspend fun signOut()
 }
 
@@ -47,6 +49,12 @@ object FakeAuthRepository : AuthRepository {
     override suspend fun sendPasswordReset(email: String): Result<Unit> {
         val emailErr = AuthValidation.validateEmail(email)
         if (emailErr != null) return Result.failure(IllegalArgumentException(emailErr))
+        return Result.success(Unit)
+    }
+
+    /** #9 — fake Google path: instant mock session, no Credential Manager, 0 quota. */
+    override suspend fun signInWithGoogleIdToken(idToken: String): Result<Unit> {
+        SettingsStore.setMockLoggedIn("google-user@mock.local")
         return Result.success(Unit)
     }
 

@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Version** | 1.4 |
+| **Version** | 1.5 |
 | **Date** | 2026-10-28 |
 | **Scope** | Roadmap #8. Steps 1–4 = console side (owner). Steps 5–7 = repo side, ONLY after the agent's code PR is merged. |
 | **Account** | ALL steps are done signed in as the NEW dedicated Google account (2FA enabled). Never the personal account. |
@@ -70,6 +70,40 @@ Created `fd-manager-dev`, Google Analytics OFF, Spark plan verified (no card req
 green WITHOUT the json — CI has no secrets), debug-build Firestore connectivity probe
 (roadmap #8 acceptance), TEST-INSTRUCTIONS-008.
 
+# PHASE C — Google Sign-In enablement (YOU, added in v1.5 for roadmap #9)
+
+The roadmap #9 decision (2026-10-31) offers BOTH auth methods — email/password AND
+Google Sign-In. Google requires two things we previously skipped: the Google provider
+toggle, and the debug SHA-1 fingerprint. One console round + one local command.
+
+## STEP C1 — Enable the Google provider  (YOU, ~1 min)
+1. Console → **Build → Authentication → Sign-in method** → **Add new provider** →
+   **Google** → toggle **Enable**.
+2. It asks for a public-facing name + support email — pick the project's dedicated
+   Google account address → **Save**.
+
+**Expected:** providers list shows Email/Password = Enabled AND Google = Enabled.
+
+## STEP C2 — Print the debug SHA-1  (YOU, one command, in the repo root)
+```
+./gradlew signingReport | grep -B2 -A3 "Variant: debug" | head -12
+```
+**Expected:** a block containing `SHA1: XX:XX:…` (20 hex pairs). Copy that SHA1 line.
+(SHA-1 is a public certificate fingerprint, not a secret.)
+
+## STEP C3 — Register the fingerprint  (YOU, ~1 min)
+1. Console → gear icon → **Project settings** → **Your apps** → app `FD Manager dev` →
+   **Add fingerprint** → paste the SHA-1 → **Save**.
+
+## STEP C4 — REPLACE the json  (YOU, ~1 min — the old file has no OAuth client)
+1. On the same Project settings page → **Download google-services.json**.
+2. Overwrite the repo copy:
+   `mv ~/Downloads/google-services.json /c/LocalApps/AppDevelopment/fd-manager/fixed-deposit-manager-android/app/`
+3. `git status --short` → must NOT list `google-services.json`.
+
+**Expected after C1–C4:** the app's sign-in screen "Continue with Google" button opens
+the Google account picker instead of an error.
+
 # PHASE B — Repo side (YOU, only AFTER the agent's PR is merged)
 
 ## STEP 5 — STEP 0 rule: pull  (YOU)
@@ -102,4 +136,4 @@ and the exact Logcat filter are in the test instructions.
 *History: v1.0 2026-10-28 initial · v1.1 2026-10-28 Step 2.1 matched to 2026 console UI ·
 v1.2 2026-10-28 resequenced: json placement moved AFTER the agent's code PR + pull (old
 Step 3 trap removed — .gitignore must exist locally first); phases A/B introduced;
-Firestore probe tied to roadmap #8 acceptance. · v1.3 2026-10-28 Step 4.1: edition choice = Standard. · v1.4 2026-10-28 Step 4.4: scheduled backups = skip on dev (Blaze-only); prod note = enable Daily on fd-manager-prod.*
+Firestore probe tied to roadmap #8 acceptance. · v1.3 2026-10-28 Step 4.1: edition choice = Standard. · v1.4 2026-10-28 Step 4.4: scheduled backups = skip on dev (Blaze-only); prod note = enable Daily on fd-manager-prod. · v1.5 2026-10-31 PHASE C added (roadmap #9): Google provider toggle, SHA-1 via signingReport, fingerprint registration, json REPLACEMENT.*
