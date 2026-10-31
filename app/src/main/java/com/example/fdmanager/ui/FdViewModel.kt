@@ -14,7 +14,8 @@ import java.time.LocalDate
 class FdViewModel : ViewModel() {
 
     private val repo = FdRepository.get()
-    private val authRepo = com.example.fdmanager.data.FakeAuthRepository
+    // #9 — real FirebaseAuthRepository when configured, fake otherwise (CI, tests, json-less builds)
+    private val authRepo get() = com.example.fdmanager.data.AuthRepositoryProvider.get()
     private val syncRepo = com.example.fdmanager.data.FakeSyncRepository
 
     val fds: StateFlow<List<FixedDeposit>> = repo.fds
@@ -61,12 +62,35 @@ class FdViewModel : ViewModel() {
         toggleDemoMode(enabled)
     }
 
+    // #9 — names kept for UI stability; behind them sits the provider-selected repository.
     suspend fun mockSignIn(email: String, password: String): Result<Unit> = authRepo.signIn(email, password)
     suspend fun mockSignUp(email: String, password: String, confirm: String): Result<Unit> = authRepo.signUp(email, password, confirm)
     suspend fun mockSendReset(email: String): Result<Unit> = authRepo.sendPasswordReset(email)
     fun mockSignOut() {
-        SettingsStore.clearMockLoggedIn()
+        val repo = authRepo
+        kotlinx.coroutines.runBlocking { repo.signOut() }
+        SettingsStore.clearMockLoggedIn() // harmless on real path; required on fake path
     }
+
+    /**
+     * #9 — Google Sign-In. Fake path: instant mock session (tests/CI, 0 quota).
+     * Real path: Credential Manager UI → ID token → Firebase credential sign-in.
+     * @param activityContext must be an Activity context (Credential Manager shows UI).
+     */
+    suspend fun signInWithGoogle(activityContext: android.content.Context): Result<Unit> {
+        return if (com.example.fdmanager.data.AuthRepositoryProvider.isUsingFake) {
+            authRepo.signInWithGoogleIdToken("fake-token")
+        } else {
+            com.example.fdmanager.data.GoogleCredentialHelper.fetchGoogleIdToken(activityContext)
+                .fold(
+                    onSuccess = { token -> authRepo.signInWithGoogleIdToken(token) },
+                    onFailure = { Result.failure(it) }
+                )
+        }
+    }
+
+    /** #9 — true when the real Firebase backend is live (drives footer labels). */
+    fun isAuthBackendReal(): Boolean = !com.example.fdmanager.data.AuthRepositoryProvider.isUsingFake
 
     // #3 sync-state — mock, 0 quota, swappable to FirebaseSyncRepository Phase 2
     fun setSyncState(state: com.example.fdmanager.domain.SyncState) {

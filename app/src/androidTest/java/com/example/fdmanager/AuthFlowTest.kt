@@ -19,6 +19,17 @@ import java.time.LocalDate
 @RunWith(AndroidJUnit4::class)
 class AuthFlowTest {
 
+    companion object {
+        // #9 — must run BEFORE the activity launches (the compose rule launches MainActivity
+        // before @Before executes). Forces the fake auth path even on machines where
+        // google-services.json exists: these flows stay 0-quota mock, no Firebase traffic.
+        @JvmStatic
+        @org.junit.BeforeClass
+        fun forceFakeAuth() {
+            com.example.fdmanager.data.AuthRepositoryProvider.forceFakeForTests = true
+        }
+    }
+
     @get:Rule
     val rule = createAndroidComposeRule<MainActivity>()
 

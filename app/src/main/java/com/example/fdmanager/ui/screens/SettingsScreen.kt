@@ -128,7 +128,8 @@ fun SettingsScreen(
                 if (!settings.isMockLoggedIn) {
                     SettingRow(
                         title = "Sign in",
-                        subtitle = "Mock auth - fake session, 0 quota. Phase 2 -> Firebase Auth",
+                        subtitle = if (vm.isAuthBackendReal()) "Firebase Authentication"
+                                   else "Mock auth - fake session, 0 quota. Phase 2 -> Firebase Auth",
                         onClick = onSignIn,
                         testTag = "accountSignIn",
                         trailing = {
