@@ -69,6 +69,9 @@ fun SettingsScreen(
     onSignOut: () -> Unit = {}
 ) {
     val settings by vm.settings.collectAsStateWithLifecycle()
+    // #9 hotfix — the Account section reads the REAL auth state. The fake path maps its
+    // mock flag into authState, so mock behavior (and every Tier2 assertion) is unchanged.
+    val auth by vm.authState.collectAsStateWithLifecycle()
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -123,9 +126,16 @@ fun SettingsScreen(
                     .fillMaxSize()
                     .verticalScroll(rememberScrollState())
             ) {
-                // ---- Account #2 mock auth ----
-                SectionHeader("Account", subtitle = if (settings.isMockLoggedIn) settings.mockEmail ?: "Signed in (mock)" else "Mock session - no backend")
-                if (!settings.isMockLoggedIn) {
+                // ---- Account (#2 mock era; #9 real backend; hotfix: authState-driven) ----
+                SectionHeader(
+                    "Account",
+                    subtitle = when {
+                        auth.isLoggedIn -> auth.email ?: "Signed in"
+                        vm.isAuthBackendReal() -> "Not signed in"
+                        else -> "Mock session - no backend"
+                    }
+                )
+                if (!auth.isLoggedIn) {
                     SettingRow(
                         title = "Sign in",
                         subtitle = if (vm.isAuthBackendReal()) "Firebase Authentication"
@@ -142,11 +152,16 @@ fun SettingsScreen(
                     )
                 } else {
                     SettingRow(
-                        title = settings.mockEmail ?: "Signed in",
-                        subtitle = "Mock session active - tap to sign out",
+                        title = auth.email ?: "Signed in",
+                        subtitle = if (vm.isAuthBackendReal()) "Signed in - tap to sign out"
+                                   else "Mock session active - tap to sign out",
                         onClick = {
                             vm.mockSignOut()
-                            scope.launch { snackbarHost.showSnackbar("Signed out (mock)") }
+                            scope.launch {
+                                snackbarHost.showSnackbar(
+                                    if (vm.isAuthBackendReal()) "Signed out" else "Signed out (mock)"
+                                )
+                            }
                             onSignOut()
                         },
                         testTag = "accountSignOut",
@@ -206,7 +221,7 @@ fun SettingsScreen(
                             modifier = Modifier.fillMaxWidth()
                         )
                         Text(
-                            "Used by the bell and strip on Home. Push alerts (10:00 AM daily) switch on once the Firebase backend is connected.",
+                            "Used by the bell and strip on Home. Push alerts (10:00 AM daily) arrive in a later release.",
                             style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )

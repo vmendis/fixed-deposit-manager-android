@@ -26,6 +26,7 @@
 | Real repo | `data/FirebaseAuthRepository.kt`, `data/AuthRepositoryProvider.kt`, `data/GoogleCredentialHelper.kt`, `data/DevicePrefs.kt` exist |
 | Google button | `grep -n googleSignInButton app/src/main/java/com/example/fdmanager/ui/screens/AuthScreens.kt` → one hit |
 | Test force-fake | `grep -n forceFakeAuth app/src/androidTest/java/com/example/fdmanager/AuthFlowTest.kt` → one hit |
+| **Hotfix applied** | `grep -n "val auth by vm.authState" app/src/main/java/com/example/fdmanager/ui/screens/SettingsScreen.kt` → one hit (round 2 fix: Account section was reading the mock flag — real sign-in showed as signed-out, §4 halted at row 5) |
 
 ## §2 Tier1  (ROO)
 `./gradlew testDebugUnitTest --console=plain` → BUILD SUCCESSFUL, **123 tests**, 0 failures
