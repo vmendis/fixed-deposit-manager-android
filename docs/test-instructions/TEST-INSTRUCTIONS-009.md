@@ -11,7 +11,7 @@
 > "persists across restart" = the session (FD storage is roadmap #10). Google Sign-In
 > AMENDS the earlier email-password-only mechanics answer.
 
-> **Counts this round: Tier1 = 123 (was 119, +4 SessionGateTest) · Tier2 = 44 (unchanged).**
+> **Counts this round: Tier1 = 123 (was 119, +4 SessionGateTest) · Tier2 = 46 (was 44, +2 round 3: password toggle, locked Settings rows).**
 
 ---
 
@@ -27,6 +27,7 @@
 | Google button | `grep -n googleSignInButton app/src/main/java/com/example/fdmanager/ui/screens/AuthScreens.kt` → one hit |
 | Test force-fake | `grep -n forceFakeAuth app/src/androidTest/java/com/example/fdmanager/AuthFlowTest.kt` → one hit |
 | **Hotfix applied** | `grep -n "val auth by vm.authState" app/src/main/java/com/example/fdmanager/ui/screens/SettingsScreen.kt` → one hit (round 2 fix: Account section was reading the mock flag — real sign-in showed as signed-out, §4 halted at row 5) |
+| **Round 3 applied** | `grep -n "sign in to export" app/src/main/java/com/example/fdmanager/ui/screens/SettingsScreen.kt` → one hit (locked data rows) · `grep -n passwordToggle app/src/main/java/com/example/fdmanager/ui/screens/AuthScreens.kt` → ≥2 hits (#30 eye toggle) |
 
 ## §2 Tier1  (ROO)
 `./gradlew testDebugUnitTest --console=plain` → BUILD SUCCESSFUL, **123 tests**, 0 failures
@@ -34,10 +35,10 @@
 proven there automatically.
 
 ## §3 Tier2  (ROO)
-`./gradlew connectedDebugAndroidTest` on Pixel_7_API_34 → **44 tests**, 0 failures.
+`./gradlew connectedDebugAndroidTest` on Pixel_7_API_34 → **46 tests**, 0 failures.
 `AuthFlowTest` now forces the FAKE auth path at class-load (`@BeforeClass`) — zero
-Firebase traffic, zero quota, even with google-services.json present. All flows and
-assertions unchanged from the last green run.
+Firebase traffic, zero quota, even with google-services.json present. Round 3 adds `passwordToggleRevealsAndHides` and
+`lockedSettingsDataRowsRedirectToSignIn`; all earlier flows and assertions unchanged.
 
 ## §4 Real-auth acceptance  (YOU + ROO — needs guide PHASE C done first)
 
@@ -61,8 +62,20 @@ registered, FRESH google-services.json in `app/` — the old json has no oauth c
 no account → Home/Calendar/Add all fully usable, no sign-in nag, no gate. The gate may
 only ever appear AFTER step 2 has happened on the device.
 
+## §4b Round 3 re-check  (YOU — after the round-3 PR merges; full §4 already PASSED 2026-11-04)
+
+| # | Step (who) | Expected |
+|---|---|---|
+| 1 | YOU: sign in, then Sign out → Settings → scroll to Data section | Export row reads "Signed out - sign in to export"; Delete row "Signed out - sign in to manage data"; Reset demo row "Signed out - sign in to reset data" |
+| 2 | YOU: tap the locked Export row | NO file picker — lands on the Sign in screen |
+| 3 | YOU: tap the locked Delete row | NO wipe dialog — lands on the Sign in screen |
+| 4 | YOU: sign back in → Settings → Data section | all three rows back to normal subtitles and actions |
+| 5 | YOU: Sign out → Sign in screen → Forgot password | copy reads "Enter your email and we'll send you a password reset link." — the words "mock" and "no backend" appear NOWHERE |
+| 6 | YOU: submit with your email | confirmation reads "…a reset link has been sent. Check your inbox - and the spam folder." (no "(mock)") |
+| 7 | YOU: Sign in screen → eye icon in the password field | tap reveals the typed password, tap again masks it; Create account has one per field (password + confirm, independent) |
+
 ## §5 Evidence  (ROO → `test-artifacts-009/`, local only)
-`tier1.txt` (123/0) · `tier2.txt` (44/0) · screenshot: session gate · screenshot:
+`tier1.txt` (123/0) · `tier2.txt` (46/0) · screenshot: session gate · screenshot:
 console Users list (both providers) · `logcat-auth.txt`
 
 ---

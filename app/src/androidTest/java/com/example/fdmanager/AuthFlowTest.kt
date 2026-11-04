@@ -2,11 +2,14 @@ package com.example.fdmanager
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createAndroidComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.performTextInput
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import com.example.fdmanager.data.DevicePrefs
 import com.example.fdmanager.data.FdRepository
 import com.example.fdmanager.data.SampleData
 import com.example.fdmanager.data.SettingsStore
@@ -39,7 +42,50 @@ class AuthFlowTest {
         SettingsStore.clearLoadingErrorDebug()
         SettingsStore.setDemoMode(false)
         SettingsStore.clearMockLoggedIn()
+        // #9 round 3 — DevicePrefs is a process-wide singleton persisted to SharedPreferences;
+        // never let a locked-state test leak into other classes.
+        DevicePrefs.setHasAccountOnDevice(false)
         FdRepository.get().reset(SampleData.seed(LocalDate.now()))
+    }
+
+    // roadmap #30 — the eye toggle flips between masked and revealed on the sign-in field.
+    // Asserted via the icon's contentDescription, which is the toggle's state signal.
+    @Test
+    fun passwordToggleRevealsAndHides() {
+        rule.onNodeWithText("Settings").performClick()
+        rule.onNodeWithTag("accountSignIn").performClick()
+
+        rule.onNodeWithTag("passwordField").performTextInput("secret123")
+        rule.onNodeWithContentDescription("Show password").assertIsDisplayed()
+
+        rule.onNodeWithTag("passwordToggle").performClick()
+        rule.onNodeWithContentDescription("Hide password").assertIsDisplayed()
+
+        rule.onNodeWithTag("passwordToggle").performClick()
+        rule.onNodeWithContentDescription("Show password").assertIsDisplayed()
+    }
+
+    // #9 round 3 — while session-locked, the Settings data rows must REDIRECT to sign-in,
+    // not export/delete/reset. (TI-009 §4 acceptance finding: signed-out export was possible.)
+    @Test
+    fun lockedSettingsDataRowsRedirectToSignIn() {
+        DevicePrefs.setHasAccountOnDevice(true)
+        try {
+            rule.onNodeWithText("Settings").performClick()
+
+            rule.onNodeWithTag("exportRow").performScrollTo()
+            rule.onNodeWithText("Signed out - sign in to export").assertIsDisplayed()
+
+            rule.onNodeWithTag("deleteDataRow").performScrollTo()
+            rule.onNodeWithText("Signed out - sign in to manage data").assertIsDisplayed()
+
+            // Clicking a locked row lands on the Sign in screen instead of opening its dialog
+            rule.onNodeWithTag("exportRow").performScrollTo()
+            rule.onNodeWithTag("exportRow").performClick()
+            rule.onNodeWithTag("auth-0100r9").assertIsDisplayed()
+        } finally {
+            DevicePrefs.setHasAccountOnDevice(false)
+        }
     }
 
     @Test
