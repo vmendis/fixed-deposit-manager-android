@@ -487,7 +487,7 @@ stored `renewOption` (no user interaction; works while the app opens).
 **Methods (shipped):**
 
 * Email + Password (primary)
-* Google Sign-In (shipped alongside email/password — owner decision 2026-10-31 to keep it; amends the #23 discussion)
+* Google Sign-In (shipped — user-selectable alternative to email/password; owner decision 2026-10-31, amends the #23 discussion)
 
 **Requirements:**
 
