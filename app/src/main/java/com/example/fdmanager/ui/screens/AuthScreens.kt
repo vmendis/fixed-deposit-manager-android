@@ -15,6 +15,8 @@ import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.Button
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
@@ -42,11 +44,27 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import com.vssbox.fdmanager.R
 import com.example.fdmanager.domain.AuthValidation
 import com.example.fdmanager.ui.FdViewModel
 import kotlinx.coroutines.launch
+
+/**
+ * roadmap #30 — standard show/hide password affordance, shared by all password fields.
+ * The icon shows the ACTION'S RESULT state convention: closed eye while hidden ("Show"),
+ * crossed eye while revealed ("Hide").
+ */
+@Composable
+private fun PasswordToggleIcon(shown: Boolean, tag: String, onToggle: () -> Unit) {
+    IconButton(onClick = onToggle, modifier = Modifier.testTag(tag)) {
+        Icon(
+            if (shown) Icons.Filled.VisibilityOff else Icons.Filled.Visibility,
+            contentDescription = if (shown) "Hide password" else "Show password"
+        )
+    }
+}
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -57,6 +75,8 @@ fun SignInScreen(
     onForgot: () -> Unit,
     onSignedIn: () -> Unit
 ) {
+    // roadmap #30 — visibility toggle on password entry
+    var showPassword by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var emailError by remember { mutableStateOf<String?>(null) }
@@ -131,8 +151,11 @@ fun SignInScreen(
                 label = { Text("Password") },
                 isError = passwordError != null,
                 supportingText = { passwordError?.let { Text(it) } },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    PasswordToggleIcon(showPassword, "passwordToggle") { showPassword = !showPassword }
+                },
                 modifier = Modifier.fillMaxWidth().testTag("passwordField"),
                 singleLine = true
             )
@@ -221,6 +244,9 @@ fun SignUpScreen(
     onSignIn: () -> Unit,
     onSignedUp: () -> Unit
 ) {
+    // roadmap #30 — independent toggles: revealing the password must not reveal the confirm
+    var showPassword by remember { mutableStateOf(false) }
+    var showConfirm by remember { mutableStateOf(false) }
     var email by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirm by remember { mutableStateOf("") }
@@ -288,8 +314,11 @@ fun SignUpScreen(
                 label = { Text("Password") },
                 isError = passwordError != null,
                 supportingText = { passwordError?.let { Text(it) } },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showPassword) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    PasswordToggleIcon(showPassword, "passwordToggle") { showPassword = !showPassword }
+                },
                 modifier = Modifier.fillMaxWidth().testTag("passwordField"),
                 singleLine = true
             )
@@ -300,8 +329,11 @@ fun SignUpScreen(
                 label = { Text("Confirm password") },
                 isError = confirmError != null,
                 supportingText = { confirmError?.let { Text(it) } },
-                visualTransformation = PasswordVisualTransformation(),
+                visualTransformation = if (showConfirm) VisualTransformation.None else PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                trailingIcon = {
+                    PasswordToggleIcon(showConfirm, "confirmPasswordToggle") { showConfirm = !showConfirm }
+                },
                 modifier = Modifier.fillMaxWidth().testTag("confirmPasswordField"),
                 singleLine = true
             )
@@ -402,7 +434,11 @@ fun ForgotPasswordScreen(
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Enter your email - we'll mock-send a reset link (no backend).",
+                // #9 round 3 — this screen claimed "no backend" while a REAL reset email went out
+                if (vm.isAuthBackendReal())
+                    "Enter your email and we'll send you a password reset link."
+                else
+                    "Enter your email - we'll mock-send a reset link (no backend).",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -430,7 +466,10 @@ fun ForgotPasswordScreen(
             if (sent) {
                 Spacer(Modifier.height(12.dp))
                 Text(
-                    "If an account exists for $email, a reset link has been sent (mock).",
+                    if (vm.isAuthBackendReal())
+                        "If an account exists for $email, a reset link has been sent. Check your inbox - and the spam folder."
+                    else
+                        "If an account exists for $email, a reset link has been sent (mock).",
                     color = MaterialTheme.colorScheme.primary,
                     style = MaterialTheme.typography.bodySmall,
                     modifier = Modifier.testTag("resetSentMessage")

@@ -57,6 +57,8 @@ import com.example.fdmanager.domain.FdExport
 import com.example.fdmanager.domain.WipeSelection
 import com.example.fdmanager.ui.FdViewModel
 import com.example.fdmanager.ui.components.DeleteAllDataDialog
+import com.example.fdmanager.data.DevicePrefs
+import com.example.fdmanager.domain.SessionGate
 import com.example.fdmanager.ui.components.ExportFormatDialog
 import com.example.fdmanager.ui.components.SectionHeader
 import kotlinx.coroutines.launch
@@ -72,6 +74,12 @@ fun SettingsScreen(
     // #9 hotfix — the Account section reads the REAL auth state. The fake path maps its
     // mock flag into authState, so mock behavior (and every Tier2 assertion) is unchanged.
     val auth by vm.authState.collectAsStateWithLifecycle()
+    // #9 round 3 — the session gate must also cover data egress/destruction INSIDE Settings.
+    // Settings itself stays reachable while locked (it hosts the Sign in row), so the
+    // Export / Delete / Reset rows redirect to sign-in instead of acting. Found in TI-009 §4
+    // acceptance: a signed-out device could still export every deposit.
+    val hasAccount by DevicePrefs.hasAccountOnDevice.collectAsStateWithLifecycle()
+    val sessionLocked = SessionGate.isLocked(hasAccount, auth.isLoggedIn)
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -261,8 +269,9 @@ fun SettingsScreen(
                 SettingRow(
                     testTag = "exportRow",
                     title = "Export deposits",
-                    subtitle = "CSV or JSON — saves wherever you choose (${fds.size} records)",
-                    onClick = { showExportDialog = true },
+                    subtitle = if (sessionLocked) "Signed out - sign in to export"
+                        else "CSV or JSON — saves wherever you choose (${fds.size} records)",
+                    onClick = { if (sessionLocked) onSignIn() else showExportDialog = true },
                     trailing = {
                         Icon(Icons.Filled.FileDownload, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
@@ -270,8 +279,9 @@ fun SettingsScreen(
                 SettingRow(
                     testTag = "deleteDataRow",
                     title = "Delete data",
-                    subtitle = "Choose what to remove. Requires typing ${DataWipe.CONFIRM_PHRASE}",
-                    onClick = { showWipeDialog = true },
+                    subtitle = if (sessionLocked) "Signed out - sign in to manage data"
+                        else "Choose what to remove. Requires typing ${DataWipe.CONFIRM_PHRASE}",
+                    onClick = { if (sessionLocked) onSignIn() else showWipeDialog = true },
                     trailing = {
                         Icon(
                             Icons.Filled.DeleteForever,
@@ -282,10 +292,15 @@ fun SettingsScreen(
                 )
                 SettingRow(
                     title = "Reset demo data",
-                    subtitle = "Restore the original sample FDs",
+                    // #9 round 3 — same defect class as Export/Delete: while locked this row
+                    // would OVERWRITE the signed-out owner's deposits with sample data.
+                    subtitle = if (sessionLocked) "Signed out - sign in to reset data"
+                        else "Restore the original sample FDs",
                     onClick = {
-                        vm.resetDemoData()
-                        placeholder("Demo data restored.")
+                        if (sessionLocked) onSignIn() else {
+                            vm.resetDemoData()
+                            placeholder("Demo data restored.")
+                        }
                     },
                     trailing = {
                         Icon(Icons.Filled.Refresh, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant)
