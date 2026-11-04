@@ -1,6 +1,6 @@
 package com.example.fdmanager
 
-import com.example.fdmanager.data.FdRepository
+import com.example.fdmanager.data.InMemoryFdRepository
 import com.example.fdmanager.data.model.CompoundingFrequency
 import com.example.fdmanager.data.model.FdStatus
 import com.example.fdmanager.data.model.FixedDeposit
@@ -31,7 +31,7 @@ class FdRepositoryTest {
             isDeleted = true)
     )
 
-    private fun repo() = FdRepository(seed())
+    private fun repo() = InMemoryFdRepository(seed())
 
     @Test
     fun `visible excludes soft-deleted records`() {
@@ -167,7 +167,7 @@ class FdRepositoryTest {
     @Test
     fun `renew without an explicit option uses the stored instruction`() {
         val capitalizing = seed().first { it.id == "d" }.copy(renewOption = RenewOption.CAPITALIZE)
-        val repo = FdRepository(seed().map { if (it.id == "d") capitalizing else it })
+        val repo = InMemoryFdRepository(seed().map { if (it.id == "d") capitalizing else it })
         val newId = repo.renew("d")
         // 300,000 @ 8.5% × 6/12 → +12,750 (stored CAPITALIZE was applied)
         assertEquals(312_750.0, repo.get(newId)!!.amount, 0.001)
@@ -178,7 +178,7 @@ class FdRepositoryTest {
     @Test
     fun `renew with CAPITALIZE capitalises compounded interest when the fd compounds`() {
         val quarterly = seed().first { it.id == "d" }.copy(compounding = CompoundingFrequency.QUARTERLY)
-        val repo = FdRepository(seed().map { if (it.id == "d") quarterly else it })
+        val repo = InMemoryFdRepository(seed().map { if (it.id == "d") quarterly else it })
 
         val newId = repo.renew("d", RenewOption.CAPITALIZE)
 
@@ -192,7 +192,7 @@ class FdRepositoryTest {
     @Test
     fun `auto renew sweep renews only due flagged fds`() {
         val dueFlagged = seed().first { it.id == "e" }.copy(autoRenew = true)
-        val repo = FdRepository(seed().map { if (it.id == "e") dueFlagged else it })
+        val repo = InMemoryFdRepository(seed().map { if (it.id == "e") dueFlagged else it })
 
         val renewedIds = repo.autoRenewDue(today)
 
@@ -220,7 +220,7 @@ class FdRepositoryTest {
             durationDays = 100, tenorUnit = com.example.fdmanager.data.model.TenorUnit.DAYS,
             renewOption = RenewOption.CAPITALIZE, autoRenew = true
         )
-        val repo = FdRepository(listOf(dayFd))
+        val repo = InMemoryFdRepository(listOf(dayFd))
         val newId = repo.renew("day1")
         val child = repo.get(newId)!!
         assertEquals(com.example.fdmanager.data.model.TenorUnit.DAYS, child.tenorUnit)
@@ -239,7 +239,7 @@ class FdRepositoryTest {
             tenorUnit = com.example.fdmanager.data.model.TenorUnit.MONTHS,
             renewOption = RenewOption.PAYOUT
         )
-        val repo = FdRepository(listOf(monthFd))
+        val repo = InMemoryFdRepository(listOf(monthFd))
         val newId = repo.renew("m1")
         val child = repo.get(newId)!!
         assertEquals(com.example.fdmanager.data.model.TenorUnit.MONTHS, child.tenorUnit)

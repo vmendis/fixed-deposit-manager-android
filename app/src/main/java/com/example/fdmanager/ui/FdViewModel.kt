@@ -1,7 +1,9 @@
 package com.example.fdmanager.ui
 
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.viewModelScope
 import com.example.fdmanager.data.FdRepository
+import kotlinx.coroutines.flow.stateIn
 import com.example.fdmanager.data.SampleData
 import com.example.fdmanager.data.SettingsState
 import com.example.fdmanager.data.SettingsStore
@@ -21,8 +23,33 @@ class FdViewModel : ViewModel() {
     val fds: StateFlow<List<FixedDeposit>> = repo.fds
     val settings: StateFlow<SettingsState> = SettingsStore.state
     val authState = authRepo.authState
-    val syncState = syncRepo.syncState
-    val lastSyncError = syncRepo.lastError
+
+    // #10 — the #3 chip goes REAL when the cloud backend is live: Firestore pending-writes /
+    // cache / server states win; the mock sync repo keeps driving it everywhere else
+    // (fake sessions, tests, CI), so every existing flow is unchanged.
+    val syncState: StateFlow<com.example.fdmanager.domain.SyncState> =
+        kotlinx.coroutines.flow.combine(
+            com.example.fdmanager.data.FdRepositoryProvider.cloudSyncState,
+            syncRepo.syncState
+        ) { cloud, fake -> cloud ?: fake }
+            .stateIn(
+                viewModelScope,
+                kotlinx.coroutines.flow.SharingStarted.Eagerly,
+                syncRepo.syncState.value
+            )
+    val lastSyncError: StateFlow<String?> =
+        kotlinx.coroutines.flow.combine(
+            com.example.fdmanager.data.FdRepositoryProvider.cloudSyncError,
+            syncRepo.lastError
+        ) { cloud, fake -> if (com.example.fdmanager.data.FdRepositoryProvider.isCloudActive) cloud else fake }
+            .stateIn(
+                viewModelScope,
+                kotlinx.coroutines.flow.SharingStarted.Eagerly,
+                syncRepo.lastError.value
+            )
+
+    /** #10 — true while the Firestore backend is live (disables the local-only demo rows). */
+    fun isCloudActive(): Boolean = com.example.fdmanager.data.FdRepositoryProvider.isCloudActive
 
     init {
         repo.autoRenewDue()

@@ -39,4 +39,15 @@ object DevicePrefs {
         _hasAccountOnDevice.value = value
         prefs?.edit()?.putBoolean(KEY_HAS_ACCOUNT, value)?.apply()
     }
+
+    // #10 — one-shot local→cloud migration bookkeeping, per uid (a device can host
+    // several accounts over its life; each gets exactly one migration).
+    private const val KEY_MIGRATED_PREFIX = "cloud_migrated_"
+
+    fun isCloudMigrated(uid: String): Boolean =
+        prefs?.getBoolean(KEY_MIGRATED_PREFIX + uid, false) ?: false
+
+    fun setCloudMigrated(uid: String) {
+        prefs?.edit()?.putBoolean(KEY_MIGRATED_PREFIX + uid, true)?.apply()
+    }
 }

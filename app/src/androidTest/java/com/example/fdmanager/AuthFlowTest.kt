@@ -30,6 +30,9 @@ class AuthFlowTest {
         @org.junit.BeforeClass
         fun forceFakeAuth() {
             com.example.fdmanager.data.AuthRepositoryProvider.forceFakeForTests = true
+            // #10 — belt-and-braces: the provider ALSO auto-detects instrumentation
+            // (it probes for this very class), but the explicit flag documents intent.
+            com.example.fdmanager.data.FdRepositoryProvider.forceFakeForTests = true
         }
     }
 
