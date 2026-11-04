@@ -83,6 +83,8 @@ class MainActivity : ComponentActivity() {
         // #9 — must run before any ViewModel exists: persisted has-account flag + real/fake auth selection
         DevicePrefs.init(applicationContext)
         AuthRepositoryProvider.init(applicationContext)
+        // #10 — AFTER auth: picks in-memory vs Firestore per session, runs one-shot migration
+        com.example.fdmanager.data.FdRepositoryProvider.init(applicationContext)
         FirebaseProbe.run(applicationContext) // debug-only Firestore connectivity probe (roadmap #8); no-op in release and when unconfigured
         setContent {
             val settings by SettingsStore.state.collectAsStateWithLifecycle()

@@ -1,6 +1,7 @@
 # Fixed Deposit (FD) Manager — Technical Specification
 
-> **Revision v1.1 · 2026-11-04** — added §4.13 (real Firebase Auth, roadmap #8/#9/#30), rewrote §6 to shipped truth incl. password-visibility-toggle requirement, added §3 status note. Size/md5 of this revision: backfilled at next bump. Previous (unversioned, treated as v1.0): 40,702 B / md5 `96bc0556`.
+> **Revision v1.2 · 2026-11-04** — added §4.14 (Firestore-backed FdRepository, roadmap #10), §3 status note updated to cloud-live. Size/md5 of this revision: backfilled at next bump.
+> v1.1 · 2026-11-04 — §4.13 (real Firebase Auth, roadmap #8/#9/#30), §6 rewrite incl. password-visibility-toggle requirement: 45,262 B / md5 `db28acc2`. Previous (unversioned, treated as v1.0): 40,702 B / md5 `96bc0556`.
 
 ## 1. Project Overview
 
@@ -46,7 +47,7 @@ Enable users to securely track, manage, and receive alerts for Fixed Deposits (F
 
 ## 3. Data Model (Firestore)
 
-> **Status (2026-11-04):** This section describes the **target Firestore model**. It is not wired yet — current persistence is the in-memory `FdRepository` (demo data); Firestore-backed storage lands with roadmap #10, user-document settings sync with roadmap #12. Firebase **Auth** is already live (roadmap #9, see §4.13/§6), so `request.auth.uid` is available the day #10 starts.
+> **Status (2026-11-04, post-#10):** This model is **LIVE** for signed-in sessions — `FirestoreFdRepository` reads/writes `users/{uid}/fds` with offline persistence (see §4.14). Signed-out/demo sessions and all automated tests still run on the in-memory store. Dates are stored as epoch-day numbers, enums as name strings, `createdAt`/`updatedAt` as server timestamps. User-document settings sync remains roadmap #12; security rules + App Check remain roadmap #11.
 
 ### 3.1 Collection Structure
 
@@ -462,6 +463,25 @@ stored `renewOption` (no user interaction; works while the app opens).
 **REQUIREMENT — password visibility toggle (roadmap #30):** every password entry field — sign-in password, sign-up password, sign-up confirm — provides a show/hide toggle (`PasswordToggleIcon`). Passwords are **obscured by default**; tapping reveals plaintext and flips the icon state; tapping again re-obscures. Test tags `passwordToggle` / `confirmPasswordToggle`. This applies to any future password field as well.
 
 **Acceptance #9/#30 (recorded):** Tier1 123/0, Tier2 46/0 (`AuthFlowTest`, Pixel_7 API 34, one run); real-backend manual acceptance 10 rows (§4) + 7 rows (§4b) PASS; CI builds green without `google-services.json`.
+
+### 4.14 Firestore-backed FdRepository (Issue #10)
+**Scope — roadmap #10:** the §3 data model goes live. `FdRepository` becomes an interface with two backends behind a provider-managed facade (CLOUD_GATE = `cloud-1000r1`); UI code is unchanged — it still calls `FdRepository.get()`.
+
+**Backend selection — `FdRepositoryProvider` (mirrors the §4.13 auth pattern):**
+- Instrumentation detected (probe for the androidTest class in-process) or `forceFakeForTests` → `InMemoryFdRepository`, always. NO Tier2 test can reach Firestore, even on a machine with `google-services.json` and a signed-in emulator.
+- Real auth backend + signed in → `FirestoreFdRepository(uid)` on `users/{uid}/fds`.
+- Everything else (CI, fresh clones, signed-out, fake-auth sessions) → in-memory, exactly the pre-#10 behaviour.
+
+**`FirestoreFdRepository`:** one snapshot listener (metadata included) is the single source of truth; offline persistence is the Firestore Android default, so airplane-mode edits hit the local cache instantly and sync on reconnect. Doc id = client UUID; `createdAt`/`updatedAt` = server timestamps; `userId` written per §3.2; dates = epoch-day numbers; enums = name strings with safe fallbacks on read (mapper = pure-Kotlin `FdFirestoreMapper`, Tier1-tested). Soft delete, recycle bin, renew chains and the issue #25 auto-renew sweep (deferred to the first SERVER snapshot so a stale cache can't double-renew) are identical across backends — `renew`/`autoRenewDue` are interface defaults built only on `get`/`add`/`update`.
+
+**Owner decisions (2026-11-04):**
+- First sign-in migration moves **user-entered FDs only** (demo samples fd1..fd8 never leave the device), once per uid per device (`DevicePrefs` flag). A move, not a copy.
+- Signed-out sessions keep showing the local store (demo or empty), as before #10.
+- The §4.11 sync chip is **REAL** while the cloud backend is live: pending writes → Syncing, cache-only emission → Offline, server ack → Saved, listener failure → Error. The mock sync repo keeps driving it everywhere else.
+- Recycle-bin "Delete forever" **really deletes** the cloud document.
+- Demo data is **local-only**: while a cloud session is live the two Settings demo rows explain ("Demo data is local-only - sign out to use") instead of acting.
+
+**Acceptance #10:** per `docs/test-instructions/TEST-INSTRUCTIONS-010.md` — Tier1 131 (+8 mapper), Tier2 46 (unchanged, shielded), manual rows: migration, console-visible schema, airplane-mode edit syncs on reconnect, bin semantics in cloud, renew chain in cloud, `pm clear` + re-sign-in replicates all data, demo rows inert, sign-out hides.
 
 ---
 

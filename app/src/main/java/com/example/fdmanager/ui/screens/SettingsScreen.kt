@@ -80,6 +80,9 @@ fun SettingsScreen(
     // acceptance: a signed-out device could still export every deposit.
     val hasAccount by DevicePrefs.hasAccountOnDevice.collectAsStateWithLifecycle()
     val sessionLocked = SessionGate.isLocked(hasAccount, auth.isLoggedIn)
+    // #10 — while the Firestore backend is live, demo data stays LOCAL-ONLY (owner decision):
+    // the two demo rows explain instead of silently mutating an invisible local store.
+    val cloudActive = auth.isLoggedIn && vm.isCloudActive()
     val snackbarHost = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
@@ -294,10 +297,14 @@ fun SettingsScreen(
                     title = "Reset demo data",
                     // #9 round 3 — same defect class as Export/Delete: while locked this row
                     // would OVERWRITE the signed-out owner's deposits with sample data.
+                    // #10 — while the cloud session is live, demo data is local-only.
                     subtitle = if (sessionLocked) "Signed out - sign in to reset data"
+                        else if (cloudActive) "Demo data is local-only - sign out to use"
                         else "Restore the original sample FDs",
                     onClick = {
-                        if (sessionLocked) onSignIn() else {
+                        if (sessionLocked) onSignIn() else if (cloudActive) {
+                            placeholder("Demo data is local-only - sign out to use it.")
+                        } else {
                             vm.resetDemoData()
                             placeholder("Demo data restored.")
                         }
@@ -404,9 +411,14 @@ fun SettingsScreen(
                 SectionHeader("Demo")
                 SettingSwitchRow(
                     title = "Demo mode",
-                    subtitle = if (settings.isDemoMode) "Sample FDs visible (opt-in demo)" else "Hide sample data",
+                    // #10 — cloud session live → demo is local-only; the switch explains instead of toggling.
+                    subtitle = if (cloudActive) "Demo data is local-only - sign out to use"
+                        else if (settings.isDemoMode) "Sample FDs visible (opt-in demo)" else "Hide sample data",
                     checked = settings.isDemoMode,
-                    onCheckedChange = { vm.setDemoMode(it) }
+                    onCheckedChange = {
+                        if (cloudActive) placeholder("Demo data is local-only - sign out to use it.")
+                        else vm.setDemoMode(it)
+                    }
                 )
 
                 HorizontalDivider(Modifier.padding(vertical = 8.dp))

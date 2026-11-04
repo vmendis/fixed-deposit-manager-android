@@ -14,48 +14,128 @@ import java.time.LocalDate
 import java.util.UUID
 
 /**
- * In-memory stand-in for Firestore. Mirrors the spec's behaviours:
+ * #10 — the repository CONTRACT. Two implementations:
+ * - [InMemoryFdRepository]: the original in-memory store (demo mode, signed-out sessions,
+ *   ALL tests — zero Firebase traffic, exactly the pre-#10 behaviour).
+ * - [FirestoreFdRepository]: users/{uid}/fds with offline persistence (signed-in sessions
+ *   on builds where Firebase is configured).
+ * [FdRepositoryProvider] owns the switch; UI code keeps calling [FdRepository.get].
+ *
+ * [renew] and [autoRenewDue] are default methods built ONLY on [get]/[add]/[update], so the
+ * renewal rules (spec 4.4, issue #25) cannot diverge between backends.
+ */
+interface FdRepository {
+
+    val fds: StateFlow<List<FixedDeposit>>
+
+    fun get(id: String): FixedDeposit? = FdQueries.byId(fds.value, id)
+
+    fun add(fd: FixedDeposit): String
+    fun update(fd: FixedDeposit)
+
+    /** Soft delete per spec — data is never destroyed here. */
+    fun softDelete(id: String)
+    fun restore(id: String)
+
+    /** Bin-only hard delete (the one place data actually leaves the store). */
+    fun deleteForever(id: String)
+
+    /** Demo/reset helpers — ALWAYS local-only; the provider routes them to the in-memory store. */
+    fun reset(sample: List<FixedDeposit>)
+    fun setDemoMode(enabled: Boolean, sample: List<FixedDeposit> = SampleData.seed(LocalDate.now()))
+
+    fun clearAll()
+
+    /**
+     * Spec 4.4 renew — default built on get/update/add; see class docs. CAPITALIZE adds accrued
+     * interest to the child's principal, PAYOUT reopens with the original sum (issue #25).
+     */
+    fun renew(id: String, option: RenewOption? = null): String {
+        val old = get(id)
+        require(old != null && !old.isDeleted && old.status != FdStatus.RENEWED) {
+            "Only an existing, non-renewed FD can be renewed"
+        }
+        val chosen = option ?: old.renewOption
+        val childAmount = if (chosen == RenewOption.CAPITALIZE) {
+            old.amount + FdMath.interestEarned(old)
+        } else old.amount
+        val chainPos = FdQueries.renewalChain(fds.value, id).size  // root=1 → child becomes -R1
+        val baseNumber = old.fdNumber.replace(Regex("-R\\d+$"), "")
+        val newId = "fd-" + UUID.randomUUID().toString()
+        val child = old.copy(
+            id = newId,
+            amount = childAmount,
+            fdNumber = "$baseNumber-R$chainPos",
+            openedDate = old.maturityDate,
+            maturityDate = FdMath.maturityDate(old.maturityDate, old),
+            status = FdStatus.ACTIVE,
+            isActive = true,
+            isDeleted = false,
+            parentFdId = old.id,
+            createdAt = System.currentTimeMillis()
+        )
+        update(old.copy(status = FdStatus.RENEWED, isActive = false))
+        add(child)
+        return newId
+    }
+
+    /**
+     * Issue #25 — session-start sweep: every due FD (maturity reached, auto-renew on,
+     * not yet renewed/deleted) renews itself per its stored instruction. Returns the ids
+     * of the parents that were renewed.
+     */
+    fun autoRenewDue(today: LocalDate = LocalDate.now()): List<String> {
+        val due = fds.value.filter {
+            !it.isDeleted && it.autoRenew && it.status != FdStatus.RENEWED &&
+                !it.maturityDate.isAfter(today) &&
+                (it.status == FdStatus.ACTIVE || it.status == FdStatus.MATURED)
+        }
+        due.forEach { renew(it.id, it.renewOption) }
+        return due.map { it.id }  // parent ids that were renewed
+    }
+
+    companion object {
+        // DEMO_GATE = demo-0100r9 — freshness marker for V25 #1 opt-in demo
+        const val DEMO_GATE = "demo-0100r9"
+
+        /** #10 — the provider-managed facade; callers never see the backend switch. */
+        fun get(): FdRepository = FdRepositoryProvider.facade
+    }
+}
+
+/**
+ * The original in-memory store. Mirrors the spec's behaviours:
  * soft delete (isDeleted), renewal via parentFdId chains, active/status bookkeeping.
  */
-class FdRepository(initial: List<FixedDeposit>) {
+class InMemoryFdRepository(initial: List<FixedDeposit>) : FdRepository {
 
     private val _fds = MutableStateFlow(initial)
-    val fds: StateFlow<List<FixedDeposit>> = _fds.asStateFlow()
+    override val fds: StateFlow<List<FixedDeposit>> = _fds.asStateFlow()
 
-    fun get(id: String): FixedDeposit? = FdQueries.byId(_fds.value, id)
-
-    fun add(fd: FixedDeposit): String {
+    override fun add(fd: FixedDeposit): String {
         val id = if (fd.id.isBlank()) "fd-" + UUID.randomUUID().toString() else fd.id
         _fds.value = _fds.value + fd.copy(id = id)
         return id
     }
 
-    fun update(fd: FixedDeposit) {
+    override fun update(fd: FixedDeposit) {
         _fds.value = _fds.value.map { if (it.id == fd.id) fd else it }
     }
 
-    /** Soft delete per spec — data is never destroyed here. */
-    fun softDelete(id: String) {
+    override fun softDelete(id: String) {
         _fds.value = _fds.value.map { if (it.id == id) it.copy(isDeleted = true) else it }
     }
 
-    fun restore(id: String) {
+    override fun restore(id: String) {
         _fds.value = _fds.value.map { if (it.id == id) it.copy(isDeleted = false) else it }
     }
 
-    /** Bin-only hard delete (the one place data actually leaves the mock store). */
-    fun deleteForever(id: String) {
+    override fun deleteForever(id: String) {
         _fds.value = _fds.value.filterNot { it.id == id }
     }
 
-    /**
-     * Spec 4.4 — mark old FD RENEWED + inactive, create a child FD linked by parentFdId.
-     * Child opens on the old FD's maturity date with the same terms.
-     * Issue #25 — [option] decides the child's principal: CAPITALIZE adds the accrued
-     * interest, PAYOUT reopens with the original sum. Null = use the FD's stored instruction.
-     * Returns the new FD's id.
-     */
-    fun renew(id: String, option: RenewOption? = null): String {
+    /** Original atomic renew kept — single _fds assignment (interface default would be two). */
+    override fun renew(id: String, option: RenewOption?): String {
         val old = get(id)
         require(old != null && !old.isDeleted && old.status != FdStatus.RENEWED) {
             "Only an existing, non-renewed FD can be renewed"
@@ -85,7 +165,7 @@ class FdRepository(initial: List<FixedDeposit>) {
         return newId
     }
 
-    fun reset(sample: List<FixedDeposit>) {
+    override fun reset(sample: List<FixedDeposit>) {
         _fds.value = sample
     }
 
@@ -96,7 +176,7 @@ class FdRepository(initial: List<FixedDeposit>) {
      * - off: remove sample FDs by id, keep user FDs
      * Sample ids are fd1..fd8 from SampleData.seed
      */
-    fun setDemoMode(enabled: Boolean, sample: List<FixedDeposit> = SampleData.seed(LocalDate.now())) {
+    override fun setDemoMode(enabled: Boolean, sample: List<FixedDeposit>) {
         val sampleIds = sample.map { it.id }.toSet()
         val current = _fds.value
         _fds.value = if (enabled) {
@@ -110,48 +190,17 @@ class FdRepository(initial: List<FixedDeposit>) {
         }
     }
 
-    fun clearAll() {
+    override fun clearAll() {
         _fds.value = emptyList()
     }
 
-    /**
-     * Issue #25 — session-start sweep: every due FD (maturity reached, auto-renew on,
-     * not yet renewed/deleted) renews itself per its stored instruction. Returns the ids
-     * of the parents that were renewed.
-     */
-    fun autoRenewDue(today: LocalDate = LocalDate.now()): List<String> {
-        val due = _fds.value.filter {
-            !it.isDeleted && it.autoRenew && it.status != FdStatus.RENEWED &&
-                !it.maturityDate.isAfter(today) &&
-                (it.status == FdStatus.ACTIVE || it.status == FdStatus.MATURED)
-        }
-        due.forEach { renew(it.id, it.renewOption) }
-        return due.map { it.id }  // parent ids that were renewed
-    }
-
-    companion object {
-        // DEMO_GATE = demo-0100r9 — freshness marker for V25 #1 opt-in demo
-        const val DEMO_GATE = "demo-0100r9"
-
-        @Volatile
-        private var instance: FdRepository? = null
-
-        fun get(): FdRepository = instance ?: synchronized(this) {
-            // #1 opt-in demo: fresh install starts empty if demo off, sample if demo on
-            // Check SettingsStore flag (in-memory) — default false per #1
-            val demoOn = try {
-                SettingsStore.state.value.isDemoMode
-            } catch (_: Exception) {
-                false
-            }
-            val initial = if (demoOn) SampleData.seed(LocalDate.now()) else emptyList()
-            instance ?: FdRepository(initial).also { instance = it }
-        }
-    }
 }
 
 /** Realistic Sri Lankan demo data, dated relative to "today" so the mock always looks alive. */
 object SampleData {
+
+    /** #10 — demo record ids. NEVER migrated to the cloud (owner decision: demo stays local). */
+    val SAMPLE_IDS: Set<String> = setOf("fd1", "fd2", "fd3", "fd4", "fd5", "fd6", "fd7", "fd8")
 
     fun seed(today: LocalDate): List<FixedDeposit> = listOf(
         FixedDeposit(
