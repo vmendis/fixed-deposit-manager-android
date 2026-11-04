@@ -1,5 +1,7 @@
 # Fixed Deposit (FD) Manager — Technical Specification
 
+> **Revision v1.1 · 2026-11-04** — added §4.13 (real Firebase Auth, roadmap #8/#9/#30), rewrote §6 to shipped truth incl. password-visibility-toggle requirement, added §3 status note. Size/md5 of this revision: backfilled at next bump. Previous (unversioned, treated as v1.0): 40,702 B / md5 `96bc0556`.
+
 ## 1. Project Overview
 
 **Project Name:** Fixed Deposit (FD) Manager
@@ -43,6 +45,8 @@ Enable users to securely track, manage, and receive alerts for Fixed Deposits (F
 ---
 
 ## 3. Data Model (Firestore)
+
+> **Status (2026-11-04):** This section describes the **target Firestore model**. It is not wired yet — current persistence is the in-memory `FdRepository` (demo data); Firestore-backed storage lands with roadmap #10, user-document settings sync with roadmap #12. Firebase **Auth** is already live (roadmap #9, see §4.13/§6), so `request.auth.uid` is available the day #10 starts.
 
 ### 3.1 Collection Structure
 
@@ -436,6 +440,29 @@ stored `renewOption` (no user interaction; works while the app opens).
 - Tier1 now 58 tests (54+4 new LoadingState) GREEN, Tier2 now 28 tests (24+4 new LoadingErrorUiTest) GREEN, freshness gate `loadstate-0400r9` yes + existing gates.
 - Spec both copies identical.
 
+### 4.13 Real Firebase Auth (Issues #8, #9, #30)
+**Scope — roadmap #8 (project setup) + #9 (auth integration) + #30 (password visibility toggle).** Replaces the mock-only session of §4.10 with a real Firebase Authentication backend while keeping every §4.10 screen, route, and test tag unchanged. Shipped via code-repo PRs #25, #26, #27; real-backend acceptance (§4 + §4b of TEST-INSTRUCTIONS-009) all-PASS 2026-11-04.
+
+**Backend selection — `AuthRepositoryProvider` (one decision per process):**
+- `forceFakeForTests` set (androidTest `@BeforeClass`) → `FakeAuthRepository`, always. Tier2 runs with ZERO Firebase traffic even on machines with `google-services.json`.
+- Firebase configured (`google-services.json` present at build → `FirebaseApp` auto-initialized) → `FirebaseAuthRepository`.
+- Otherwise (CI, fresh clones) → fake. The app is fully usable either way; `google-services.json` is owner-machine-only and gitignored.
+
+**Real repository — `FirebaseAuthRepository : AuthRepository`:** `signIn`, `signUp`, `sendPasswordReset`, `signInWithGoogleIdToken`, `signOut`. Validation stays in shared `AuthValidation` (same rules as mock, §4.10).
+
+**Google Sign-In:** `GoogleCredentialHelper` (Credential Manager API) → `signInWithGoogleIdToken`. **Owner decision 2026-10-31: the Google Sign-In button STAYS** (amends the #23 discussion outcome).
+
+**Session gate — `SessionGate.isLocked(hasAccountOnDevice, isLoggedIn)`:**
+- Lock applies to **account-holders only**: `DevicePrefs` persists `hasAccountOnDevice`; fresh installs / never-signed-in users are never locked out of the demo experience.
+- Sign-out **hides** data behind the gate — it never wipes.
+- While locked, the Settings data rows (export, delete-all-data, reset-demo) redirect to Sign in with subtitles `Signed out - sign in to export` / `... to manage data` / `... to reset data`.
+
+**Password reset (real path):** prompt "Enter your email and we'll send you a password reset link." → confirmation "If an account exists for `$email`, a reset link has been sent. Check your inbox - and the spam folder." (Mock path keeps its own "(mock)" copy.)
+
+**REQUIREMENT — password visibility toggle (roadmap #30):** every password entry field — sign-in password, sign-up password, sign-up confirm — provides a show/hide toggle (`PasswordToggleIcon`). Passwords are **obscured by default**; tapping reveals plaintext and flips the icon state; tapping again re-obscures. Test tags `passwordToggle` / `confirmPasswordToggle`. This applies to any future password field as well.
+
+**Acceptance #9/#30 (recorded):** Tier1 123/0, Tier2 46/0 (`AuthFlowTest`, Pixel_7 API 34, one run); real-backend manual acceptance 10 rows (§4) + 7 rows (§4b) PASS; CI builds green without `google-services.json`.
+
 ---
 
 ## 5. Notifications
@@ -455,18 +482,26 @@ stored `renewOption` (no user interaction; works while the app opens).
 
 ## 6. Authentication Strategy
 
-**Provider:** Firebase Authentication
+**Provider:** Firebase Authentication — **LIVE** since roadmap #9 (2026-11-04). Implementation details in §4.13.
 
-**Methods:**
+**Methods (shipped):**
 
 * Email + Password (primary)
-* Google Sign-In (optional)
+* Google Sign-In (shipped — user-selectable alternative to email/password; owner decision 2026-10-31, amends the #23 discussion)
+
+**Requirements:**
+
+1. Inline validation via shared `AuthValidation` — email format (254 max), password 6–128 chars, confirm match; identical rules for mock and real backends.
+2. **Password visibility toggle:** all password entry fields (sign-in, sign-up, confirm — and any future password field) must provide a show/hide toggle; obscured by default, icon flips on reveal (roadmap #30, shipped).
+3. Password reset by email with non-enumerating confirmation copy ("If an account exists for …") plus a spam-folder hint.
+4. Session gate for **account-holders only** (`SessionGate`): never lock a fresh install out of the demo; sign-out hides data, never wipes.
+5. CI and fresh clones must build and pass tests with **zero** Firebase traffic (fake repository auto-selected; `google-services.json` gitignored).
 
 **User Flow:**
 
-1. User registers (web or app)
+1. User registers (app; web later)
 2. Firebase assigns `userId`
-3. Create user profile document
+3. Create user profile document — **not yet implemented**; lands with Firestore wiring (roadmap #10/#12)
 
 ---
 
