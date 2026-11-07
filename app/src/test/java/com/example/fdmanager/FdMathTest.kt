@@ -50,6 +50,9 @@ class FdMathTest {
         assertEquals("Rs 12.5 M", Lkr.compact(12_500_000.0))
         assertEquals("Rs 250 K", Lkr.compact(250_000.0))
         assertEquals("Rs 75,000", Lkr.compact(75_000.0))
+        // #10 follow-up (F2): toward-zero — a headline never overstates
+        assertEquals("Rs 1.17 M", Lkr.compact(1_175_000.0))
+        assertEquals("Rs 175.55 K", Lkr.compact(175_559.0))
     }
 
     @Test
@@ -59,6 +62,9 @@ class FdMathTest {
         assertEquals("Rs 12.5 Million", Lkr.words(12_500_000.0))
         assertEquals("Rs 750 K", Lkr.words(750_000.0))           // sub-million keeps K family
         assertEquals("Rs 0", Lkr.words(0.0))
+        // #10 follow-up (F2): 1,175,000 must NOT read "Rs 1.2 Million" (owner, 2026-11-07)
+        assertEquals("Rs 1.17 Million", Lkr.words(1_175_000.0))
+        assertEquals("Rs 1.11 Million", Lkr.words(1_119_999.0))  // truncated, not half-rounded
         assertEquals("Rs 3,200,000.00", Lkr.exact(3_200_000.0))
         assertEquals("Rs 75,000.00", Lkr.exact(75_000.0))
     }

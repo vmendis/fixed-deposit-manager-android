@@ -171,15 +171,25 @@ object Lkr {
     fun full(amount: Double): String = "Rs " + grouped.format(amount)
 
     /**
-     * Hero wording for prominent totals: "Rs 3.2 Million" at >= 1M (one decimal, trailing
-     * `.0` dropped → "Rs 5 Million"); below that the compact K-style ("Rs 750 K") so the
-     * Home card, the bank-row wording, and the hero stay one family. Issue #20.
+     * Hero wording for prominent totals: "Rs 3.2 Million" at >= 1M (up to two decimals,
+     * trailing zeros dropped → "Rs 5 Million"); below that the compact K-style ("Rs 750 K")
+     * so the Home card, the bank-row wording, and the hero stay one family. Issue #20.
+     *
+     * #10 follow-up (F2): rounding is TOWARD ZERO, never half-up — a financial headline must
+     * not overstate (1,175,000 reads "Rs 1.17 Million", not "Rs 1.2 Million"). The exact
+     * grouped line shown next to it carries the precise figure.
      */
     fun words(amount: Double): String =
         if (Math.abs(amount) >= 1_000_000) {
-            "Rs " + DecimalFormat("0.#", DecimalFormatSymbols(Locale.US))
-                .format(amount / 1_000_000.0) + " Million"
+            "Rs " + truncate2(amount / 1_000_000.0) + " Million"
         } else compact(amount)
+
+    /** Two decimals, rounded toward zero, trailing zeros dropped ("3.20" → "3.2", "5.00" → "5"). */
+    private fun truncate2(value: Double): String =
+        java.math.BigDecimal.valueOf(value)
+            .setScale(2, java.math.RoundingMode.DOWN)
+            .stripTrailingZeros()
+            .toPlainString()
 
     /** Exact secondary line: grouped with two decimals — "Rs 3,200,000.00". Issue #20. */
     fun exact(amount: Double): String =
@@ -187,10 +197,10 @@ object Lkr {
 
     fun compact(amount: Double): String {
         val abs = Math.abs(amount)
-        val short = DecimalFormat("0.##", DecimalFormatSymbols(Locale.US))
+        // #10 follow-up (F2): same toward-zero rounding as words() — never overstate.
         return when {
-            abs >= 1_000_000 -> "Rs " + short.format(amount / 1_000_000.0) + " M"
-            abs >= 100_000 -> "Rs " + short.format(amount / 1_000.0) + " K"
+            abs >= 1_000_000 -> "Rs " + truncate2(amount / 1_000_000.0) + " M"
+            abs >= 100_000 -> "Rs " + truncate2(amount / 1_000.0) + " K"
             else -> full(amount)
         }
     }

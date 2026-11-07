@@ -212,7 +212,7 @@ class SyncStateChipTest {
                         rule.onNodeWithTag("syncstate-0300r9", useUnmergedTree = true).assertIsDisplayed()
                         true
                     } catch (e2: Throwable) {
-                        rule.onNodeWithText("Local changes saved", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                        rule.onNodeWithText("All changes saved", substring = true, useUnmergedTree = true).assertIsDisplayed()
                         true
                     }
                 }
@@ -351,7 +351,7 @@ class SyncStateChipTest {
                     true
                 } catch (e1: Throwable) {
                     try {
-                        rule.onNodeWithText("Local only", substring = true, useUnmergedTree = true).assertIsDisplayed()
+                        rule.onNodeWithText("saved on device", substring = true, useUnmergedTree = true).assertIsDisplayed()
                         true
                     } catch (e2: Throwable) {
                         try {
