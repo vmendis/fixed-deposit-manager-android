@@ -412,9 +412,12 @@ fun SettingsScreen(
                 SettingSwitchRow(
                     title = "Demo mode",
                     // #10 — cloud session live → demo is local-only; the switch explains instead of toggling.
+                    // #10 follow-up (F6): render DISABLED under a cloud session instead of a live-looking
+                    // switch that swallows taps (it could show a stale ON from the onboarding demo path).
                     subtitle = if (cloudActive) "Demo data is local-only - sign out to use"
                         else if (settings.isDemoMode) "Sample FDs visible (opt-in demo)" else "Hide sample data",
                     checked = settings.isDemoMode,
+                    enabled = !cloudActive,
                     onCheckedChange = {
                         if (cloudActive) placeholder("Demo data is local-only - sign out to use it.")
                         else vm.setDemoMode(it)
@@ -567,7 +570,8 @@ private fun SettingSwitchRow(
     subtitle: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    testTag: String? = null
+    testTag: String? = null,
+    enabled: Boolean = true
 ) {
     Row(
         Modifier
@@ -587,6 +591,7 @@ private fun SettingSwitchRow(
         Switch(
             checked = checked,
             onCheckedChange = onCheckedChange,
+            enabled = enabled,
             modifier = if (testTag != null) Modifier.testTag("${testTag}Switch") else Modifier
         )
     }

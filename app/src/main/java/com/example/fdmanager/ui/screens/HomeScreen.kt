@@ -182,9 +182,9 @@ fun HomeScreen(
                     SyncStateChip(state = syncState, modifier = Modifier.testTag("syncChip"))
                     Text(
                         text = when (syncState) {
-                            com.example.fdmanager.domain.SyncState.SAVED -> "Local changes saved"
-                            com.example.fdmanager.domain.SyncState.SYNCING -> "Syncing to cloud (mock)…"
-                            com.example.fdmanager.domain.SyncState.OFFLINE -> "Offline — local only"
+                            com.example.fdmanager.domain.SyncState.SAVED -> "All changes saved"
+                            com.example.fdmanager.domain.SyncState.SYNCING -> "Syncing to cloud…"
+                            com.example.fdmanager.domain.SyncState.OFFLINE -> "Offline — changes saved on device"
                             com.example.fdmanager.domain.SyncState.ERROR -> "Sync failed — check Snackbar for Retry"
                         },
                         style = MaterialTheme.typography.bodySmall,
